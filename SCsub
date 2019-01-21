@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+Import('env')
+Import('env_modules')
+
+env_module = env_modules.Clone()
+
+env_module.add_source_files(env.modules_sources, 'duktape/duktape.c')
+env_module.add_source_files(env.modules_sources, "*.cpp")
