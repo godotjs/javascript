@@ -1,17 +1,17 @@
 #ifndef ECMASCRIPT_H
 #define ECMASCRIPT_H
 
-#include "core/ustring.h"
-#include "core/typedefs.h"
-#include "core/reference.h"
 #include "core/error_list.h"
+#include "core/reference.h"
 #include "core/script_language.h"
+#include "core/typedefs.h"
+#include "core/ustring.h"
 #include "duktape/duktape.h"
 
 class ECMAScriptLanguage : public ScriptLanguage {
 
 private:
-	duk_context* ctx;
+	duk_context *ctx;
 	static ECMAScriptLanguage *singleton;
 
 public:
@@ -31,7 +31,7 @@ public:
 	virtual void init();
 	virtual void finish();
 
-	/* TODO */ virtual Error execute_file(const String &p_path) { return ERR_UNAVAILABLE; }
+	/* TODO */ virtual Error execute_file(const String &p_path);
 
 	virtual void get_reserved_words(List<String> *p_words) const;
 	virtual void get_comment_delimiters(List<String> *p_delimiters) const;
@@ -41,7 +41,7 @@ public:
 	/* TODO */ virtual void make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script) {}
 	/* TODO */ virtual bool validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path = "", List<String> *r_functions = NULL, List<Warning> *r_warnings = NULL, Set<int> *r_safe_lines = NULL) const { return true; }
 	/* TODO */ virtual String validate_path(const String &p_path) const { return ""; }
-	/* TODO */  virtual Script *create_script() const { return NULL; }
+	/* TODO */ virtual Script *create_script() const { return NULL; }
 
 	/* TODO */ virtual int find_function(const String &p_function, const String &p_code) const { return -1; }
 	/* TODO */ virtual String make_function(const String &p_class, const String &p_name, const PoolStringArray &p_args) const { return ""; }
@@ -63,7 +63,6 @@ public:
 
 	/* DEBUGGER FUNCTIONS */
 
-
 	/* DEBUGGER FUNCTIONS */
 	/* TODO */ virtual String debug_get_error() const { return ""; }
 	/* TODO */ virtual int debug_get_stack_level_count() const { return 1; }
@@ -76,12 +75,12 @@ public:
 	/* TODO */ virtual String debug_parse_stack_level_expression(int p_level, const String &p_expression, int p_max_subitems, int p_max_depth) { return ""; }
 	/* TODO */ virtual Vector<StackInfo> debug_get_current_stack_info() { return Vector<StackInfo>(); }
 
-	/* TODO */ virtual void reload_all_scripts() {};
-	/* TODO */ virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) {};
+	/* TODO */ virtual void reload_all_scripts(){};
+	/* TODO */ virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload){};
 
 	/* LOADER FUNCTIONS */
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;
-	/* TODO */  virtual void get_public_functions(List<MethodInfo> *p_functions) const {}
+	/* TODO */ virtual void get_public_functions(List<MethodInfo> *p_functions) const {}
 	/* TODO */ virtual void get_public_constants(List<Pair<String, Variant> > *p_constants) const {}
 
 	/* TODO */ virtual void profiling_start() {}
@@ -95,7 +94,7 @@ public:
 	/* TODO */ virtual void refcount_incremented_instance_binding(Object *p_object) {} //optional, not used by all languages
 	/* TODO */ virtual bool refcount_decremented_instance_binding(Object *p_object) { return true; } //return true if it can die //optional, not used by all languages
 
-	/* TODO */ virtual void frame() {};
+	/* TODO */ virtual void frame(){};
 
 	/* TODO */ virtual bool handles_global_class_type(const String &p_type) const { return false; }
 	/* TODO */ virtual String get_global_class_name(const String &p_path, String *r_base_type = NULL, String *r_icon_path = NULL) const { return String(); }
