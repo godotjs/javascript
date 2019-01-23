@@ -1,11 +1,7 @@
 #ifndef ECMASCRIPT_H
 #define ECMASCRIPT_H
 
-#include "core/error_list.h"
-#include "core/reference.h"
 #include "core/script_language.h"
-#include "core/typedefs.h"
-#include "core/ustring.h"
 #include "duktape/duktape.h"
 
 class ECMAScriptLanguage : public ScriptLanguage {

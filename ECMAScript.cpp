@@ -1,41 +1,10 @@
 #include "ECMAScript.h"
 #include "core/os/file_access.h"
-#include "core/os/memory.h"
-#include "core/typedefs.h"
+#include "utils/binding_helper.h"
+#include "utils/builtin_classes.h"
 
 /************* SCRIPT LANGUAGE **************/
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
-
-static void *alloc_function(void *udata, duk_size_t size) {
-	return memalloc(size);
-}
-
-static void *realloc_function(void *udata, void *ptr, duk_size_t size) {
-	return memrealloc(ptr, size);
-}
-
-static void free_function(void *udata, void *ptr) {
-	if (ptr) {
-		memfree(ptr);
-	}
-}
-
-static void fatal_function(void *udata, const char *msg) {
-	ERR_EXPLAIN(msg);
-}
-
-static int native_print(duk_context *ctx) {
-	int size = duk_get_top(ctx);
-	String msg;
-	for (int i = 0; i < size; ++i) {
-		msg += duk_to_string(ctx, i);
-		if (i < size - 1) {
-			msg += " ";
-		}
-	}
-	print_line(msg);
-	return 0;
-}
 
 void ECMAScriptLanguage::init() {
 	ERR_FAIL_COND(this->ctx);
@@ -46,6 +15,9 @@ void ECMAScriptLanguage::init() {
 	duk_put_global_string(this->ctx, "print");
 
 	duk_push_object(this->ctx);
+
+	register_builtin_classes(this->ctx);
+
 	duk_put_global_string(this->ctx, "godot");
 
 	this->execute_file("test.js");
