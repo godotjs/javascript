@@ -1,8 +1,8 @@
 #ifndef ECMASCRIPT_BINDDING_HELPER
 #define ECMASCRIPT_BINDDING_HELPER
 
-#include "duktape/duktape.h"
 #include "core/os/memory.h"
+#include "duktape/duktape.h"
 
 #define NO_RET_VAL 0
 #define HAS_RET_VAL 1
@@ -16,8 +16,8 @@ void fatal_function(void *udata, const char *msg);
 
 duk_ret_t native_print(duk_context *ctx);
 
-template<typename T>
-duk_ret_t finalizer_static(duk_context* ctx) {
+template <typename T>
+duk_ret_t finalizer_static(duk_context *ctx) {
 
 	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("ptr"));
 	T *ptr = static_cast<T *>(duk_get_pointer(ctx, -1));
@@ -29,7 +29,7 @@ duk_ret_t finalizer_static(duk_context* ctx) {
 	return NO_RET_VAL;
 }
 
-template<typename T>
+template <typename T>
 duk_ret_t static_constructor(duk_context *ctx) {
 
 	if (!duk_is_constructor_call(ctx)) {
@@ -37,7 +37,7 @@ duk_ret_t static_constructor(duk_context *ctx) {
 	}
 
 	size_t this_pos = duk_get_top(ctx);
-	T* ptr = new T();
+	T *ptr = memnew(T);
 	duk_push_this(ctx);
 	duk_push_pointer(ctx, ptr);
 	duk_put_prop_string(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
@@ -48,7 +48,7 @@ duk_ret_t static_constructor(duk_context *ctx) {
 	return NO_RET_VAL;
 }
 
-template<typename T>
+template <typename T>
 duk_ret_t static_constructor_2f(duk_context *ctx) {
 
 	if (!duk_is_constructor_call(ctx)) {
@@ -57,12 +57,12 @@ duk_ret_t static_constructor_2f(duk_context *ctx) {
 
 	duk_double_t p0 = duk_get_number_default(ctx, 0, 0);
 	duk_double_t p1 = duk_get_number_default(ctx, 1, 0);
-	T* ptr = new T(p0, p1);
+	T *ptr = memnew(T(p0, p1));
 
 	size_t this_pos = duk_get_top(ctx);
 	duk_push_this(ctx);
 	duk_push_pointer(ctx, ptr);
-	duk_put_prop_string(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 
 	duk_push_c_function(ctx, finalizer_static<T>, 1);
 	duk_set_finalizer(ctx, this_pos);
@@ -70,26 +70,4 @@ duk_ret_t static_constructor_2f(duk_context *ctx) {
 	return NO_RET_VAL;
 }
 
-template<typename T>
-duk_ret_t setter_function(duk_context* ctx) {
-
-}
-
-template<typename T>
-duk_ret_t getter_function(duk_context* ctx) {
-
-	duk_push_this(ctx);
-	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("ptr"));
-	T *ptr = static_cast<T *>(duk_get_pointer(ctx, -1));
-
-	duk_push_current_function(ctx);
-	duk_get_prop_string(ctx, -1, "key");
-	const char * key = duk_require_string(ctx, -1);
-	if (strcmp(key, 'x') == 0) {
-		duk_push_number(ctx, ptr->x);
-	}
-	return HAS_RET_VAL;
-}
-
 #endif // ECMASCRIPT_BINDDING_HELPER
-
