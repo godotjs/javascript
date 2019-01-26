@@ -7,8 +7,6 @@ sources = [
     'register_types.cpp',
     'duktape/duktape.c',
     'ECMAScript.cpp',
-    'utils/binding_helper.cpp',
-    'utils/builtin_classes.cpp',
 ]
 
 env_module = env_modules.Clone()
