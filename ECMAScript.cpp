@@ -150,14 +150,14 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
 	if (!duk_is_constructor_call(ctx)) {
 		return DUK_ERR_TYPE_ERROR;
 	}
+
 	duk_push_current_function(ctx);
-	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("ctor"));
-	GodotObjectCreator creator = (GodotObjectCreator)duk_get_pointer_default(ctx, -1, NULL);
-	if (creator) {
-		duk_push_godot_object(ctx, creator());
-	} else {
-		return DUK_ERR_TYPE_ERROR;
-	}
+	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
+	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer_default(ctx, -1, NULL));
+	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
+	ERR_FAIL_NULL_V(cls->creation_func, DUK_ERR_TYPE_ERROR);
+
+	duk_push_godot_object(ctx, cls->creation_func());
 	return NO_RET_VAL;
 }
 
@@ -345,8 +345,8 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 
 	// Class constuctor function
 	duk_push_c_function(ctx, duk_godot_object_constructor, 0);
-	duk_push_pointer(ctx, (void *)cls->creation_func);
-	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ctor"));
+	duk_push_pointer(ctx, (void *)cls);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls"));
 	{
 		// Class.prototype
 		duk_push_object(ctx);
@@ -402,6 +402,10 @@ void DuktapeBindingHelper::uninitialize() {
 }
 
 void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls) {
+	if (cls->inherits_ptr) {
+		register_class_members(ctx, cls->inherits_ptr);
+	}
+
 	const duk_idx_t prototype_idx = duk_get_top(ctx) - 1;
 
 	{
@@ -424,7 +428,7 @@ void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassD
 		const StringName *key = cls->property_setget.next(NULL);
 		while (key) {
 
-			duk_require_stack(ctx, 4);
+			duk_require_stack(ctx, 3);
 
 			const ClassDB::PropertySetGet &prop = cls->property_setget[*key];
 			duk_uidx_t masks = DUK_DEFPROP_FORCE;
@@ -443,20 +447,15 @@ void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassD
 			} else {
 				duk_pop(ctx);
 			}
-
 			key = cls->property_setget.next(key);
 		}
-	}
-
-	if (cls->inherits_ptr) {
-		register_class_members(ctx, cls->inherits_ptr);
 	}
 }
 
 void DuktapeBindingHelper::duk_push_godot_method(duk_context *ctx, const MethodBind *mb) {
 
-	void **val_ele = method_bindings.getptr(mb);
-	void *heap_ptr = val_ele ? (*val_ele) : NULL;
+	ECMAScriptHeapObject **val_ele = method_bindings.getptr(mb);
+	ECMAScriptHeapObject *heap_ptr = val_ele ? (*val_ele) : NULL;
 
 	if (heap_ptr) {
 		duk_push_heapptr(ctx, heap_ptr);

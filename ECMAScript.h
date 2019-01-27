@@ -104,7 +104,6 @@ public:
 };
 
 typedef void ECMAScriptHeapObject;
-typedef Object *(*GodotObjectCreator)();
 
 #define NO_RET_VAL 0
 #define HAS_RET_VAL 1
