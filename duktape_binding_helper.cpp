@@ -1,144 +1,5 @@
-#include "ECMAScript.h"
-#include "core/os/file_access.h"
-
-#include "core/class_db.h"
-
-/************* SCRIPT LANGUAGE **************/
-ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
-
-void ECMAScriptLanguage::init() {
-	ERR_FAIL_NULL(this->binding);
-
-	this->binding->initialize();
-
-	this->execute_file("test.js");
-}
-
-void ECMAScriptLanguage::finish() {
-	this->binding->uninitialize();
-}
-
-Error ECMAScriptLanguage::execute_file(const String &p_path) {
-	ERR_FAIL_NULL_V(this->binding, ERR_BUG);
-
-	FileAccessRef f = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V(!f, ERR_INVALID_PARAMETER);
-
-	Vector<uint8_t> buff;
-	buff.resize(f->get_len() + 1);
-	f->get_buffer(buff.ptrw(), f->get_len());
-	buff.ptrw()[buff.size() - 1] = 0;
-
-	duk_eval_string(this->binding->get_context(), (char *)buff.ptr());
-	return OK;
-}
-
-void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
-
-	static const char *_reserved_words[] = {
-		"abstract",
-		"arguments",
-		"await",
-		"boolean",
-		"break",
-		"byte",
-		"case",
-		"catch",
-		"char",
-		"class",
-		"const",
-		"continue",
-		"debugger",
-		"default",
-		"delete",
-		"do",
-		"double",
-		"else",
-		"enum",
-		"eval",
-		"export",
-		"extends",
-		"false",
-		"final",
-		"finally",
-		"float",
-		"for",
-		"function",
-		"goto",
-		"if",
-		"implements",
-		"import",
-		"in",
-		"instanceof",
-		"int",
-		"interface",
-		"let",
-		"long",
-		"native",
-		"new",
-		"null",
-		"package",
-		"private",
-		"protected",
-		"public",
-		"return",
-		"short",
-		"static",
-		"super",
-		"switch",
-		"synchronized",
-		"this",
-		"throw",
-		"throws",
-		"transient",
-		"true",
-		"try",
-		"typeof",
-		"var",
-		"void",
-		"volatile",
-		"while",
-		"with",
-		"yield",
-		0
-	};
-
-	const char **w = _reserved_words;
-
-	while (*w) {
-
-		p_words->push_back(*w);
-		w++;
-	}
-}
-
-void ECMAScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const {
-	p_delimiters->push_back("//"); // single-line comment
-	p_delimiters->push_back("/* */"); // delimited comment
-}
-
-void ECMAScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const {
-	p_delimiters->push_back("' '");
-	p_delimiters->push_back("\" \"");
-	p_delimiters->push_back("` `");
-}
-
-void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
-	p_extensions->push_back("js");
-}
-
-ECMAScriptLanguage::ECMAScriptLanguage() {
-
-	ERR_FAIL_COND(singleton);
-	singleton = this;
-	binding = memnew(DuktapeBindingHelper);
-}
-
-ECMAScriptLanguage::~ECMAScriptLanguage() {
-	memdelete(this->binding);
-}
-
-/************* Duktape Binding Helper **************/
+#include "duktape_binding_helper.h"
+#include "ecmascript_language.h"
 
 void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fprintf(stderr, "*** FATAL ERROR: %s\n", (msg ? msg : "no message"));
@@ -298,7 +159,7 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj) {
 	if (obj) {
 		void **ele_ptr = get_singleton()->heap_objects.getptr(obj->get_instance_id());
-		ECMAScriptHeapObject *heap_obj = (ele_ptr != NULL) ? (*ele_ptr) : NULL;
+		DuktapeHeapObject *heap_obj = (ele_ptr != NULL) ? (*ele_ptr) : NULL;
 		if (heap_obj) {
 			duk_push_heapptr(ctx, heap_obj);
 		} else {
@@ -363,12 +224,16 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 			register_class_members(ctx, cls);
 		}
 
-		ECMAScriptHeapObject *proto_ptr = duk_get_heapptr(ctx, -1);
+		DuktapeHeapObject *proto_ptr = duk_get_heapptr(ctx, -1);
 		get_singleton()->class_prototypes[cls->name] = proto_ptr;
 
 		duk_set_prototype(ctx, -2);
 	}
 	duk_put_prop_godot_string_name(ctx, -2, cls->name);
+}
+
+DuktapeBindingHelper *DuktapeBindingHelper::get_singleton() {
+	return ECMAScriptLanguage::get_singleton()->binding;
 }
 
 void DuktapeBindingHelper::initialize() {
@@ -454,8 +319,8 @@ void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassD
 
 void DuktapeBindingHelper::duk_push_godot_method(duk_context *ctx, const MethodBind *mb) {
 
-	ECMAScriptHeapObject **val_ele = method_bindings.getptr(mb);
-	ECMAScriptHeapObject *heap_ptr = val_ele ? (*val_ele) : NULL;
+	DuktapeHeapObject **val_ele = method_bindings.getptr(mb);
+	DuktapeHeapObject *heap_ptr = val_ele ? (*val_ele) : NULL;
 
 	if (heap_ptr) {
 		duk_push_heapptr(ctx, heap_ptr);

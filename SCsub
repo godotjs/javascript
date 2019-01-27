@@ -6,7 +6,10 @@ Import('env_modules')
 sources = [
     'register_types.cpp',
     'duktape/duktape.c',
-    'ECMAScript.cpp',
+    'duktape_binding_helper.cpp',
+    'ecmascript_language.cpp',
+    'ecmascript_instance.cpp',
+    'ecmascript.cpp',
 ]
 
 env_module = env_modules.Clone()

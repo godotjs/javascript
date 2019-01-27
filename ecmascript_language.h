@@ -1,11 +1,11 @@
-#ifndef ECMASCRIPT_H
-#define ECMASCRIPT_H
+﻿#ifndef ECMASCRIPT_LANGUAGE_H
+#define ECMASCRIPT_LANGUAGE_H
 
 #include "core/script_language.h"
-#include "duktape/duktape.h"
+#include "duktape_binding_helper.h"
 
+/*********************** ECMAScriptLanguage ***********************/
 class DuktapeBindingHelper;
-
 class ECMAScriptLanguage : public ScriptLanguage {
 
 	friend class DuktapeBindingHelper;
@@ -103,70 +103,4 @@ public:
 	virtual ~ECMAScriptLanguage();
 };
 
-typedef void ECMAScriptHeapObject;
-
-#define NO_RET_VAL 0
-#define HAS_RET_VAL 1
-
-class DuktapeBindingHelper {
-	duk_context *ctx;
-
-	struct MethodPtrHash {
-		static _FORCE_INLINE_ uint32_t hash(const MethodBind *p_mb) {
-			union {
-				const MethodBind *p;
-				unsigned long i;
-			} u;
-			u.p = p_mb;
-			return HashMapHasherDefault::hash((uint64_t)u.i);
-		}
-	};
-
-public:
-	HashMap<ObjectID, ECMAScriptHeapObject *> heap_objects;
-	HashMap<StringName, ECMAScriptHeapObject *> class_prototypes;
-	HashMap<const MethodBind *, ECMAScriptHeapObject *, MethodPtrHash> method_bindings;
-
-	// memery managerment functions
-	_FORCE_INLINE_ static void *alloc_function(void *udata, duk_size_t size) { return memalloc(size); }
-	_FORCE_INLINE_ static void *realloc_function(void *udata, void *ptr, duk_size_t size) { return memrealloc(ptr, size); }
-	_FORCE_INLINE_ static void free_function(void *udata, void *ptr) {
-		if (ptr) memfree(ptr);
-	}
-
-	// handle duktape fatal errors
-	static void fatal_function(void *udata, const char *msg);
-
-	static duk_ret_t duk_godot_object_constructor(duk_context *ctx);
-	static duk_ret_t duk_godot_object_finalizer(duk_context *ctx);
-	static duk_ret_t duk_godot_object_method(duk_context *ctx);
-	static duk_ret_t godot_object_free(duk_context *ctx);
-
-	static duk_ret_t godot_print_function(duk_context *ctx);
-
-	static void duk_push_godot_variant(duk_context *ctx, const Variant &var);
-	static void duk_push_godot_object(duk_context *ctx, Object *obj);
-	static void duk_push_godot_string(duk_context *ctx, const String &str);
-	static void duk_push_godot_string_name(duk_context *ctx, const StringName &str);
-
-	static void duk_put_prop_godot_string(duk_context *ctx, duk_idx_t idx, const String &str);
-	static void duk_put_prop_godot_string_name(duk_context *ctx, duk_idx_t idx, const StringName &str);
-
-	static Variant duk_get_godot_variant(duk_context *ctx, duk_idx_t idx);
-	static String duk_get_godot_string(duk_context *ctx, duk_idx_t idx, bool convert_type = false);
-	static Object *duk_get_godot_object(duk_context *ctx, duk_idx_t idx);
-
-	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
-
-	_FORCE_INLINE_ static DuktapeBindingHelper *get_singleton() { return ECMAScriptLanguage::get_singleton()->binding; }
-	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }
-
-	void initialize();
-	void uninitialize();
-
-private:
-	void register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls);
-	void duk_push_godot_method(duk_context *ctx, const MethodBind *mb);
-};
-
-#endif
+#endif // ECMASCRIPT_LANGUAGE_H

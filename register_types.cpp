@@ -29,7 +29,7 @@
 /*************************************************************************/
 
 #include "register_types.h"
-#include "ECMAScript.h"
+#include "ecmascript_language.h"
 
 static ECMAScriptLanguage *script_language_es = NULL;
 
