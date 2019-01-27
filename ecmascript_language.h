@@ -13,10 +13,14 @@ class ECMAScriptLanguage : public ScriptLanguage {
 private:
 	static ECMAScriptLanguage *singleton;
 	DuktapeBindingHelper *binding;
+	int language_index;
 
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
 	_FORCE_INLINE_ virtual String get_name() const { return "ECMAScript"; }
+
+	_FORCE_INLINE_ int get_language_index() const { return language_index; }
+	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
 
 	/* LANGUAGE FUNCTIONS */
 
@@ -89,10 +93,10 @@ public:
 	/* TODO */ virtual int profiling_get_accumulated_data(ProfilingInfo *p_info_arr, int p_info_max) { return -1; }
 	/* TODO */ virtual int profiling_get_frame_data(ProfilingInfo *p_info_arr, int p_info_max) { return -1; }
 
-	/* TODO */ virtual void *alloc_instance_binding_data(Object *p_object) { return NULL; } //optional, not used by all languages
-	/* TODO */ virtual void free_instance_binding_data(void *p_data) {} //optional, not used by all languages
-	/* TODO */ virtual void refcount_incremented_instance_binding(Object *p_object) {} //optional, not used by all languages
-	/* TODO */ virtual bool refcount_decremented_instance_binding(Object *p_object) { return true; } //return true if it can die //optional, not used by all languages
+	virtual void *alloc_instance_binding_data(Object *p_object); //optional, not used by all languages
+	virtual void free_instance_binding_data(void *p_data); //optional, not used by all languages
+	virtual void refcount_incremented_instance_binding(Object *p_object); //optional, not used by all languages
+	virtual bool refcount_decremented_instance_binding(Object *p_object); //return true if it can die //optional, not used by all languages
 
 	/* TODO */ virtual void frame(){};
 

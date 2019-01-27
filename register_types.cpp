@@ -35,6 +35,7 @@ static ECMAScriptLanguage *script_language_es = NULL;
 
 void register_ECMAScript_types() {
 	script_language_es = memnew(ECMAScriptLanguage);
+	script_language_es->set_language_index(ScriptServer::get_language_count());
 	ScriptServer::register_language(script_language_es);
 }
 

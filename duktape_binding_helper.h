@@ -3,6 +3,7 @@
 
 #include "core/hash_map.h"
 #include "core/object.h"
+#include "core/reference.h"
 #include "core/string_db.h"
 #include "core/variant.h"
 #include <duktape/duktape.h>
@@ -11,6 +12,7 @@
 #define HAS_RET_VAL 1
 
 typedef void DuktapeHeapObject;
+class ECMAScriptLanguage;
 
 class DuktapeBindingHelper {
 	duk_context *ctx;
@@ -27,10 +29,6 @@ class DuktapeBindingHelper {
 	};
 
 public:
-	HashMap<ObjectID, DuktapeHeapObject *> heap_objects;
-	HashMap<StringName, DuktapeHeapObject *> class_prototypes;
-	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
-
 	// memery managerment functions
 	_FORCE_INLINE_ static void *alloc_function(void *udata, duk_size_t size) { return memalloc(size); }
 	_FORCE_INLINE_ static void *realloc_function(void *udata, void *ptr, duk_size_t size) { return memrealloc(ptr, size); }
@@ -62,15 +60,35 @@ public:
 
 	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
 
-	_FORCE_INLINE_ static DuktapeBindingHelper *get_singleton();
 	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }
+	static DuktapeBindingHelper *get_singleton();
+	static ECMAScriptLanguage *get_language();
 
 	void initialize();
 	void uninitialize();
 
+	void godot_refcount_incremented(Reference *p_object);
+	bool godot_refcount_decremented(Reference *p_object);
+	void godot_free_instance_callback(Object *p_object);
+
 private:
+	HashMap<StringName, DuktapeHeapObject *> class_prototypes;
+	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
+	DuktapeHeapObject *strongref_pool_ptr;
+	HashMap<ObjectID, DuktapeHeapObject *> weakref_pool;
+	Set<ObjectID> rescued_references;
+
+	// for register godot classes
 	void register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls);
 	void duk_push_godot_method(duk_context *ctx, const MethodBind *mb);
+
+	// weak references
+	DuktapeHeapObject *get_weak_ref(Object *obj);
+	void set_weak_ref(Object *obj, DuktapeHeapObject *ptr);
+
+	// strong references
+	void duk_push_strong_ref_container(duk_context *ctx);
+	void set_strong_ref(Object *obj, DuktapeHeapObject *ptr);
 };
 
 #endif

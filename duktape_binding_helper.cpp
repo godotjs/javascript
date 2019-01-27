@@ -4,7 +4,11 @@
 void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fprintf(stderr, "*** FATAL ERROR: %s\n", (msg ? msg : "no message"));
 	fflush(stderr);
+#ifdef DEBUG_ENABLED
+	CRASH_NOW();
+#elif
 	abort();
+#endif
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
@@ -147,8 +151,12 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 
 	if (Reference *ref = Object::cast_to<Reference>(ptr)) {
 		if (ref->unreference()) {
-			get_singleton()->heap_objects.erase(ptr->get_instance_id());
+			get_singleton()->weakref_pool.erase(ptr->get_instance_id());
 			memdelete(ref);
+		} else {
+			// rescue the ecmascript object as the reference is still alive
+			get_singleton()->set_strong_ref(ref, duk_get_heapptr(ctx, 0));
+			get_singleton()->rescued_references.insert(ptr->get_instance_id());
 		}
 	}
 	// Bare proptype don't have the ptr property
@@ -158,8 +166,7 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 
 void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj) {
 	if (obj) {
-		void **ele_ptr = get_singleton()->heap_objects.getptr(obj->get_instance_id());
-		DuktapeHeapObject *heap_obj = (ele_ptr != NULL) ? (*ele_ptr) : NULL;
+		DuktapeHeapObject *heap_obj = get_singleton()->get_weak_ref(obj);
 		if (heap_obj) {
 			duk_push_heapptr(ctx, heap_obj);
 		} else {
@@ -176,8 +183,14 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj) 
 			duk_set_prototype(ctx, -2);
 
 			heap_obj = duk_get_heapptr(ctx, -1);
-			if (heap_obj) {
-				get_singleton()->heap_objects[obj->get_instance_id()] = heap_obj;
+			if (Reference *ref = Object::cast_to<Reference>(obj)) {
+				get_singleton()->set_weak_ref(ref, heap_obj);
+				// fill the script instance binding data to make sure godot_refcount_decremented can get in
+				ref->get_script_instance_binding(get_language()->get_language_index());
+			} else {
+				// the strong reference is released when object is going to die
+				// see godot_free_instance_callback
+				get_singleton()->set_strong_ref(obj, heap_obj);
 			}
 		}
 	} else {
@@ -236,10 +249,21 @@ DuktapeBindingHelper *DuktapeBindingHelper::get_singleton() {
 	return ECMAScriptLanguage::get_singleton()->binding;
 }
 
+ECMAScriptLanguage *DuktapeBindingHelper::get_language() {
+	return ECMAScriptLanguage::get_singleton();
+}
+
 void DuktapeBindingHelper::initialize() {
 
 	this->ctx = duk_create_heap(alloc_function, realloc_function, free_function, this, fatal_function);
 	ERR_FAIL_NULL(this->ctx);
+
+	// strong reference object pool
+	duk_push_heap_stash(this->ctx);
+	duk_push_object(this->ctx);
+	this->strongref_pool_ptr = duk_get_heapptr(ctx, -1);
+	duk_put_prop_literal(ctx, -2, "object_pool");
+	duk_pop(ctx);
 
 	// global scope
 	duk_push_c_function(this->ctx, godot_print_function, DUK_VARARGS);
@@ -264,6 +288,31 @@ void DuktapeBindingHelper::initialize() {
 void DuktapeBindingHelper::uninitialize() {
 	duk_destroy_heap(this->ctx);
 	this->ctx = NULL;
+}
+
+void DuktapeBindingHelper::godot_refcount_incremented(Reference *p_object) {
+}
+
+bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
+	int refcount = p_object->reference_get_count();
+	if (DuktapeHeapObject *heap_ptr = get_weak_ref(p_object)) {
+		if (refcount <= 0) {
+			if (Set<ObjectID>::Element *E = rescued_references.find(p_object->get_instance_id())) {
+				set_strong_ref(p_object, NULL);
+				rescued_references.erase(E);
+			}
+		}
+		return false;
+	}
+	return refcount <= 0;
+}
+
+void DuktapeBindingHelper::godot_free_instance_callback(Object *p_object) {
+	if (Object::cast_to<Reference>(p_object)) {
+		// References don't need do this as they are weak referenced
+		return;
+	}
+	set_strong_ref(p_object, NULL);
 }
 
 void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls) {
@@ -334,4 +383,33 @@ void DuktapeBindingHelper::duk_push_godot_method(duk_context *ctx, const MethodB
 			method_bindings[mb] = heap_ptr;
 		}
 	}
+}
+
+DuktapeHeapObject *DuktapeBindingHelper::get_weak_ref(Object *obj) {
+	ERR_FAIL_NULL_V(obj, NULL);
+	void **ele_ptr = get_singleton()->weakref_pool.getptr(obj->get_instance_id());
+	if (ele_ptr) {
+		return *ele_ptr;
+	}
+	return NULL;
+}
+
+void DuktapeBindingHelper::set_weak_ref(Object *obj, DuktapeHeapObject *ptr) {
+	ERR_FAIL_NULL(obj);
+	weakref_pool.set(obj->get_instance_id(), ptr);
+}
+
+void DuktapeBindingHelper::duk_push_strong_ref_container(duk_context *ctx) {
+	duk_push_heapptr(ctx, this->strongref_pool_ptr);
+}
+
+void DuktapeBindingHelper::set_strong_ref(Object *obj, DuktapeHeapObject *ptr) {
+
+	ERR_FAIL_NULL(obj);
+
+	set_weak_ref(obj, ptr);
+	duk_push_strong_ref_container(ctx);
+	duk_push_heapptr(ctx, ptr);
+	duk_put_prop_index(ctx, -2, obj->get_instance_id());
+	duk_pop(ctx);
 }

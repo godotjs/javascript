@@ -126,6 +126,22 @@ void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) c
 	p_extensions->push_back("js");
 }
 
+void *ECMAScriptLanguage::alloc_instance_binding_data(Object *p_object) {
+	return p_object;
+}
+
+void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
+	this->binding->godot_free_instance_callback(static_cast<Object *>(p_data));
+}
+
+void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {
+	this->binding->godot_refcount_incremented(static_cast<Reference *>(p_object));
+}
+
+bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object) {
+	return this->binding->godot_refcount_decremented(static_cast<Reference *>(p_object));
+}
+
 ECMAScriptLanguage::ECMAScriptLanguage() {
 
 	ERR_FAIL_COND(singleton);
