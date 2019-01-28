@@ -127,11 +127,11 @@ void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) c
 }
 
 void *ECMAScriptLanguage::alloc_instance_binding_data(Object *p_object) {
-	return p_object;
+        return this->binding->alloc_object_binding_data(p_object);
 }
 
 void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
-	this->binding->godot_free_instance_callback(static_cast<Object *>(p_data));
+        this->binding->free_object_binding_data(static_cast<DuktapeBindingHelper::DuktapeGCHandler*>(p_data));
 }
 
 void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {

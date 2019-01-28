@@ -15,7 +15,15 @@ typedef void DuktapeHeapObject;
 class ECMAScriptLanguage;
 
 class DuktapeBindingHelper {
+
+	friend class ECMAScriptLanguage;
+
 	duk_context *ctx;
+
+	struct DuktapeGCHandler {
+		Object *godot_object;
+		DuktapeHeapObject *duktape_heap_ptr;
+	};
 
 	struct MethodPtrHash {
 		static _FORCE_INLINE_ uint32_t hash(const MethodBind *p_mb) {
@@ -69,14 +77,17 @@ public:
 
 	void godot_refcount_incremented(Reference *p_object);
 	bool godot_refcount_decremented(Reference *p_object);
-	void godot_free_instance_callback(Object *p_object);
+	DuktapeGCHandler *alloc_object_binding_data(Object *p_object);
+	void free_object_binding_data(DuktapeGCHandler *p_gc_handle);
 
 private:
 	HashMap<StringName, DuktapeHeapObject *> class_prototypes;
 	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
-	DuktapeHeapObject *strongref_pool_ptr;
+
 	HashMap<ObjectID, DuktapeHeapObject *> weakref_pool;
-	Set<ObjectID> rescued_references;
+
+	DuktapeHeapObject *strongref_pool_ptr;
+	HashMap<ObjectID, DuktapeHeapObject *> strongref_pool;
 
 	// for register godot classes
 	void register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls);
@@ -89,6 +100,7 @@ private:
 	// strong references
 	void duk_push_strong_ref_container(duk_context *ctx);
 	void set_strong_ref(Object *obj, DuktapeHeapObject *ptr);
+	DuktapeHeapObject *get_strong_ref(Object *obj);
 };
 
 #endif
