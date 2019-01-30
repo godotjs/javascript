@@ -55,7 +55,7 @@ public:
 	static duk_ret_t godot_print_function(duk_context *ctx);
 
 	static void duk_push_godot_variant(duk_context *ctx, const Variant &var);
-	static void duk_push_godot_object(duk_context *ctx, Object *obj);
+	static void duk_push_godot_object(duk_context *ctx, Object *obj, bool from_constructor = false);
 	static void duk_push_godot_string(duk_context *ctx, const String &str);
 	static void duk_push_godot_string_name(duk_context *ctx, const StringName &str);
 
