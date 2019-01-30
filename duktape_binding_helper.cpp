@@ -29,6 +29,7 @@ void DuktapeBindingHelper::set_strong_ref(Object *obj, DuktapeHeapObject *ptr) {
 
 	ERR_FAIL_NULL(obj);
 
+	weakref_pool.set(obj->get_instance_id(), ptr);
 	strongref_pool.set(obj->get_instance_id(), ptr);
 
 	// fill the script instance binding data to make sure godot_refcount_decremented can get when unreference
@@ -53,17 +54,13 @@ void DuktapeBindingHelper::duk_push_strong_ref_container(duk_context *ctx) {
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
-	if (!duk_is_constructor_call(ctx)) {
-		return DUK_ERR_TYPE_ERROR;
-	}
-
+	//	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_TYPE_ERROR);
 	duk_push_current_function(ctx);
 	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
 	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer_default(ctx, -1, NULL));
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 	ERR_FAIL_NULL_V(cls->creation_func, DUK_ERR_TYPE_ERROR);
-
-	duk_push_godot_object(ctx, cls->creation_func());
+	duk_push_godot_object(ctx, cls->creation_func(), true);
 	return NO_RET_VAL;
 }
 
@@ -251,13 +248,13 @@ Object *DuktapeBindingHelper::duk_get_godot_object(duk_context *ctx, duk_idx_t i
 	return static_cast<Object *>(duk_get_pointer_default(ctx, -1, NULL));
 }
 
-void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj) {
+void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, bool is_constructor) {
 	if (obj) {
 		DuktapeHeapObject *heap_obj = get_singleton()->get_weak_ref(obj);
 		if (heap_obj) {
 			duk_push_heapptr(ctx, heap_obj);
 		} else {
-			if (duk_is_constructor_call(ctx)) {
+			if (is_constructor) {
 				duk_push_this(ctx);
 			} else {
 				duk_push_object(ctx);
@@ -267,7 +264,7 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj) 
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 
 			duk_push_heapptr(ctx, get_singleton()->class_prototypes.get(obj->get_class_name()));
-			duk_set_prototype(ctx, -2);
+			duk_put_prop_literal(ctx, -2, "prototyp");
 
 			heap_obj = duk_get_heapptr(ctx, -1);
 			if (Reference *ref = Object::cast_to<Reference>(obj)) {
@@ -325,7 +322,7 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 		DuktapeHeapObject *proto_ptr = duk_get_heapptr(ctx, -1);
 		get_singleton()->class_prototypes[cls->name] = proto_ptr;
 
-		duk_set_prototype(ctx, -2);
+		duk_put_prop_literal(ctx, -2, "prototype");
 	}
 	duk_put_prop_godot_string_name(ctx, -2, cls->name);
 }
