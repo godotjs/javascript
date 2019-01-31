@@ -283,7 +283,11 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 }
 
 void DuktapeBindingHelper::duk_push_godot_string(duk_context *ctx, const String &str) {
-	duk_push_string(ctx, str.utf8().ptr());
+	if (str.empty()) {
+		duk_push_lstring(ctx, NULL, 0);
+	} else {
+		duk_push_string(ctx, str.utf8().ptr());
+	}
 }
 
 void DuktapeBindingHelper::duk_push_godot_string_name(duk_context *ctx, const StringName &str) {
