@@ -49,8 +49,9 @@ public:
 
 	static duk_ret_t duk_godot_object_constructor(duk_context *ctx);
 	static duk_ret_t duk_godot_object_finalizer(duk_context *ctx);
-	static duk_ret_t duk_godot_object_method(duk_context *ctx);
 	static duk_ret_t godot_object_free(duk_context *ctx);
+	static duk_ret_t duk_godot_object_method(duk_context *ctx);
+	static duk_ret_t godot_object_to_string(duk_context *ctx);
 
 	static duk_ret_t godot_print_function(duk_context *ctx);
 
@@ -101,6 +102,11 @@ private:
 	void duk_push_strong_ref_container(duk_context *ctx);
 	void set_strong_ref(Object *obj, DuktapeHeapObject *ptr);
 	DuktapeHeapObject *get_strong_ref(Object *obj);
+
+	// cached ecmascript functions
+	DuktapeHeapObject * duk_ptr_godot_object_finalizer;
+	DuktapeHeapObject * duk_ptr_godot_object_free;
+	DuktapeHeapObject * duk_ptr_godot_object_to_string;
 };
 
 #endif

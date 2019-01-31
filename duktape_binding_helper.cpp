@@ -185,6 +185,13 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_method(duk_context *ctx) {
 	return NO_RET_VAL;
 }
 
+duk_ret_t DuktapeBindingHelper::godot_object_to_string(duk_context *ctx) {
+	duk_push_this(ctx);
+	Variant var = duk_get_godot_object(ctx, -1);
+	duk_push_godot_string(ctx, var);
+	return HAS_RET_VAL;
+}
+
 void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Variant &var) {
 	switch (var.get_type()) {
 		case Variant::NIL:
@@ -313,14 +320,6 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 		// Class.prototype
 		duk_push_object(ctx);
 		{
-			// Class.prototype.fin
-			duk_push_c_function(ctx, duk_godot_object_finalizer, 1);
-			duk_set_finalizer(ctx, -2);
-			// Object.free
-			duk_push_c_function(ctx, godot_object_free, 0);
-			duk_put_prop_literal(ctx, -2, "free");
-		}
-		{
 			// members
 			register_class_members(ctx, cls);
 		}
@@ -351,6 +350,23 @@ void DuktapeBindingHelper::initialize() {
 	duk_push_object(this->ctx);
 	this->strongref_pool_ptr = duk_get_heapptr(ctx, -1);
 	duk_put_prop_literal(ctx, -2, "object_pool");
+
+	{
+		// predefined functions for godot classes
+		duk_push_c_function(ctx, duk_godot_object_finalizer, 1);
+		this->duk_ptr_godot_object_finalizer = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "duk_godot_object_finalizer");
+
+		duk_push_c_function(ctx, godot_object_free, 0);
+		this->duk_ptr_godot_object_free = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "godot_object_free");
+
+		duk_push_c_function(ctx, godot_object_to_string, 0);
+		this->duk_ptr_godot_object_to_string = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "godot_object_to_string");
+	}
+
+
 	duk_pop(ctx);
 
 	// global scope
@@ -361,7 +377,6 @@ void DuktapeBindingHelper::initialize() {
 	duk_push_object(this->ctx);
 	{
 		// TODO: register builtin classes
-
 		// register classes
 		const StringName *key = ClassDB::classes.next(NULL);
 		while (key) {
@@ -381,6 +396,18 @@ void DuktapeBindingHelper::uninitialize() {
 void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls) {
 	if (cls->inherits_ptr) {
 		register_class_members(ctx, cls->inherits_ptr);
+	}
+
+	if (cls->name == "Object") {
+		// Object.prototype.fin
+		duk_push_heapptr(ctx, this->duk_ptr_godot_object_finalizer);
+		duk_set_finalizer(ctx, -2);
+		// Object.prototype.free
+		duk_push_heapptr(ctx, this->duk_ptr_godot_object_free);
+		duk_put_prop_literal(ctx, -2, "free");
+		// Object.prototype.toString
+		duk_push_heapptr(ctx, this->duk_ptr_godot_object_to_string);
+		duk_put_prop_literal(ctx, -2, "toString");
 	}
 
 	const duk_idx_t prototype_idx = duk_get_top(ctx) - 1;
