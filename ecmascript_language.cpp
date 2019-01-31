@@ -1,24 +1,23 @@
 #include "ecmascript_language.h"
 #include "core/os/file_access.h"
-
 #include "core/class_db.h"
 
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
 void ECMAScriptLanguage::init() {
-	ERR_FAIL_NULL(this->binding);
+	ERR_FAIL_NULL(binding);
 
-	this->binding->initialize();
+	binding->initialize();
 
 	this->execute_file("test.js");
 }
 
 void ECMAScriptLanguage::finish() {
-	this->binding->uninitialize();
+	binding->uninitialize();
 }
 
 Error ECMAScriptLanguage::execute_file(const String &p_path) {
-	ERR_FAIL_NULL_V(this->binding, ERR_BUG);
+	ERR_FAIL_NULL_V(binding, ERR_BUG);
 
 	FileAccessRef f = FileAccess::open(p_path, FileAccess::READ);
 	ERR_FAIL_COND_V(!f, ERR_INVALID_PARAMETER);
@@ -28,8 +27,10 @@ Error ECMAScriptLanguage::execute_file(const String &p_path) {
 	f->get_buffer(buff.ptrw(), f->get_len());
 	buff.ptrw()[buff.size() - 1] = 0;
 
-	duk_eval_string(this->binding->get_context(), (char *)buff.ptr());
-	return OK;
+	String source;
+	source.parse_utf8((const char*)buff.ptr(), buff.size());
+
+	return binding->eval_string(source);
 }
 
 void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
@@ -127,19 +128,19 @@ void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) c
 }
 
 void *ECMAScriptLanguage::alloc_instance_binding_data(Object *p_object) {
-        return this->binding->alloc_object_binding_data(p_object);
+	return binding->alloc_object_binding_data(p_object);
 }
 
 void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
-        this->binding->free_object_binding_data(static_cast<DuktapeBindingHelper::DuktapeGCHandler*>(p_data));
+	binding->free_object_binding_data(static_cast<DuktapeBindingHelper::DuktapeGCHandler*>(p_data));
 }
 
 void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {
-	this->binding->godot_refcount_incremented(static_cast<Reference *>(p_object));
+	binding->godot_refcount_incremented(static_cast<Reference *>(p_object));
 }
 
 bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object) {
-	return this->binding->godot_refcount_decremented(static_cast<Reference *>(p_object));
+	return binding->godot_refcount_decremented(static_cast<Reference *>(p_object));
 }
 
 ECMAScriptLanguage::ECMAScriptLanguage() {
@@ -150,5 +151,5 @@ ECMAScriptLanguage::ECMAScriptLanguage() {
 }
 
 ECMAScriptLanguage::~ECMAScriptLanguage() {
-	memdelete(this->binding);
+	memdelete(binding);
 }

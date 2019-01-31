@@ -6,15 +6,16 @@
 #include "core/reference.h"
 #include "core/string_db.h"
 #include "core/variant.h"
-#include <duktape/duktape.h>
+#include "src/duktape.h"
+#include "../ecmascript_binding_helper.h"
 
-#define NO_RET_VAL 0
-#define HAS_RET_VAL 1
+#define DUK_NO_RET_VAL 0
+#define DUK_HAS_RET_VAL 1
 
 typedef void DuktapeHeapObject;
 class ECMAScriptLanguage;
 
-class DuktapeBindingHelper {
+class DuktapeBindingHelper : public ECMAScriptBindingHelper {
 
 	friend class ECMAScriptLanguage;
 
@@ -73,13 +74,7 @@ public:
 	static DuktapeBindingHelper *get_singleton();
 	static ECMAScriptLanguage *get_language();
 
-	void initialize();
-	void uninitialize();
 
-	void godot_refcount_incremented(Reference *p_object);
-	bool godot_refcount_decremented(Reference *p_object);
-	DuktapeGCHandler *alloc_object_binding_data(Object *p_object);
-	void free_object_binding_data(DuktapeGCHandler *p_gc_handle);
 
 private:
 	HashMap<StringName, DuktapeHeapObject *> class_prototypes;
@@ -107,6 +102,18 @@ private:
 	DuktapeHeapObject * duk_ptr_godot_object_finalizer;
 	DuktapeHeapObject * duk_ptr_godot_object_free;
 	DuktapeHeapObject * duk_ptr_godot_object_to_string;
+
+public:
+	virtual void initialize();
+	virtual void uninitialize();
+
+	virtual void *alloc_object_binding_data(Object *p_object);
+	virtual void free_object_binding_data(void *p_gc_handle);
+
+	virtual void godot_refcount_incremented(Reference *p_object);
+	virtual bool godot_refcount_decremented(Reference *p_object);
+
+	virtual Error eval_string(const String &p_source);
 };
 
 #endif

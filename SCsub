@@ -5,8 +5,8 @@ Import('env_modules')
 
 sources = [
     'register_types.cpp',
-    'duktape/duktape.c',
-    'duktape_binding_helper.cpp',
+    'duktape/src/duktape.c',
+    'duktape/duktape_binding_helper.cpp',
     'ecmascript_language.cpp',
     'ecmascript_instance.cpp',
     'ecmascript.cpp',

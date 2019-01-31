@@ -1,15 +1,13 @@
 #ifndef ECMASCRIPT_INSTANCE_H
 #define ECMASCRIPT_INSTANCE_H
 
-#include "duktape_binding_helper.h"
+#include "ecmascript_binding_helper.h"
 #include "ecmascript.h"
 #include <core/script_language.h>
 
 class ECMAScriptInstance : public ScriptInstance {
 	Object *owner;
 	Ref<ECMAScript> script;
-
-	DuktapeHeapObject *gc_object_handler;
 
 public:
 	/* TODO */ virtual bool set(const StringName &p_name, const Variant &p_value) { return false; }
