@@ -9,6 +9,8 @@ class ECMAScriptInstance : public ScriptInstance {
 	Object *owner;
 	Ref<ECMAScript> script;
 
+	ECMAScriptGCHandler ecma_object;
+
 public:
 	/* TODO */ virtual bool set(const StringName &p_name, const Variant &p_value) { return false; }
 	/* TODO */ virtual bool get(const StringName &p_name, Variant &r_ret) const { return false; }

@@ -3,10 +3,17 @@
 
 #include "core/object.h"
 
+
+struct ECMAScriptGCHandler {
+	void* ecma_object;
+};
+
+struct ECMAScriptBindingData : public ECMAScriptGCHandler {
+	Object *godot_object;
+};
+
 class ECMAScriptBindingHelper {
-
 public:
-
 	virtual void initialize() = 0;
 	virtual void uninitialize() = 0;
 
@@ -17,6 +24,8 @@ public:
 	virtual bool godot_refcount_decremented(Reference *p_object) = 0;
 
 	virtual Error eval_string(const String& p_source) = 0;
+
+	virtual Error make_ecma_object_for_godot_object(const ECMAScriptGCHandler & p_prototype, Object * p_object, ECMAScriptGCHandler &r_handler) = 0;
 };
 
 #endif

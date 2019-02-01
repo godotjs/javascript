@@ -21,11 +21,6 @@ class DuktapeBindingHelper : public ECMAScriptBindingHelper {
 
 	duk_context *ctx;
 
-	struct DuktapeGCHandler {
-		Object *godot_object;
-		DuktapeHeapObject *duktape_heap_ptr;
-	};
-
 	struct MethodPtrHash {
 		static _FORCE_INLINE_ uint32_t hash(const MethodBind *p_mb) {
 			union {
@@ -37,7 +32,7 @@ class DuktapeBindingHelper : public ECMAScriptBindingHelper {
 		}
 	};
 
-public:
+private:
 	// memery managerment functions
 	_FORCE_INLINE_ static void *alloc_function(void *udata, duk_size_t size) { return memalloc(size); }
 	_FORCE_INLINE_ static void *realloc_function(void *udata, void *ptr, duk_size_t size) { return memrealloc(ptr, size); }
@@ -51,6 +46,9 @@ public:
 	static duk_ret_t duk_godot_object_constructor(duk_context *ctx);
 	static duk_ret_t duk_godot_object_finalizer(duk_context *ctx);
 	static duk_ret_t godot_object_free(duk_context *ctx);
+	_FORCE_INLINE_ static duk_ret_t godot_object_virtual_method(duk_context *ctx) {
+		return DUK_NO_RET_VAL;
+	}
 	static duk_ret_t duk_godot_object_method(duk_context *ctx);
 	static duk_ret_t godot_object_to_string(duk_context *ctx);
 
@@ -69,12 +67,6 @@ public:
 	static Object *duk_get_godot_object(duk_context *ctx, duk_idx_t idx);
 
 	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
-
-	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }
-	static DuktapeBindingHelper *get_singleton();
-	static ECMAScriptLanguage *get_language();
-
-
 
 private:
 	HashMap<StringName, DuktapeHeapObject *> class_prototypes;
@@ -102,8 +94,14 @@ private:
 	DuktapeHeapObject * duk_ptr_godot_object_finalizer;
 	DuktapeHeapObject * duk_ptr_godot_object_free;
 	DuktapeHeapObject * duk_ptr_godot_object_to_string;
+	DuktapeHeapObject * duk_ptr_godot_object_virtual_method;
 
 public:
+
+	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }
+	static DuktapeBindingHelper *get_singleton();
+	static ECMAScriptLanguage *get_language();
+
 	virtual void initialize();
 	virtual void uninitialize();
 
@@ -114,6 +112,8 @@ public:
 	virtual bool godot_refcount_decremented(Reference *p_object);
 
 	virtual Error eval_string(const String &p_source);
+
+	virtual Error make_ecma_object_for_godot_object(const ECMAScriptGCHandler & p_prototype, Object * p_object, ECMAScriptGCHandler &r_handler);
 };
 
 #endif

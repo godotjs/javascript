@@ -132,7 +132,7 @@ void *ECMAScriptLanguage::alloc_instance_binding_data(Object *p_object) {
 }
 
 void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
-	binding->free_object_binding_data(static_cast<DuktapeBindingHelper::DuktapeGCHandler*>(p_data));
+	binding->free_object_binding_data(p_data);
 }
 
 void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {
