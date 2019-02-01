@@ -2,21 +2,23 @@
 #define ECMASCRIPT_LANGUAGE_H
 
 #include "core/script_language.h"
-#include "duktape_binding_helper.h"
+#include "duktape/duktape_binding_helper.h"
 
 /*********************** ECMAScriptLanguage ***********************/
-class DuktapeBindingHelper;
+class ECMAScriptBindingHelper;
 class ECMAScriptLanguage : public ScriptLanguage {
 
-	friend class DuktapeBindingHelper;
+	friend class ECMAScriptBindingHelper;
 
 private:
 	static ECMAScriptLanguage *singleton;
-	DuktapeBindingHelper *binding;
+	ECMAScriptBindingHelper *binding;
 	int language_index;
 
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
+	_FORCE_INLINE_ static ECMAScriptBindingHelper* get_binder() { return singleton->binding; }
+
 	_FORCE_INLINE_ virtual String get_name() const { return "ECMAScript"; }
 
 	_FORCE_INLINE_ int get_language_index() const { return language_index; }
@@ -35,7 +37,7 @@ public:
 	virtual void init();
 	virtual void finish();
 
-	/* TODO */ virtual Error execute_file(const String &p_path);
+	virtual Error execute_file(const String &p_path);
 
 	virtual void get_reserved_words(List<String> *p_words) const;
 	virtual void get_comment_delimiters(List<String> *p_delimiters) const;

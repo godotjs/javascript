@@ -10,6 +10,7 @@ Ref<Script> ECMAScriptInstance::get_script() const {
 }
 
 ECMAScriptInstance::ECMAScriptInstance() {
+	ecma_object.ecma_object = NULL;
 }
 
 ECMAScriptInstance::~ECMAScriptInstance() {

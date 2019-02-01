@@ -10,6 +10,7 @@ ScriptLanguage *ECMAScript::get_language() const {
 }
 
 ECMAScript::ECMAScript() {
+	ecma_constructor.ecma_object = NULL;
 }
 
 ECMAScript::~ECMAScript() {

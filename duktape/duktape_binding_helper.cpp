@@ -1,5 +1,5 @@
 #include "duktape_binding_helper.h"
-#include "ecmascript_language.h"
+#include "../ecmascript_language.h"
 
 void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fprintf(stderr, "*** FATAL ERROR: %s\n", (msg ? msg : "no message"));
@@ -50,23 +50,35 @@ DuktapeHeapObject *DuktapeBindingHelper::get_strong_ref(Object *obj) {
 }
 
 void DuktapeBindingHelper::duk_push_strong_ref_container(duk_context *ctx) {
-	duk_push_heapptr(ctx, this->strongref_pool_ptr);
+	duk_push_heapptr(ctx, strongref_pool_ptr);
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
-	//	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_TYPE_ERROR);
 	duk_push_current_function(ctx);
+
 	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
 	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer_default(ctx, -1, NULL));
+	duk_pop(ctx);
+
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 	ERR_FAIL_NULL_V(cls->creation_func, DUK_ERR_TYPE_ERROR);
+
 	duk_push_godot_object(ctx, cls->creation_func(), true);
-	return NO_RET_VAL;
+	ERR_FAIL_COND_V(duk_is_null_or_undefined(ctx, -1), DUK_ERR_TYPE_ERROR);
+
+	//	call _init method
+	duk_get_prop_literal(ctx, -1, "_init");
+	ERR_FAIL_COND_V(!duk_is_function(ctx, -1), DUK_ERR_ERROR);
+	duk_dup(ctx, -2);
+	duk_call_method(ctx, 0);
+	duk_pop(ctx);
+
+	return DUK_NO_RET_VAL;
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 	Object *ptr = duk_get_godot_object(ctx, -1);
-	if (NULL == ptr) return NO_RET_VAL;
+	if (NULL == ptr) return DUK_NO_RET_VAL;
 
 	if (Reference *ref = Object::cast_to<Reference>(ptr)) {
 		if (ref->unreference()) {
@@ -82,7 +94,7 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 			get_singleton()->set_strong_ref(ref, duk_get_heapptr(ctx, 0));
 		}
 	}
-	return NO_RET_VAL;
+	return DUK_NO_RET_VAL;
 }
 
 void DuktapeBindingHelper::godot_refcount_incremented(Reference *p_object) {
@@ -90,7 +102,7 @@ void DuktapeBindingHelper::godot_refcount_incremented(Reference *p_object) {
 
 bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
 	int refcount = p_object->reference_get_count();
-	DuktapeGCHandler *gc_handler = static_cast<DuktapeGCHandler *>(p_object->get_script_instance_binding(get_language()->get_language_index()));
+	ECMAScriptBindingData *gc_handler = static_cast<ECMAScriptBindingData *>(p_object->get_script_instance_binding(get_language()->get_language_index()));
 	if (gc_handler) {
 		if (refcount == 0) {
 			// clear taged strong reference in script
@@ -102,40 +114,73 @@ bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
 	return refcount == 0;
 }
 
-DuktapeBindingHelper::DuktapeGCHandler *DuktapeBindingHelper::alloc_object_binding_data(Object *p_object) {
-	DuktapeGCHandler *handler = NULL;
+Error DuktapeBindingHelper::eval_string(const String &p_source) {
+	ERR_FAIL_NULL_V(ctx, ERR_SKIP);
+	duk_eval_string(ctx, p_source.utf8().ptr());
+	return OK;
+}
+
+Error DuktapeBindingHelper::create_ecma_object_for_godot_object(const ECMAScriptGCHandler &p_prototype, Object *p_object, ECMAScriptGCHandler &r_handler) {
+
+	ERR_FAIL_NULL_V(p_object, ERR_INVALID_PARAMETER);
+	ERR_FAIL_NULL_V(p_prototype.ecma_object, ERR_INVALID_PARAMETER);
+
+	duk_require_stack(ctx, 3);
+
+	duk_idx_t object_idx = duk_get_top(ctx);
+	duk_push_object(ctx);
+	duk_push_pointer(ctx, p_object);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_heapptr(ctx, p_prototype.ecma_object);
+	duk_put_prop_literal(ctx, -2, "__proto__");
+
+	set_strong_ref(p_object, duk_get_heapptr(ctx, -1));
+
+	//	call _init method
+	duk_get_prop_literal(ctx, -1, "_init");
+	ERR_FAIL_COND_V(!duk_is_function(ctx, -1), ERR_DOES_NOT_EXIST);
+	duk_dup(ctx, -2);
+	duk_call_method(ctx, 0);
+	duk_pop(ctx);
+
+	r_handler.ecma_object = duk_get_heapptr(ctx, object_idx);
+	return OK;
+}
+
+void *DuktapeBindingHelper::alloc_object_binding_data(Object *p_object) {
+	ECMAScriptBindingData *handler = NULL;
 	if (DuktapeHeapObject *heap_ptr = get_strong_ref(p_object)) {
-		handler = memnew(DuktapeGCHandler);
+		handler = memnew(ECMAScriptBindingData);
 		handler->godot_object = p_object;
-		handler->duktape_heap_ptr = heap_ptr;
+		handler->ecma_object = heap_ptr;
 	}
 	return handler;
 }
 
-void DuktapeBindingHelper::free_object_binding_data(DuktapeGCHandler *p_gc_handler) {
-	if (p_gc_handler) {
-		if (Object::cast_to<Reference>(p_gc_handler->godot_object)) {
+void DuktapeBindingHelper::free_object_binding_data(void *p_gc_handler) {
+	if (ECMAScriptBindingData *handler = static_cast<ECMAScriptBindingData *>(p_gc_handler)) {
+		if (Object::cast_to<Reference>(handler->godot_object)) {
 			// References don't need do this as they are weak referenced or they
 			return;
-		} else if (p_gc_handler->duktape_heap_ptr) {
+		} else if (handler->ecma_object) {
 			// clear taged script reference
-			set_strong_ref(p_gc_handler->godot_object, NULL);
+			set_strong_ref(handler->godot_object, NULL);
 		}
-		memdelete(p_gc_handler);
+		memdelete(handler);
 	}
 }
 
 duk_ret_t DuktapeBindingHelper::godot_object_free(duk_context *ctx) {
 	duk_push_this(ctx);
 	Object *obj = duk_get_godot_object(ctx, -1);
-	ERR_FAIL_NULL_V(obj, NO_RET_VAL);
+	ERR_FAIL_NULL_V(obj, DUK_NO_RET_VAL);
 	if (Object::cast_to<Reference>(obj)) {
 		ERR_FAIL_V(DUK_ERR_TYPE_ERROR);
 	} else {
 		memdelete(obj);
 		duk_del_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 	}
-	return NO_RET_VAL;
+	return DUK_NO_RET_VAL;
 }
 
 duk_ret_t DuktapeBindingHelper::godot_print_function(duk_context *ctx) {
@@ -148,7 +193,7 @@ duk_ret_t DuktapeBindingHelper::godot_print_function(duk_context *ctx) {
 		}
 	}
 	print_line(msg);
-	return NO_RET_VAL;
+	return DUK_NO_RET_VAL;
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_method(duk_context *ctx) {
@@ -158,11 +203,11 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_method(duk_context *ctx) {
 	duk_push_current_function(ctx);
 	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("mb"));
 	MethodBind *mb = static_cast<MethodBind *>(duk_get_pointer_default(ctx, -1, NULL));
-	ERR_FAIL_NULL_V(mb, NO_RET_VAL);
+	ERR_FAIL_NULL_V(mb, DUK_NO_RET_VAL);
 
 	duk_push_this(ctx);
 	Object *ptr = duk_get_godot_object(ctx, -1);
-	ERR_FAIL_NULL_V(ptr, NO_RET_VAL);
+	ERR_FAIL_NULL_V(ptr, DUK_NO_RET_VAL);
 
 	Variant::CallError err;
 
@@ -178,9 +223,16 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_method(duk_context *ctx) {
 
 	if (mb->has_return()) {
 		duk_push_godot_variant(ctx, ret_val);
-		return HAS_RET_VAL;
+		return DUK_HAS_RET_VAL;
 	}
-	return NO_RET_VAL;
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::godot_object_to_string(duk_context *ctx) {
+	duk_push_this(ctx);
+	Variant var = duk_get_godot_object(ctx, -1);
+	duk_push_godot_string(ctx, var);
+	return DUK_HAS_RET_VAL;
 }
 
 void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Variant &var) {
@@ -248,23 +300,22 @@ Object *DuktapeBindingHelper::duk_get_godot_object(duk_context *ctx, duk_idx_t i
 	return static_cast<Object *>(duk_get_pointer_default(ctx, -1, NULL));
 }
 
-void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, bool is_constructor) {
+void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, bool from_constructor) {
 	if (obj) {
 		DuktapeHeapObject *heap_obj = get_singleton()->get_weak_ref(obj);
 		if (heap_obj) {
 			duk_push_heapptr(ctx, heap_obj);
 		} else {
-			if (is_constructor) {
+			if (from_constructor) {
 				duk_push_this(ctx);
 			} else {
 				duk_push_object(ctx);
+				duk_push_heapptr(ctx, get_singleton()->class_prototypes.get(obj->get_class_name()));
+				duk_put_prop_literal(ctx, -2, "__proto__");
 			}
 
 			duk_push_pointer(ctx, obj);
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-
-			duk_push_heapptr(ctx, get_singleton()->class_prototypes.get(obj->get_class_name()));
-			duk_put_prop_literal(ctx, -2, "prototyp");
 
 			heap_obj = duk_get_heapptr(ctx, -1);
 			if (Reference *ref = Object::cast_to<Reference>(obj)) {
@@ -276,12 +327,16 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 			}
 		}
 	} else {
-		duk_push_null(ctx);
+		duk_push_undefined(ctx);
 	}
 }
 
 void DuktapeBindingHelper::duk_push_godot_string(duk_context *ctx, const String &str) {
-	duk_push_string(ctx, str.utf8().ptr());
+	if (str.empty()) {
+		duk_push_lstring(ctx, NULL, 0);
+	} else {
+		duk_push_string(ctx, str.utf8().ptr());
+	}
 }
 
 void DuktapeBindingHelper::duk_push_godot_string_name(duk_context *ctx, const StringName &str) {
@@ -307,14 +362,6 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 		// Class.prototype
 		duk_push_object(ctx);
 		{
-			// Class.prototype.fin
-			duk_push_c_function(ctx, duk_godot_object_finalizer, 1);
-			duk_set_finalizer(ctx, -2);
-			// Object.free
-			duk_push_c_function(ctx, godot_object_free, 0);
-			duk_put_prop_literal(ctx, -2, "free");
-		}
-		{
 			// members
 			register_class_members(ctx, cls);
 		}
@@ -328,7 +375,7 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 }
 
 DuktapeBindingHelper *DuktapeBindingHelper::get_singleton() {
-	return ECMAScriptLanguage::get_singleton()->binding;
+	return dynamic_cast<DuktapeBindingHelper *>(ECMAScriptLanguage::get_binder());
 }
 
 ECMAScriptLanguage *DuktapeBindingHelper::get_language() {
@@ -338,43 +385,89 @@ ECMAScriptLanguage *DuktapeBindingHelper::get_language() {
 void DuktapeBindingHelper::initialize() {
 
 	this->ctx = duk_create_heap(alloc_function, realloc_function, free_function, this, fatal_function);
-	ERR_FAIL_NULL(this->ctx);
+	ERR_FAIL_NULL(ctx);
 
 	// strong reference object pool
-	duk_push_heap_stash(this->ctx);
-	duk_push_object(this->ctx);
+	duk_push_heap_stash(ctx);
+	duk_push_object(ctx);
 	this->strongref_pool_ptr = duk_get_heapptr(ctx, -1);
 	duk_put_prop_literal(ctx, -2, "object_pool");
+
+	{
+		// pr-edefined functions for godot classes
+		duk_push_c_function(ctx, duk_godot_object_finalizer, 1);
+		this->duk_ptr_godot_object_finalizer = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "duk_godot_object_finalizer");
+
+		duk_push_c_function(ctx, godot_object_virtual_method, 0);
+		this->duk_ptr_godot_object_virtual_method = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "godot_object_virtual_method");
+
+		duk_push_c_function(ctx, godot_object_free, 0);
+		this->duk_ptr_godot_object_free = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "godot_object_free");
+
+		duk_push_c_function(ctx, godot_object_to_string, 0);
+		this->duk_ptr_godot_object_to_string = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "godot_object_to_string");
+	}
+
 	duk_pop(ctx);
 
 	// global scope
-	duk_push_c_function(this->ctx, godot_print_function, DUK_VARARGS);
-	duk_put_global_string(this->ctx, "print");
+	duk_push_c_function(ctx, godot_print_function, DUK_VARARGS);
+	duk_put_global_literal(ctx, "print");
 
 	// godot namespace
-	duk_push_object(this->ctx);
+	duk_push_object(ctx);
 	{
 		// TODO: register builtin classes
-
 		// register classes
 		const StringName *key = ClassDB::classes.next(NULL);
 		while (key) {
 			const ClassDB::ClassInfo *cls = ClassDB::classes.getptr(*key);
-			rigister_class(this->ctx, cls);
+			rigister_class(ctx, cls);
+			key = ClassDB::classes.next(key);
+		}
+		// setup proto chain for prototypes
+		key = ClassDB::classes.next(NULL);
+		while (key) {
+			const ClassDB::ClassInfo *cls = ClassDB::classes.getptr(*key);
+			if (cls->inherits_ptr) {
+				duk_require_stack(ctx, 2);
+				DuktapeHeapObject *prototype_ptr = class_prototypes.get(cls->name);
+				duk_push_heapptr(ctx, prototype_ptr);
+				DuktapeHeapObject *base_prototype_ptr = class_prototypes.get(cls->inherits_ptr->name);
+				duk_push_heapptr(ctx, base_prototype_ptr);
+				duk_put_prop_literal(ctx, -2, "__proto__");
+				duk_pop(ctx);
+			}
 			key = ClassDB::classes.next(key);
 		}
 	}
-	duk_put_global_string(this->ctx, "godot");
+	duk_put_global_literal(ctx, "godot");
 }
 
 void DuktapeBindingHelper::uninitialize() {
-	duk_destroy_heap(this->ctx);
+	duk_destroy_heap(ctx);
 	this->ctx = NULL;
 }
 
 void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassDB::ClassInfo *cls) {
-	if (cls->inherits_ptr) {
-		register_class_members(ctx, cls->inherits_ptr);
+
+	if (cls->name == "Object") {
+		// Object.prototype.fin
+		duk_push_heapptr(ctx, duk_ptr_godot_object_finalizer);
+		duk_set_finalizer(ctx, -2);
+		// Object.prototype._init
+		duk_push_heapptr(ctx, duk_ptr_godot_object_virtual_method);
+		duk_put_prop_literal(ctx, -2, "_init");
+		// Object.prototype.free
+		duk_push_heapptr(ctx, duk_ptr_godot_object_free);
+		duk_put_prop_literal(ctx, -2, "free");
+		// Object.prototype.toString
+		duk_push_heapptr(ctx, duk_ptr_godot_object_to_string);
+		duk_put_prop_literal(ctx, -2, "toString");
 	}
 
 	const duk_idx_t prototype_idx = duk_get_top(ctx) - 1;
@@ -431,13 +524,16 @@ void DuktapeBindingHelper::duk_push_godot_method(duk_context *ctx, const MethodB
 	if (heap_ptr) {
 		duk_push_heapptr(ctx, heap_ptr);
 	} else {
-		duk_push_c_function(ctx, duk_godot_object_method, mb->is_vararg() ? DUK_VARARGS : mb->get_argument_count());
-		duk_push_pointer(ctx, (void *)mb);
-		duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("mb"));
-
-		heap_ptr = duk_get_heapptr(ctx, -1);
-		if (heap_ptr) {
-			method_bindings[mb] = heap_ptr;
+		if (mb->get_hint_flags() & MethodFlags::METHOD_FLAG_VIRTUAL) {
+			duk_push_heapptr(ctx, duk_ptr_godot_object_virtual_method);
+			heap_ptr = duk_ptr_godot_object_virtual_method;
+		} else {
+			duk_size_t argc = mb->is_vararg() ? DUK_VARARGS : mb->get_argument_count();
+			duk_push_c_function(ctx, duk_godot_object_method, argc);
+			duk_push_pointer(ctx, (void *)mb);
+			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("mb"));
+			heap_ptr = duk_get_heapptr(ctx, -1);
 		}
+		method_bindings[mb] = heap_ptr;
 	}
 }

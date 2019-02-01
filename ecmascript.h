@@ -2,11 +2,14 @@
 #define ECMASCRIPT_H
 
 #include <core/script_language.h>
+#include "ecmascript_binding_helper.h"
 
 class ECMAScriptInstance;
 
 class ECMAScript : public Script {
 	GDCLASS(ECMAScript, Script);
+
+	ECMAScriptGCHandler ecma_constructor;
 
 	bool tool;
 	bool valid;
