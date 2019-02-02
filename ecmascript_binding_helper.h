@@ -12,7 +12,17 @@ struct ECMAScriptBindingData : public ECMAScriptGCHandler {
 	Object *godot_object;
 };
 
+struct ECMAClassInfo {
+	ECMAScriptGCHandler ecma_constructor;
+	StringName class_name;
+	String icon_path;
+};
+
 class ECMAScriptBindingHelper {
+
+protected:
+	HashMap<StringName, ECMAClassInfo> ecma_classes;
+
 public:
 	virtual void initialize() = 0;
 	virtual void uninitialize() = 0;

@@ -90,11 +90,28 @@ private:
 	void set_strong_ref(Object *obj, DuktapeHeapObject *ptr);
 	DuktapeHeapObject *get_strong_ref(Object *obj);
 
-	// cached ecmascript functions
+	/**
+	 * godot.register_class = function(ecma_class, name, icon) {
+	 *		ecma_class.name = name;
+	 *		ecma_class.icon = icon;
+	 *		return ecma_class;
+	 * }
+	 */
+	static duk_ret_t register_ecma_class(duk_context *ctx);
+
+	/**
+	 * godot.GDCLASS = functions(name, icon) {
+	 *		return godot.register_class(ecma_class, name, icon);
+	 * }
+	 */
+	static duk_ret_t decorator_register_ecma_class(duk_context *ctx);
+
+	// cached Duktape/C functions
 	DuktapeHeapObject *duk_ptr_godot_object_finalizer;
 	DuktapeHeapObject *duk_ptr_godot_object_free;
 	DuktapeHeapObject *duk_ptr_godot_object_to_string;
 	DuktapeHeapObject *duk_ptr_godot_object_virtual_method;
+	DuktapeHeapObject *duk_ptr_register_ecma_class;
 
 public:
 	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }

@@ -389,10 +389,10 @@ void DuktapeBindingHelper::initialize() {
 
 	// strong reference object pool
 	duk_push_heap_stash(ctx);
+
 	duk_push_object(ctx);
 	this->strongref_pool_ptr = duk_get_heapptr(ctx, -1);
 	duk_put_prop_literal(ctx, -2, "object_pool");
-
 	{
 		// pr-edefined functions for godot classes
 		duk_push_c_function(ctx, duk_godot_object_finalizer, 1);
@@ -411,7 +411,6 @@ void DuktapeBindingHelper::initialize() {
 		this->duk_ptr_godot_object_to_string = duk_get_heapptr(ctx, -1);
 		duk_put_prop_literal(ctx, -2, "godot_object_to_string");
 	}
-
 	duk_pop(ctx);
 
 	// global scope
@@ -444,6 +443,15 @@ void DuktapeBindingHelper::initialize() {
 			}
 			key = ClassDB::classes.next(key);
 		}
+
+		// godot.register_class
+		duk_push_c_function(ctx, register_ecma_class, 3);
+		this->duk_ptr_register_ecma_class = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, "register_class");
+
+		// godot.GDCLASS
+		duk_push_c_function(ctx, decorator_register_ecma_class, 3);
+		duk_put_prop_literal(ctx, -2, "GDCLASS");
 	}
 	duk_put_global_literal(ctx, "godot");
 }
@@ -536,4 +544,60 @@ void DuktapeBindingHelper::duk_push_godot_method(duk_context *ctx, const MethodB
 		}
 		method_bindings[mb] = heap_ptr;
 	}
+}
+
+duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
+	// godot.register_class(cls, name, icon)
+	const duk_idx_t CLASS_FUNC_IDX = 0;
+
+	ERR_FAIL_COND_V(!duk_is_function(ctx, CLASS_FUNC_IDX), DUK_ERR_TYPE_ERROR);
+
+	const char *class_name = duk_get_string_default(ctx, 1, NULL);
+	const char *class_icon = duk_get_string_default(ctx, 2, NULL);
+
+	duk_push_current_function(ctx);
+
+	if (duk_is_null_or_undefined(ctx, 1) && !class_name) {
+		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls_name"));
+		class_name = duk_get_string_default(ctx, -1, NULL);
+		duk_pop(ctx);
+		if (!class_name) {
+			duk_get_prop_literal(ctx, -1, "name");
+			class_name = duk_get_string_default(ctx, -1, NULL);
+			duk_pop(ctx);
+			ERR_FAIL_COND_V(class_name == NULL || !strlen(class_name), DUK_ERR_EVAL_ERROR);
+		}
+	}
+
+	if (duk_is_null_or_undefined(ctx, 2) && !class_icon) {
+		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls_icon"));
+		class_icon = duk_get_string_default(ctx, -1, "");
+		duk_pop(ctx);
+	}
+
+	duk_pop(ctx);
+
+	ECMAClassInfo ecma_class;
+	ecma_class.icon_path = class_icon;
+	ecma_class.class_name = class_name;
+	ecma_class.ecma_constructor = { duk_get_heapptr(ctx, CLASS_FUNC_IDX) };
+	get_singleton()->ecma_classes.set(class_name, ecma_class);
+
+	duk_dup(ctx, CLASS_FUNC_IDX);
+	return DUK_HAS_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::decorator_register_ecma_class(duk_context *ctx) {
+	// godot.GDCLASS(name, icon)
+
+	const char *class_name = duk_get_string_default(ctx, 0, NULL);
+	const char *icon_path = duk_get_string_default(ctx, 1, NULL);
+
+	duk_push_heapptr(ctx, get_singleton()->duk_ptr_register_ecma_class);
+	duk_push_string(ctx, class_name);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls_name"));
+	duk_push_string(ctx, icon_path);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls_icon"));
+
+	return DUK_HAS_RET_VAL;
 }
