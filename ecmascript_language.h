@@ -17,7 +17,7 @@ private:
 
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
-	_FORCE_INLINE_ static ECMAScriptBindingHelper* get_binder() { return singleton->binding; }
+	_FORCE_INLINE_ static ECMAScriptBindingHelper *get_binder() { return singleton->binding; }
 
 	_FORCE_INLINE_ virtual String get_name() const { return "ECMAScript"; }
 
@@ -27,7 +27,7 @@ public:
 	/* LANGUAGE FUNCTIONS */
 
 	_FORCE_INLINE_ virtual String get_type() const { return "ECMAScript"; }
-	_FORCE_INLINE_ virtual String get_extension() const { return "js"; }
+	_FORCE_INLINE_ virtual String get_extension() const { return "es"; }
 	_FORCE_INLINE_ virtual bool has_named_classes() const { return true; }
 	_FORCE_INLINE_ virtual bool supports_builtin_mode() const { return false; }
 	_FORCE_INLINE_ virtual bool can_inherit_from_file() { return false; }
@@ -38,6 +38,7 @@ public:
 	virtual void finish();
 
 	virtual Error execute_file(const String &p_path);
+	Error eval_text(const String &p_source);
 
 	virtual void get_reserved_words(List<String> *p_words) const;
 	virtual void get_comment_delimiters(List<String> *p_delimiters) const;

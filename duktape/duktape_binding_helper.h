@@ -99,12 +99,14 @@ private:
 	 */
 	static duk_ret_t register_ecma_class(duk_context *ctx);
 
+#if 0
 	/**
 	 * godot.GDCLASS = functions(name, icon) {
 	 *		return godot.register_class(ecma_class, name, icon);
 	 * }
 	 */
 	static duk_ret_t decorator_register_ecma_class(duk_context *ctx);
+#endif
 
 	// cached Duktape/C functions
 	DuktapeHeapObject *duk_ptr_godot_object_finalizer;

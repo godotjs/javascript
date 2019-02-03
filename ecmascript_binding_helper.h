@@ -16,6 +16,7 @@ struct ECMAClassInfo {
 	ECMAScriptGCHandler ecma_constructor;
 	StringName class_name;
 	String icon_path;
+	ClassDB::ClassInfo *native_class;
 };
 
 class ECMAScriptBindingHelper {

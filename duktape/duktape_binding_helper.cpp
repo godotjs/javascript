@@ -54,11 +54,11 @@ void DuktapeBindingHelper::duk_push_strong_ref_container(duk_context *ctx) {
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
-	duk_push_current_function(ctx);
 
+	duk_push_current_function(ctx);
 	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
 	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer_default(ctx, -1, NULL));
-	duk_pop(ctx);
+	duk_pop_2(ctx);
 
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 	ERR_FAIL_NULL_V(cls->creation_func, DUK_ERR_TYPE_ERROR);
@@ -449,10 +449,13 @@ void DuktapeBindingHelper::initialize() {
 		this->duk_ptr_register_ecma_class = duk_get_heapptr(ctx, -1);
 		duk_put_prop_literal(ctx, -2, "register_class");
 
+#if 0
 		// godot.GDCLASS
 		duk_push_c_function(ctx, decorator_register_ecma_class, 3);
 		duk_put_prop_literal(ctx, -2, "GDCLASS");
+#endif
 	}
+
 	duk_put_global_literal(ctx, "godot");
 }
 
@@ -552,6 +555,11 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 
 	ERR_FAIL_COND_V(!duk_is_function(ctx, CLASS_FUNC_IDX), DUK_ERR_TYPE_ERROR);
 
+	duk_get_prop_string(ctx, CLASS_FUNC_IDX, DUK_HIDDEN_SYMBOL("cls"));
+	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer(ctx, -1));
+	duk_pop(ctx);
+	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
+
 	const char *class_name = duk_get_string_default(ctx, 1, NULL);
 	const char *class_icon = duk_get_string_default(ctx, 2, NULL);
 
@@ -578,8 +586,9 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	duk_pop(ctx);
 
 	ECMAClassInfo ecma_class;
-	ecma_class.icon_path = class_icon;
 	ecma_class.class_name = class_name;
+	ecma_class.icon_path = class_icon;
+	ecma_class.native_class = cls;
 	ecma_class.ecma_constructor = { duk_get_heapptr(ctx, CLASS_FUNC_IDX) };
 	get_singleton()->ecma_classes.set(class_name, ecma_class);
 
@@ -587,6 +596,7 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	return DUK_HAS_RET_VAL;
 }
 
+#if 0
 duk_ret_t DuktapeBindingHelper::decorator_register_ecma_class(duk_context *ctx) {
 	// godot.GDCLASS(name, icon)
 
@@ -601,3 +611,4 @@ duk_ret_t DuktapeBindingHelper::decorator_register_ecma_class(duk_context *ctx) 
 
 	return DUK_HAS_RET_VAL;
 }
+#endif

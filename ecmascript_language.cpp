@@ -1,6 +1,6 @@
 #include "ecmascript_language.h"
-#include "core/os/file_access.h"
 #include "core/class_db.h"
+#include "core/os/file_access.h"
 
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
@@ -28,9 +28,14 @@ Error ECMAScriptLanguage::execute_file(const String &p_path) {
 	buff.ptrw()[buff.size() - 1] = 0;
 
 	String source;
-	source.parse_utf8((const char*)buff.ptr(), buff.size());
+	source.parse_utf8((const char *)buff.ptr(), buff.size());
 
 	return binding->eval_string(source);
+}
+
+Error ECMAScriptLanguage::eval_text(const String &p_source) {
+	ERR_FAIL_NULL_V(binding, ERR_BUG);
+	return binding->eval_string(p_source);
 }
 
 void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
