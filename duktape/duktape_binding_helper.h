@@ -131,7 +131,8 @@ public:
 
 	virtual Error eval_string(const String &p_source);
 
-	virtual Error create_ecma_object_for_godot_object(const ECMAScriptGCHandler &p_prototype, Object *p_object, ECMAScriptGCHandler &r_handler);
+	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName& ecma_class_name, Object *p_object);
+	virtual Variant call_method(const ECMAScriptGCHandler& p_object, const ECMAMethodInfo& p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
 };
 
 #endif

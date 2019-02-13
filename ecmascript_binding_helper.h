@@ -4,22 +4,30 @@
 #include "core/object.h"
 #include "core/reference.h"
 
+#define PROTOTYPE_LITERAL "prototype"
+#define PROTO_LITERAL "__proto__"
+
 struct ECMAScriptGCHandler {
 	void *ecma_object;
+	bool is_null() const { return ecma_object == NULL; }
 };
 
 struct ECMAScriptBindingData : public ECMAScriptGCHandler {
 	Object *godot_object;
 };
 
+typedef ECMAScriptGCHandler ECMAMethodInfo;
+
 struct ECMAClassInfo {
 	ECMAScriptGCHandler ecma_constructor;
 	StringName class_name;
 	String icon_path;
 	ClassDB::ClassInfo *native_class;
+	HashMap<StringName, ECMAMethodInfo> methods;
 };
 
 class ECMAScriptBindingHelper {
+	friend class ECMAScript;
 
 protected:
 	HashMap<StringName, ECMAClassInfo> ecma_classes;
@@ -36,7 +44,8 @@ public:
 
 	virtual Error eval_string(const String &p_source) = 0;
 
-	virtual Error create_ecma_object_for_godot_object(const ECMAScriptGCHandler &p_prototype, Object *p_object, ECMAScriptGCHandler &r_handler) = 0;
+	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName& ecma_class_name, Object *p_object) = 0;
+	virtual Variant call_method(const ECMAScriptGCHandler& p_object, const ECMAMethodInfo& p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
 };
 
 #endif

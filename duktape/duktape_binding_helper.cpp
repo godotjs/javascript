@@ -120,33 +120,6 @@ Error DuktapeBindingHelper::eval_string(const String &p_source) {
 	return OK;
 }
 
-Error DuktapeBindingHelper::create_ecma_object_for_godot_object(const ECMAScriptGCHandler &p_prototype, Object *p_object, ECMAScriptGCHandler &r_handler) {
-
-	ERR_FAIL_NULL_V(p_object, ERR_INVALID_PARAMETER);
-	ERR_FAIL_NULL_V(p_prototype.ecma_object, ERR_INVALID_PARAMETER);
-
-	duk_require_stack(ctx, 3);
-
-	duk_idx_t object_idx = duk_get_top(ctx);
-	duk_push_object(ctx);
-	duk_push_pointer(ctx, p_object);
-	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-	duk_push_heapptr(ctx, p_prototype.ecma_object);
-	duk_put_prop_literal(ctx, -2, "__proto__");
-
-	set_strong_ref(p_object, duk_get_heapptr(ctx, -1));
-
-	//	call _init method
-	duk_get_prop_literal(ctx, -1, "_init");
-	ERR_FAIL_COND_V(!duk_is_function(ctx, -1), ERR_DOES_NOT_EXIST);
-	duk_dup(ctx, -2);
-	duk_call_method(ctx, 0);
-	duk_pop(ctx);
-
-	r_handler.ecma_object = duk_get_heapptr(ctx, object_idx);
-	return OK;
-}
-
 void *DuktapeBindingHelper::alloc_object_binding_data(Object *p_object) {
 	ECMAScriptBindingData *handler = NULL;
 	if (DuktapeHeapObject *heap_ptr = get_strong_ref(p_object)) {
@@ -311,7 +284,7 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 			} else {
 				duk_push_object(ctx);
 				duk_push_heapptr(ctx, get_singleton()->class_prototypes.get(obj->get_class_name()));
-				duk_put_prop_literal(ctx, -2, "__proto__");
+				duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 			}
 
 			duk_push_pointer(ctx, obj);
@@ -369,7 +342,7 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 		DuktapeHeapObject *proto_ptr = duk_get_heapptr(ctx, -1);
 		get_singleton()->class_prototypes[cls->name] = proto_ptr;
 
-		duk_put_prop_literal(ctx, -2, "prototype");
+		duk_put_prop_literal(ctx, -2, PROTOTYPE_LITERAL);
 	}
 	duk_put_prop_godot_string_name(ctx, -2, cls->name);
 }
@@ -438,7 +411,7 @@ void DuktapeBindingHelper::initialize() {
 				duk_push_heapptr(ctx, prototype_ptr);
 				DuktapeHeapObject *base_prototype_ptr = class_prototypes.get(cls->inherits_ptr->name);
 				duk_push_heapptr(ctx, base_prototype_ptr);
-				duk_put_prop_literal(ctx, -2, "__proto__");
+				duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 				duk_pop(ctx);
 			}
 			key = ClassDB::classes.next(key);
@@ -590,6 +563,20 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	ecma_class.icon_path = class_icon;
 	ecma_class.native_class = cls;
 	ecma_class.ecma_constructor = { duk_get_heapptr(ctx, CLASS_FUNC_IDX) };
+
+	// ecmascript methods
+	duk_get_prop_literal(ctx, CLASS_FUNC_IDX, PROTOTYPE_LITERAL);
+	duk_enum(ctx, -1, DUK_HINT_NONE);
+	while (duk_next(ctx, -1, true)) {
+		if (duk_is_ecmascript_function(ctx, -1)) {
+			StringName name = duk_get_godot_string(ctx, -2);
+			ECMAMethodInfo method = { duk_get_heapptr(ctx, -1) };
+			ecma_class.methods.set(name, method);
+		}
+		duk_pop_2(ctx);
+	}
+	duk_pop_2(ctx);
+
 	get_singleton()->ecma_classes.set(class_name, ecma_class);
 
 	duk_dup(ctx, CLASS_FUNC_IDX);
@@ -612,3 +599,55 @@ duk_ret_t DuktapeBindingHelper::decorator_register_ecma_class(duk_context *ctx) 
 	return DUK_HAS_RET_VAL;
 }
 #endif
+
+
+ECMAScriptGCHandler DuktapeBindingHelper::create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) {
+
+	ECMAScriptGCHandler ret = { NULL };
+
+	ECMAClassInfo *ecma_class = ecma_classes.getptr(ecma_class_name);
+	ERR_FAIL_NULL_V(p_object, ret);
+	ERR_FAIL_NULL_V(ecma_class, ret);
+
+	duk_require_stack(ctx, 3);
+
+	duk_idx_t object_idx = duk_get_top(ctx);
+	duk_push_object(ctx);
+
+	duk_push_pointer(ctx, p_object);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+
+	duk_push_heapptr(ctx, ecma_class->ecma_constructor.ecma_object);
+	duk_get_prop_literal(ctx, -1, PROTOTYPE_LITERAL);
+	duk_remove(ctx, -2);
+	duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
+
+	set_strong_ref(p_object, duk_get_heapptr(ctx, -1));
+
+	//	call _init method
+	duk_get_prop_literal(ctx, -1, "_init");
+	ERR_FAIL_COND_V(!duk_is_function(ctx, -1), ret);
+	duk_dup(ctx, -2);
+	duk_call_method(ctx, 0);
+	duk_pop(ctx);
+
+	ret.ecma_object = duk_get_heapptr(ctx, object_idx);
+
+	return ret;
+}
+
+Variant DuktapeBindingHelper::call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
+	ERR_FAIL_COND_V(p_object.is_null() || p_method.is_null(), NULL);
+
+	duk_push_heapptr(ctx, p_method.ecma_object);
+	duk_push_heapptr(ctx, p_object.ecma_object);
+
+	for (int i = 0; i < p_argcount; ++i) {
+		duk_push_godot_variant(ctx, *(p_args[i]));
+	}
+	duk_call_method(ctx, p_argcount);
+	Variant ret = duk_get_godot_variant(ctx, -1);
+	duk_pop(ctx);
+	return ret;
+}
+

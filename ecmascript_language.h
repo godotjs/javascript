@@ -9,6 +9,8 @@ class ECMAScriptBindingHelper;
 class ECMAScriptLanguage : public ScriptLanguage {
 
 	friend class ECMAScriptBindingHelper;
+	friend class ECMAScript;
+	friend class ECMAScriptInstance;
 
 private:
 	static ECMAScriptLanguage *singleton;

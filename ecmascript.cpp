@@ -2,10 +2,6 @@
 #include "ecmascript_language.h"
 #include "scene/resources/scene_format_text.h"
 
-bool ECMAScript::can_instance() const {
-	return is_valid();
-}
-
 ScriptLanguage *ECMAScript::get_language() const {
 	return ECMAScriptLanguage::get_singleton();
 }
@@ -15,6 +11,85 @@ ECMAScript::ECMAScript() {
 }
 
 ECMAScript::~ECMAScript() {
+}
+
+bool ECMAScript::can_instance() const {
+	return is_valid();
+}
+
+ScriptInstance *ECMAScript::instance_create(Object *p_this) {
+
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, NULL);
+
+	if (!ClassDB::is_parent_class(p_this->get_class_name(), cls->native_class->name)) {
+		ERR_EXPLAIN("Script inherits from native type '" + String(cls->native_class->name) + "', so it can't be instanced in object of type: '" + p_this->get_class() + "'");
+		ERR_FAIL_V(NULL);
+	}
+
+	Variant::CallError unchecked_error;
+	ECMAScriptGCHandler ecma_instance = ECMAScriptLanguage::get_singleton()->binding->create_ecma_instance_for_godot_object(class_name, p_this);
+	ERR_FAIL_COND_V(ecma_instance.is_null(), NULL);
+
+
+	ECMAScriptInstance *instance = memnew(ECMAScriptInstance);
+	instance->script = Ref<ECMAScript>(this);
+	instance->owner = p_this;
+	instance->owner->set_script_instance(instance);
+	instance->ecma_object = ecma_instance;
+
+	return instance;
+}
+
+bool ECMAScript::instance_has(const Object *p_this) const {
+	return instances.has(const_cast<Object*>(p_this));
+}
+
+ECMAClassInfo *ECMAScript::get_ecma_class() const {
+	return ECMAScriptLanguage::get_singleton()->binding->ecma_classes.getptr(class_name);
+}
+
+
+bool ECMAScript::has_method(const StringName &p_method) const {
+
+	ECMAClassInfo * cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, false);
+
+	return cls->methods.has(p_method);
+}
+
+MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
+
+	MethodInfo mi;
+	ECMAClassInfo * cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, mi);
+
+	if (ECMAScriptGCHandler * method = cls->methods.getptr(p_method)) {
+		mi.name = p_method;
+	}
+
+	return mi;
+}
+
+void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
+
+	ECMAClassInfo * cls = get_ecma_class();
+	ERR_FAIL_NULL(cls);
+
+
+	const StringName* key = cls->methods.next(NULL);
+	while (key) {
+
+		MethodInfo mi;
+		mi.name = String(*key);
+		p_list->push_back(mi);
+
+		key = cls->methods.next(key);
+	}
+}
+
+bool ECMAScript::is_valid() const {
+	return get_ecma_class() != NULL;
 }
 
 void ECMAScript::_bind_methods() {

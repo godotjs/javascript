@@ -5,20 +5,21 @@
 #include "core/script_language.h"
 #include "ecmascript_binding_helper.h"
 #include "ecmascript_library.h"
-
-class ECMAScriptInstance;
+#include "ecmascript_instance.h"
 
 class ECMAScript : public Script {
 	GDCLASS(ECMAScript, Script);
 
+private:
+	friend class ECMAScriptInstance;
+
 	ECMAScriptGCHandler ecma_constructor;
 	Set<Object *> instances;
 
-	String class_name;
+	StringName class_name;
 	Ref<ECMAScriptLibrary> library;
 
-	/* TODO */ ECMAScriptInstance *_create_instance(const Variant **p_args, int p_argcount, Object *p_owner, bool p_isref, Variant::CallError &r_error) { return NULL; }
-	/* TODO */ Variant _new(const Variant **p_args, int p_argcount, Variant::CallError &r_error) { return Variant(); }
+	ECMAClassInfo* get_ecma_class() const;
 
 protected:
 	/* TODO */ virtual bool editor_can_reload_from_file() { return false; } // this is handled by editor better
@@ -34,20 +35,20 @@ public:
 	/* TODO */ virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
 
 	/* TODO */ virtual StringName get_instance_base_type() const { return StringName(); } // this may not work in all scripts, will return empty if so
-	/* TODO */ virtual ScriptInstance *instance_create(Object *p_this) { return NULL; }
+	 virtual ScriptInstance *instance_create(Object *p_this);
 	/* TODO */ virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this) { return NULL; }
-	/* TODO */ virtual bool instance_has(const Object *p_this) const { return false; }
+	virtual bool instance_has(const Object *p_this) const;
 
 	/* TODO */ virtual bool has_source_code() const { return false; }
 	/* TODO */ virtual String get_source_code() const { return ""; }
 	/* TODO */ virtual void set_source_code(const String &p_code) {}
 	/* TODO */ virtual Error reload(bool p_keep_state = false) { return ERR_UNAVAILABLE; }
 
-	/* TODO */ virtual bool has_method(const StringName &p_method) const { return false; }
-	/* TODO */ virtual MethodInfo get_method_info(const StringName &p_method) const { return MethodInfo(); }
+	virtual bool has_method(const StringName &p_method) const;
+	virtual MethodInfo get_method_info(const StringName &p_method) const;
 
 	/* TODO */ virtual bool is_tool() const { return false; }
-	/* TODO */ virtual bool is_valid() const { return false; }
+	virtual bool is_valid() const;
 
 	virtual ScriptLanguage *get_language() const;
 
@@ -57,7 +58,7 @@ public:
 	/* TODO */ virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const { return false; }
 
 	/* TODO */ virtual void update_exports() {} //editor tool
-	/* TODO */ virtual void get_script_method_list(List<MethodInfo> *p_list) const {};
+	virtual void get_script_method_list(List<MethodInfo> *p_list) const;
 	/* TODO */ virtual void get_script_property_list(List<PropertyInfo> *p_list) const {};
 
 	/* TODO */ virtual int get_member_line(const StringName &p_member) const { return -1; }
@@ -67,8 +68,9 @@ public:
 
 	/* TODO */ virtual bool is_placeholder_fallback_enabled() const { return false; }
 
-	_FORCE_INLINE_ void set_class_name(const String &p_class_name) { class_name = p_class_name; }
-	_FORCE_INLINE_ String get_class_name() const { return class_name; }
+	_FORCE_INLINE_ void set_class_name(const StringName &p_class_name) { class_name = p_class_name; }
+	_FORCE_INLINE_ StringName get_class_name() const { return class_name; }
+
 	_FORCE_INLINE_ void set_library(const Ref<ECMAScriptLibrary> &p_library) { library = p_library; }
 	_FORCE_INLINE_ Ref<ECMAScriptLibrary> get_library() const { return library; }
 
