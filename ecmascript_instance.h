@@ -1,6 +1,7 @@
 #ifndef ECMASCRIPT_INSTANCE_H
 #define ECMASCRIPT_INSTANCE_H
 
+#include "ecmascript.h"
 #include "ecmascript_binding_helper.h"
 #include <core/script_language.h>
 

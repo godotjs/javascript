@@ -1,4 +1,5 @@
 #include "ecmascript.h"
+#include "ecmascript_instance.h"
 #include "ecmascript_language.h"
 #include "scene/resources/scene_format_text.h"
 
@@ -7,7 +8,6 @@ ScriptLanguage *ECMAScript::get_language() const {
 }
 
 ECMAScript::ECMAScript() {
-
 }
 
 ECMAScript::~ECMAScript() {
@@ -31,7 +31,6 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	ECMAScriptGCHandler ecma_instance = ECMAScriptLanguage::get_singleton()->binding->create_ecma_instance_for_godot_object(class_name, p_this);
 	ERR_FAIL_COND_V(ecma_instance.is_null(), NULL);
 
-
 	ECMAScriptInstance *instance = memnew(ECMAScriptInstance);
 	instance->script = Ref<ECMAScript>(this);
 	instance->owner = p_this;
@@ -42,17 +41,16 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 }
 
 bool ECMAScript::instance_has(const Object *p_this) const {
-	return instances.has(const_cast<Object*>(p_this));
+	return instances.has(const_cast<Object *>(p_this));
 }
 
 ECMAClassInfo *ECMAScript::get_ecma_class() const {
 	return ECMAScriptLanguage::get_singleton()->binding->ecma_classes.getptr(class_name);
 }
 
-
 bool ECMAScript::has_method(const StringName &p_method) const {
 
-	ECMAClassInfo * cls = get_ecma_class();
+	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, false);
 
 	return cls->methods.has(p_method);
@@ -61,10 +59,10 @@ bool ECMAScript::has_method(const StringName &p_method) const {
 MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 
 	MethodInfo mi;
-	ECMAClassInfo * cls = get_ecma_class();
+	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, mi);
 
-	if (ECMAScriptGCHandler * method = cls->methods.getptr(p_method)) {
+	if (ECMAScriptGCHandler *method = cls->methods.getptr(p_method)) {
 		mi.name = p_method;
 	}
 
@@ -73,11 +71,10 @@ MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 
-	ECMAClassInfo * cls = get_ecma_class();
+	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL(cls);
 
-
-	const StringName* key = cls->methods.next(NULL);
+	const StringName *key = cls->methods.next(NULL);
 	while (key) {
 
 		MethodInfo mi;
@@ -104,9 +101,9 @@ void ECMAScript::_bind_methods() {
 }
 
 RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
-	 Ref<ECMAScript> script = ResourceFormatLoaderText::singleton->load(p_path, p_original_path, r_error);
-	 if (!script.is_null()) {
-		 if (Ref<ECMAScript> * script_ptr =  ECMAScriptLanguage::get_singleton()->get_class_script_ptr(script->get_class_name())) {
+	Ref<ECMAScript> script = ResourceFormatLoaderText::singleton->load(p_path, p_original_path, r_error);
+	if (!script.is_null()) {
+		if (Ref<ECMAScript> *script_ptr = ECMAScriptLanguage::get_singleton()->get_class_script_ptr(script->get_class_name())) {
 			(*script_ptr)->set_library(script->get_library());
 			script->set_name((*script_ptr)->get_name());
 			script->set_path((*script_ptr)->get_path());
@@ -119,6 +116,10 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 }
 
 void ResourceFormatLoaderECMAScript::get_recognized_extensions(List<String> *p_extensions) const {
+	p_extensions->push_back("es");
+}
+
+void ResourceFormatLoaderECMAScript::get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const {
 	p_extensions->push_back("es");
 }
 

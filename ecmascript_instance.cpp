@@ -12,7 +12,7 @@ void ECMAScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
 }
 
 bool ECMAScriptInstance::has_method(const StringName &p_method) const {
-	ERR_FAIL_COND_V( script.is_null(), false);
+	ERR_FAIL_COND_V(script.is_null(), false);
 	return script->has_method(p_method);
 }
 
@@ -20,10 +20,17 @@ Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_a
 
 	ERR_FAIL_COND_V(script.is_null() || ecma_object.is_null(), NULL);
 
-	ECMAClassInfo * cls = script->get_ecma_class();
-	ERR_FAIL_NULL_V(cls, NULL);
-	ECMAMethodInfo * method = cls->methods.getptr(p_method);
-	ERR_FAIL_NULL_V(method, NULL);
+	ECMAClassInfo *cls = script->get_ecma_class();
+	if (cls == NULL) {
+		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
+		return NULL;
+	}
+
+	ECMAMethodInfo *method = cls->methods.getptr(p_method);
+	if (method == NULL) {
+		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
+		return NULL;
+	}
 
 	return ECMAScriptLanguage::get_singleton()->binding->call_method(ecma_object, *method, p_args, p_argcount, r_error);
 }
@@ -31,8 +38,6 @@ Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_a
 ScriptLanguage *ECMAScriptInstance::get_language() {
 	return ECMAScriptLanguage::get_singleton();
 }
-
-
 
 ECMAScriptInstance::ECMAScriptInstance() {
 	owner = NULL;

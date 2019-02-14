@@ -83,11 +83,11 @@ private:
 
 	// weak references
 	DuktapeHeapObject *get_weak_ref(Object *obj);
-	void set_weak_ref(Object *obj, DuktapeHeapObject *ptr);
+	void set_weak_ref(ObjectID p_id, DuktapeHeapObject *ptr);
 
 	// strong references
 	void duk_push_strong_ref_container(duk_context *ctx);
-	void set_strong_ref(Object *obj, DuktapeHeapObject *ptr);
+	void set_strong_ref(ObjectID p_id, DuktapeHeapObject *ptr);
 	DuktapeHeapObject *get_strong_ref(Object *obj);
 
 	/**

@@ -5,7 +5,6 @@
 #include "core/script_language.h"
 #include "ecmascript_binding_helper.h"
 #include "ecmascript_library.h"
-#include "ecmascript_instance.h"
 
 class ECMAScript : public Script {
 	GDCLASS(ECMAScript, Script);
@@ -19,7 +18,7 @@ private:
 	StringName class_name;
 	Ref<ECMAScriptLibrary> library;
 
-	ECMAClassInfo* get_ecma_class() const;
+	ECMAClassInfo *get_ecma_class() const;
 
 protected:
 	/* TODO */ virtual bool editor_can_reload_from_file() { return false; } // this is handled by editor better
@@ -35,7 +34,7 @@ public:
 	/* TODO */ virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
 
 	/* TODO */ virtual StringName get_instance_base_type() const { return StringName(); } // this may not work in all scripts, will return empty if so
-	 virtual ScriptInstance *instance_create(Object *p_this);
+	virtual ScriptInstance *instance_create(Object *p_this);
 	/* TODO */ virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this) { return NULL; }
 	virtual bool instance_has(const Object *p_this) const;
 
@@ -83,6 +82,7 @@ class ResourceFormatLoaderECMAScript : public ResourceFormatLoader {
 public:
 	virtual RES load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;
+	virtual void get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const;
 	virtual bool handles_type(const String &p_type) const;
 	virtual String get_resource_type(const String &p_path) const;
 };

@@ -14,7 +14,8 @@ struct ECMAScriptGCHandler {
 };
 
 struct ECMAScriptBindingData : public ECMAScriptGCHandler {
-	Object *godot_object;
+        Object *godot_object;
+	ObjectID instance_id;
 };
 
 typedef ECMAScriptGCHandler ECMAMethodInfo;

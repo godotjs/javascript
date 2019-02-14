@@ -27,6 +27,10 @@ void ECMAScriptLibraryResourceLoader::get_recognized_extensions(List<String> *p_
 	p_extensions->push_front("js");
 }
 
+void ECMAScriptLibraryResourceLoader::get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const {
+	p_extensions->push_front("js");
+}
+
 bool ECMAScriptLibraryResourceLoader::handles_type(const String &p_type) const {
 	return p_type == "ECMAScriptLibrary";
 }
