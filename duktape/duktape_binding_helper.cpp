@@ -1,5 +1,7 @@
 #include "duktape_binding_helper.h"
 #include "../ecmascript_language.h"
+#include "../ecmascript_instance.h"
+#include "../ecmascript.h"
 
 void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fprintf(stderr, "*** FATAL ERROR: %s\n", (msg ? msg : "no message"));
@@ -63,8 +65,24 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 	ERR_FAIL_NULL_V(cls->creation_func, DUK_ERR_TYPE_ERROR);
 
-	duk_push_godot_object(ctx, cls->creation_func(), true);
+	Object *obj = cls->creation_func();
+	duk_push_godot_object(ctx, obj, true);
 	ERR_FAIL_COND_V(duk_is_null_or_undefined(ctx, -1), DUK_ERR_TYPE_ERROR);
+
+	duk_get_prop_literal(ctx, -1, ECMA_CLASS_NAME_LITERAL);
+	const char * ecma_class_name = duk_get_string_default(ctx, -1, NULL);
+	duk_pop(ctx);
+
+	// create script instance for this object
+	if (ecma_class_name) {
+		if (ECMAClassInfo * ecma_class = get_singleton()->ecma_classes.getptr(ecma_class_name)) {
+			ECMAScriptInstance * inst = memnew(ECMAScriptInstance);
+			inst->owner = obj;
+			inst->ecma_object = { duk_get_heapptr(ctx, -1) };
+			inst->script = get_language()->script_classes.get(ecma_class_name);
+			obj->set_script_instance(inst);
+		}
+	}
 
 	//	call _init method
 	duk_get_prop_literal(ctx, -1, "_init");
@@ -79,7 +97,6 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
 duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 	Object *ptr = duk_get_godot_object(ctx, -1);
 	if (NULL == ptr) return DUK_NO_RET_VAL;
-
 	if (Reference *ref = Object::cast_to<Reference>(ptr)) {
 		if (ref->unreference()) {
 			// A reference without C++ usage
@@ -87,6 +104,8 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 			memdelete(ref);
 		} else if (ref->get_script_instance_binding(get_language()->get_language_index())) {
 			// A reference not used in C++
+			get_singleton()->weakref_pool.erase(ptr->get_instance_id());
+			get_singleton()->strongref_pool.erase(ptr->get_instance_id());
 			memdelete(ref);
 		} else {
 			// A reference with other C++ reference
@@ -283,7 +302,7 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 				duk_push_this(ctx);
 			} else {
 				duk_push_object(ctx);
-				duk_push_heapptr(ctx, get_singleton()->class_prototypes.get(obj->get_class_name()));
+				duk_push_heapptr(ctx, get_singleton()->native_class_prototypes.get(obj->get_class_name()));
 				duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 			}
 
@@ -340,7 +359,7 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 		}
 
 		DuktapeHeapObject *proto_ptr = duk_get_heapptr(ctx, -1);
-		get_singleton()->class_prototypes[cls->name] = proto_ptr;
+		get_singleton()->native_class_prototypes[cls->name] = proto_ptr;
 
 		duk_put_prop_literal(ctx, -2, PROTOTYPE_LITERAL);
 	}
@@ -407,9 +426,9 @@ void DuktapeBindingHelper::initialize() {
 			const ClassDB::ClassInfo *cls = ClassDB::classes.getptr(*key);
 			if (cls->inherits_ptr) {
 				duk_require_stack(ctx, 2);
-				DuktapeHeapObject *prototype_ptr = class_prototypes.get(cls->name);
+				DuktapeHeapObject *prototype_ptr = native_class_prototypes.get(cls->name);
 				duk_push_heapptr(ctx, prototype_ptr);
-				DuktapeHeapObject *base_prototype_ptr = class_prototypes.get(cls->inherits_ptr->name);
+				DuktapeHeapObject *base_prototype_ptr = native_class_prototypes.get(cls->inherits_ptr->name);
 				duk_push_heapptr(ctx, base_prototype_ptr);
 				duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 				duk_pop(ctx);
@@ -535,9 +554,7 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 
 	const char *class_name = duk_get_string_default(ctx, 1, NULL);
 	const char *class_icon = duk_get_string_default(ctx, 2, NULL);
-
 	duk_push_current_function(ctx);
-
 	if (duk_is_null_or_undefined(ctx, 1) && !class_name) {
 		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls_name"));
 		class_name = duk_get_string_default(ctx, -1, NULL);
@@ -549,13 +566,11 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 			ERR_FAIL_COND_V(class_name == NULL || !strlen(class_name), DUK_ERR_EVAL_ERROR);
 		}
 	}
-
 	if (duk_is_null_or_undefined(ctx, 2) && !class_icon) {
 		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls_icon"));
 		class_icon = duk_get_string_default(ctx, -1, "");
 		duk_pop(ctx);
 	}
-
 	duk_pop(ctx);
 
 	ECMAClassInfo ecma_class;
@@ -566,6 +581,11 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 
 	// ecmascript methods
 	duk_get_prop_literal(ctx, CLASS_FUNC_IDX, PROTOTYPE_LITERAL);
+	// MyClass.prototype.class_name = 'MyClass';
+	duk_push_string(ctx, class_name);
+	duk_put_prop_literal(ctx, -2, ECMA_CLASS_NAME_LITERAL);
+
+	// for (var key in MyClass.prototype)
 	duk_enum(ctx, -1, DUK_HINT_NONE);
 	while (duk_next(ctx, -1, true)) {
 		if (duk_is_ecmascript_function(ctx, -1)) {
@@ -577,9 +597,19 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	}
 	duk_pop_2(ctx);
 
+	duk_dup(ctx, CLASS_FUNC_IDX);
+	// MyClass.class_name = 'MyClass';
+	duk_push_string(ctx, class_name);
+	duk_put_prop_literal(ctx, -2, ECMA_CLASS_NAME_LITERAL);
+
+
 	get_singleton()->ecma_classes.set(class_name, ecma_class);
 
-	duk_dup(ctx, CLASS_FUNC_IDX);
+	Ref<ECMAScript> script;
+	script.instance();
+	script->class_name = class_name;
+	get_language()->script_classes.set(class_name, script);
+
 	return DUK_HAS_RET_VAL;
 }
 

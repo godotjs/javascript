@@ -2,6 +2,10 @@
 #include "ecmascript.h"
 #include "ecmascript_language.h"
 
+Ref<Script> ECMAScriptInstance::get_script() const {
+	return script;
+}
+
 void ECMAScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
 	ERR_FAIL_COND(script.is_null());
 	script->get_script_method_list(p_list);

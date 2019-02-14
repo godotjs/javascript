@@ -6,6 +6,7 @@
 
 #define PROTOTYPE_LITERAL "prototype"
 #define PROTO_LITERAL "__proto__"
+#define ECMA_CLASS_NAME_LITERAL "class_name"
 
 struct ECMAScriptGCHandler {
 	void *ecma_object;

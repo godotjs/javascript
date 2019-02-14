@@ -69,7 +69,7 @@ private:
 	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
 
 private:
-	HashMap<StringName, DuktapeHeapObject *> class_prototypes;
+	HashMap<StringName, DuktapeHeapObject *> native_class_prototypes;
 	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
 
 	HashMap<ObjectID, DuktapeHeapObject *> weakref_pool;

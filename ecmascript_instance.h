@@ -7,6 +7,7 @@
 class ECMAScriptInstance : public ScriptInstance {
 
 	friend class ECMAScript;
+	friend class DuktapeBindingHelper;
 
 	Object *owner;
 	Ref<ECMAScript> script;
@@ -19,7 +20,7 @@ public:
 	/* TODO */ virtual Variant::Type get_property_type(const StringName &p_name, bool *r_is_valid = NULL) const { return Variant::NIL; }
 
 	virtual Object *get_owner() { return owner; }
-	virtual Ref<Script> get_script() const { return script; }
+	virtual Ref<Script> get_script() const;
 
 	virtual void get_method_list(List<MethodInfo> *p_list) const;
 	virtual bool has_method(const StringName &p_method) const;

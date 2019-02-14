@@ -7,7 +7,7 @@ ScriptLanguage *ECMAScript::get_language() const {
 }
 
 ECMAScript::ECMAScript() {
-	ecma_constructor.ecma_object = NULL;
+
 }
 
 ECMAScript::~ECMAScript() {
@@ -104,7 +104,18 @@ void ECMAScript::_bind_methods() {
 }
 
 RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
-	return ResourceFormatLoaderText::singleton->load(p_path, p_original_path, r_error);
+	 Ref<ECMAScript> script = ResourceFormatLoaderText::singleton->load(p_path, p_original_path, r_error);
+	 if (!script.is_null()) {
+		 if (Ref<ECMAScript> * script_ptr =  ECMAScriptLanguage::get_singleton()->get_class_script_ptr(script->get_class_name())) {
+			(*script_ptr)->set_library(script->get_library());
+			script->set_name((*script_ptr)->get_name());
+			script->set_path((*script_ptr)->get_path());
+			script->set_import_path((*script_ptr)->get_import_path());
+			script->set_subindex((*script_ptr)->get_subindex());
+			script = *script_ptr;
+		}
+	}
+	return script;
 }
 
 void ResourceFormatLoaderECMAScript::get_recognized_extensions(List<String> *p_extensions) const {

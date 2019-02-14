@@ -12,8 +12,8 @@ class ECMAScript : public Script {
 
 private:
 	friend class ECMAScriptInstance;
+	friend class DuktapeBindingHelper;
 
-	ECMAScriptGCHandler ecma_constructor;
 	Set<Object *> instances;
 
 	StringName class_name;
