@@ -3,6 +3,8 @@
 #include "../ecmascript_instance.h"
 #include "../ecmascript_language.h"
 
+Object *DuktapeBindingHelper::ecma_instance_target = NULL;
+
 void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fprintf(stderr, "*** FATAL ERROR: %s\n", (msg ? msg : "no message"));
 	fflush(stderr);
@@ -14,7 +16,7 @@ void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 }
 
 void DuktapeBindingHelper::set_weak_ref(ObjectID p_id, DuktapeHeapObject *ptr) {
-        weakref_pool.set(p_id, ptr);
+	weakref_pool.set(p_id, ptr);
 }
 
 DuktapeHeapObject *DuktapeBindingHelper::get_weak_ref(Object *obj) {
@@ -28,12 +30,12 @@ DuktapeHeapObject *DuktapeBindingHelper::get_weak_ref(Object *obj) {
 
 void DuktapeBindingHelper::set_strong_ref(ObjectID p_id, DuktapeHeapObject *ptr) {
 
-        weakref_pool.set(p_id, ptr);
+	weakref_pool.set(p_id, ptr);
 	strongref_pool.set(p_id, ptr);
 
 	// fill the script instance binding data to make sure godot_refcount_decremented can get when unreference
 	if (Object *obj = ObjectDB::get_instance(p_id)) {
-	        obj->get_script_instance_binding(get_language()->get_language_index());
+		obj->get_script_instance_binding(get_language()->get_language_index());
 	}
 
 	duk_push_strong_ref_container(ctx);
@@ -57,38 +59,36 @@ void DuktapeBindingHelper::duk_push_strong_ref_container(duk_context *ctx) {
 duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
 
 	duk_push_current_function(ctx);
-	duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
+	duk_get_prop_literal(ctx, -1, PROTOTYPE_LITERAL);
+	duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
 	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer_default(ctx, -1, NULL));
-	duk_pop_2(ctx);
+	duk_pop_3(ctx);
+
+	Object *src_obj = ecma_instance_target;
+	ecma_instance_target = NULL;
 
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 	ERR_FAIL_NULL_V(cls->creation_func, DUK_ERR_TYPE_ERROR);
 
-	Object *obj = cls->creation_func();
+	Object *obj = src_obj == NULL ? cls->creation_func() : src_obj;
 	duk_push_godot_object(ctx, obj, true);
 	ERR_FAIL_COND_V(duk_is_null_or_undefined(ctx, -1), DUK_ERR_TYPE_ERROR);
 
-	duk_get_prop_literal(ctx, -1, ECMA_CLASS_NAME_LITERAL);
-	const char *ecma_class_name = duk_get_string_default(ctx, -1, NULL);
-	duk_pop(ctx);
-
 	// create script instance for this object
-	if (ecma_class_name) {
-	        if (ECMAClassInfo *ecma_class = get_singleton()->ecma_classes.getptr(ecma_class_name)) {
-		        ECMAScriptInstance *inst = memnew(ECMAScriptInstance);
-			inst->owner = obj;
-			inst->ecma_object = { duk_get_heapptr(ctx, -1) };
-			inst->script = get_language()->script_classes.get(ecma_class_name);
-			obj->set_script_instance(inst);
+	if (src_obj == NULL) {
+		duk_get_prop_literal(ctx, -1, ECMA_CLASS_NAME_LITERAL);
+		const char *ecma_class_name = duk_get_string_default(ctx, -1, NULL);
+		duk_pop(ctx);
+		if (ecma_class_name) {
+			if (ECMAClassInfo *ecma_class = get_singleton()->ecma_classes.getptr(ecma_class_name)) {
+				ECMAScriptInstance *inst = memnew(ECMAScriptInstance);
+				inst->owner = obj;
+				inst->ecma_object = { duk_get_heapptr(ctx, -1) };
+				inst->script = get_language()->script_classes.get(ecma_class_name);
+				obj->set_script_instance(inst);
+			}
 		}
 	}
-
-	//	call _init method
-	duk_get_prop_literal(ctx, -1, "_init");
-	ERR_FAIL_COND_V(!duk_is_function(ctx, -1), DUK_ERR_ERROR);
-	duk_dup(ctx, -2);
-	duk_call_method(ctx, 0);
-	duk_pop(ctx);
 
 	return DUK_NO_RET_VAL;
 }
@@ -109,7 +109,7 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
 		} else {
 			// A reference with other C++ reference
 			// Rescue the ecmascript object as the reference is still alive
-		        get_singleton()->set_strong_ref(ref->get_instance_id(), duk_get_heapptr(ctx, 0));
+			get_singleton()->set_strong_ref(ref->get_instance_id(), duk_get_heapptr(ctx, 0));
 		}
 	}
 	return DUK_NO_RET_VAL;
@@ -125,7 +125,7 @@ bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
 		if (refcount == 0) {
 			// clear taged strong reference in script
 			// the life of this refernce is given to script gc
-		        set_strong_ref(gc_handler->instance_id, NULL);
+			set_strong_ref(gc_handler->instance_id, NULL);
 		}
 		return false;
 	}
@@ -156,7 +156,7 @@ void DuktapeBindingHelper::free_object_binding_data(void *p_gc_handler) {
 			return;
 		} else if (handler->ecma_object) {
 			// clear taged script reference
-		        set_strong_ref(handler->instance_id, NULL);
+			set_strong_ref(handler->instance_id, NULL);
 		}
 		memdelete(handler);
 	}
@@ -203,15 +203,21 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_method(duk_context *ctx) {
 
 	Variant::CallError err;
 
-	Vector<Variant> args;
-	args.resize(argc);
-	for (duk_idx_t i = 0; i < argc; ++i) {
-		args.ptrw()->operator=(duk_get_godot_variant(ctx, i));
-	}
+	argc = MIN(argc, mb->get_argument_count());
 
-	const Variant *args_ptr = args.ptr();
-	const Variant &ret_val = mb->call(ptr, &args_ptr, argc, err);
+	const Variant **args = memnew_arr(const Variant *, argc);
+	Vector<Variant> vargs;
+	vargs.resize(argc);
+	for (duk_idx_t i = 0; i < argc; ++i) {
+		vargs.write[i] = duk_get_godot_variant(ctx, i);
+		args[i] = (vargs.ptr() + i);
+	}
+	const Variant &ret_val = mb->call(ptr, args, argc, err);
+	memdelete_arr(args);
+
+#ifdef DEBUG_METHODS_ENABLED
 	ERR_FAIL_COND_V(err.error != Variant::CallError::CALL_OK, DUK_ERR_TYPE_ERROR);
+#endif
 
 	if (mb->has_return()) {
 		duk_push_godot_variant(ctx, ret_val);
@@ -255,6 +261,8 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t idx) {
 	duk_int_t type = duk_get_type(ctx, idx);
 	switch (type) {
+		case DUK_TYPE_BOOLEAN:
+			return Variant(duk_get_boolean(ctx, idx) == true);
 		case DUK_TYPE_NUMBER:
 			return Variant(duk_get_number(ctx, idx));
 		case DUK_TYPE_STRING: {
@@ -311,11 +319,11 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 
 			heap_obj = duk_get_heapptr(ctx, -1);
 			if (Reference *ref = Object::cast_to<Reference>(obj)) {
-			        get_singleton()->set_weak_ref(ref->get_instance_id(), heap_obj);
+				get_singleton()->set_weak_ref(ref->get_instance_id(), heap_obj);
 			} else {
 				// The strong reference is released when object is going to die
 				// See godot_free_instance_callback and godot_refcount_decremented
-			        get_singleton()->set_strong_ref(obj->get_instance_id(), heap_obj);
+				get_singleton()->set_strong_ref(obj->get_instance_id(), heap_obj);
 			}
 		}
 	} else {
@@ -348,11 +356,12 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 
 	// Class constuctor function
 	duk_push_c_function(ctx, duk_godot_object_constructor, 0);
-	duk_push_pointer(ctx, (void *)cls);
-	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls"));
 	{
 		// Class.prototype
 		duk_push_object(ctx);
+		// Class.prototype.cls
+		duk_push_pointer(ctx, (void *)cls);
+		duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls"));
 		{
 			// members
 			register_class_members(ctx, cls);
@@ -462,9 +471,6 @@ void DuktapeBindingHelper::register_class_members(duk_context *ctx, const ClassD
 		// Object.prototype.fin
 		duk_push_heapptr(ctx, duk_ptr_godot_object_finalizer);
 		duk_set_finalizer(ctx, -2);
-		// Object.prototype._init
-		duk_push_heapptr(ctx, duk_ptr_godot_object_virtual_method);
-		duk_put_prop_literal(ctx, -2, "_init");
 		// Object.prototype.free
 		duk_push_heapptr(ctx, duk_ptr_godot_object_free);
 		duk_put_prop_literal(ctx, -2, "free");
@@ -531,7 +537,7 @@ void DuktapeBindingHelper::duk_push_godot_method(duk_context *ctx, const MethodB
 			duk_push_heapptr(ctx, duk_ptr_godot_object_virtual_method);
 			heap_ptr = duk_ptr_godot_object_virtual_method;
 		} else {
-			duk_size_t argc = mb->is_vararg() ? DUK_VARARGS : mb->get_argument_count();
+			duk_size_t argc = DUK_VARARGS; // (mb->is_vararg() || mb->get_default_argument_count()) ? DUK_VARARGS : mb->get_argument_count();
 			duk_push_c_function(ctx, duk_godot_object_method, argc);
 			duk_push_pointer(ctx, (void *)mb);
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("mb"));
@@ -547,9 +553,10 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 
 	ERR_FAIL_COND_V(!duk_is_function(ctx, CLASS_FUNC_IDX), DUK_ERR_TYPE_ERROR);
 
-	duk_get_prop_string(ctx, CLASS_FUNC_IDX, DUK_HIDDEN_SYMBOL("cls"));
+	duk_get_prop_literal(ctx, CLASS_FUNC_IDX, PROTOTYPE_LITERAL);
+	duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls"));
 	ClassDB::ClassInfo *cls = static_cast<ClassDB::ClassInfo *>(duk_get_pointer(ctx, -1));
-	duk_pop(ctx);
+	duk_pop_2(ctx);
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 
 	const char *class_name = duk_get_string_default(ctx, 1, NULL);
@@ -637,41 +644,24 @@ ECMAScriptGCHandler DuktapeBindingHelper::create_ecma_instance_for_godot_object(
 	ERR_FAIL_NULL_V(p_object, ret);
 	ERR_FAIL_NULL_V(ecma_class, ret);
 
-	duk_require_stack(ctx, 3);
-
-	duk_idx_t object_idx = duk_get_top(ctx);
-	duk_push_object(ctx);
-
-	duk_push_pointer(ctx, p_object);
-	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-
 	duk_push_heapptr(ctx, ecma_class->ecma_constructor.ecma_object);
-	duk_get_prop_literal(ctx, -1, PROTOTYPE_LITERAL);
-	duk_remove(ctx, -2);
-	duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
-
-	set_strong_ref(p_object->get_instance_id(), duk_get_heapptr(ctx, -1));
-
-	//	call _init method
-	duk_get_prop_literal(ctx, -1, "_init");
-	ERR_FAIL_COND_V(!duk_is_function(ctx, -1), ret);
-	duk_dup(ctx, -2);
-	duk_call_method(ctx, 0);
-	duk_pop(ctx);
-
-	ret.ecma_object = duk_get_heapptr(ctx, object_idx);
+	ecma_instance_target = p_object;
+	duk_new(ctx, 0);
+	ecma_instance_target = NULL;
+	ret.ecma_object = duk_get_heapptr(ctx, -1);
+	set_strong_ref(p_object->get_instance_id(), ret.ecma_object);
 
 	return ret;
 }
 
 Variant DuktapeBindingHelper::call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
-        if (p_object.is_null()) {
-	        r_error.error = Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL;
+	if (p_object.is_null()) {
+		r_error.error = Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL;
 		return NULL;
 	}
 
 	if (p_method.is_null()) {
-	        r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
+		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
 		return NULL;
 	}
 	duk_push_heapptr(ctx, p_method.ecma_object);
