@@ -2,6 +2,7 @@
 #include "../ecmascript.h"
 #include "../ecmascript_instance.h"
 #include "../ecmascript_language.h"
+#include "core/engine.h"
 
 Object *DuktapeBindingHelper::ecma_instance_target = NULL;
 
@@ -445,10 +446,31 @@ void DuktapeBindingHelper::initialize() {
 			key = ClassDB::classes.next(key);
 		}
 
+		// Singletons
+		List<Engine::Singleton> singletons;
+		Engine::get_singleton()->get_singletons(&singletons);
+		for (List<Engine::Singleton>::Element* E = singletons.front(); E; E = E->next()) {
+			const Engine::Singleton& s = E->get();
+
+			ERR_CONTINUE(s.ptr == NULL);
+
+			DuktapeHeapObject * prototype_ptr = native_class_prototypes.get(s.ptr->get_class_name());
+			ERR_CONTINUE(prototype_ptr == NULL);
+
+			duk_push_object(ctx);
+			duk_push_heapptr(ctx, prototype_ptr);
+			duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
+			duk_push_pointer(ctx, s.ptr);
+			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+			String name = s.name;
+			duk_put_prop_string(ctx, -2, name.utf8().ptr());
+		}
+
 		// godot.register_class
 		duk_push_c_function(ctx, register_ecma_class, 3);
 		this->duk_ptr_register_ecma_class = duk_get_heapptr(ctx, -1);
 		duk_put_prop_literal(ctx, -2, "register_class");
+
 
 #if 0
 		// godot.GDCLASS
