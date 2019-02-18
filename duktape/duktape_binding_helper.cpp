@@ -3,6 +3,7 @@
 #include "../ecmascript_instance.h"
 #include "../ecmascript_language.h"
 #include "core/engine.h"
+#include "core/global_constants.h"
 
 Object *DuktapeBindingHelper::ecma_instance_target = NULL;
 
@@ -358,6 +359,24 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 	// Class constuctor function
 	duk_push_c_function(ctx, duk_godot_object_constructor, 0);
 	{
+		// constants
+		for (const StringName* const_key = cls->constant_map.next(NULL); const_key; const_key = cls->constant_map.next(const_key)) {
+			duk_push_godot_variant(ctx, cls->constant_map.get(*const_key));
+			String name = *const_key;
+			duk_put_prop_string(ctx, -2, name.utf8().ptr());
+		}
+		// enumrations
+		for (const StringName* enum_key = cls->enum_map.next(NULL); enum_key; enum_key = cls->enum_map.next(enum_key)) {
+			const List<StringName> & consts = cls->enum_map.get(*enum_key);
+			duk_push_object(ctx);
+			for (const List<StringName>::Element * E = consts.front(); E; E = E->next()) {
+				duk_push_godot_variant(ctx, cls->constant_map.get(E->get()));
+				String const_name = E->get();
+				duk_put_prop_string(ctx, -2, const_name.utf8().ptr());
+			}
+			String enum_name = *enum_key;
+			duk_put_prop_string(ctx, -2, enum_name.utf8().ptr());
+		}
 		// Class.prototype
 		duk_push_object(ctx);
 		// Class.prototype.cls
@@ -372,6 +391,7 @@ void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::Class
 		get_singleton()->native_class_prototypes[cls->name] = proto_ptr;
 
 		duk_put_prop_literal(ctx, -2, PROTOTYPE_LITERAL);
+
 	}
 	duk_put_prop_godot_string_name(ctx, -2, cls->name);
 }
@@ -464,6 +484,39 @@ void DuktapeBindingHelper::initialize() {
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 			String name = s.name;
 			duk_put_prop_string(ctx, -2, name.utf8().ptr());
+		}
+		// global constants
+		HashMap<StringName, HashMap<StringName, int> > global_constants;
+		for (int i = 0; i < GlobalConstants::get_global_constant_count(); ++i) {
+
+			StringName enum_name = GlobalConstants::get_global_constant_enum(i);
+			const char * const_name = GlobalConstants::get_global_constant_name(i);
+			const int value = GlobalConstants::get_global_constant_value(i);
+
+			duk_push_number(ctx, value);
+			duk_put_prop_string(ctx, -2, const_name);
+
+			if (HashMap<StringName, int> * consts = global_constants.getptr(enum_name)) {
+				consts->set(const_name, value);
+			} else {
+				HashMap<StringName, int> enum_;
+				enum_.set(const_name, value);
+				global_constants.set(enum_name, enum_);
+			}
+		}
+
+		// global enums
+		for (const StringName * enum_name = global_constants.next(NULL); enum_name; enum_name = global_constants.next(enum_name)) {
+			duk_push_object(ctx);
+			const HashMap<StringName, int>& enum_ = global_constants.get(*enum_name);
+			for (const StringName * const_name = enum_.next(NULL); const_name; const_name = enum_.next(const_name)) {
+				String name = * const_name;
+				const int value = enum_.get(*const_name);
+				duk_push_number(ctx, value);
+				duk_put_prop_string(ctx, -2, name.utf8().ptr());
+			}
+			String enum_name_str = *enum_name;
+			duk_put_prop_string(ctx, -2, enum_name_str.utf8().ptr());
 		}
 
 		// godot.register_class
