@@ -7,6 +7,7 @@ sources = [
     'register_types.cpp',
     'duktape/src/duktape.c',
     'duktape/duktape_binding_helper.cpp',
+    'duktape/duktape_builtin_bindings.cpp',
     'ecmascript_library.cpp',
     'ecmascript_language.cpp',
     'ecmascript_instance.cpp',

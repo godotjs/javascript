@@ -52,7 +52,7 @@ private:
 		return DUK_NO_RET_VAL;
 	}
 	static duk_ret_t duk_godot_object_method(duk_context *ctx);
-	static duk_ret_t godot_object_to_string(duk_context *ctx);
+	static duk_ret_t godot_to_string(duk_context *ctx);
 
 	static duk_ret_t godot_print_function(duk_context *ctx);
 
@@ -70,8 +70,10 @@ private:
 	static Variant::Type duk_get_godot_variant_type(duk_context *ctx, duk_idx_t idx);
 
 	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
+	void register_builtin_classes(duk_context *ctx);
 
 private:
+	HashMap<Variant::Type, DuktapeHeapObject *> builtin_class_prototypes;
 	HashMap<StringName, DuktapeHeapObject *> native_class_prototypes;
 	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
 
@@ -114,7 +116,7 @@ private:
 	// cached Duktape/C functions
 	DuktapeHeapObject *duk_ptr_godot_object_finalizer;
 	DuktapeHeapObject *duk_ptr_godot_object_free;
-	DuktapeHeapObject *duk_ptr_godot_object_to_string;
+	DuktapeHeapObject *duk_ptr_godot_to_string;
 	DuktapeHeapObject *duk_ptr_godot_object_virtual_method;
 	DuktapeHeapObject *duk_ptr_register_ecma_class;
 
