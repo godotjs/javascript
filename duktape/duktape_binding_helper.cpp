@@ -96,24 +96,30 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_constructor(duk_context *ctx) {
 }
 
 duk_ret_t DuktapeBindingHelper::duk_godot_object_finalizer(duk_context *ctx) {
+
 	Object *ptr = duk_get_godot_object(ctx, -1);
 	if (NULL == ptr) return DUK_NO_RET_VAL;
-	if (Reference *ref = Object::cast_to<Reference>(ptr)) {
-		if (ref->unreference()) {
-			// A reference without C++ usage
-			get_singleton()->weakref_pool.erase(ptr->get_instance_id());
-			memdelete(ref);
-		} else if (ref->get_script_instance_binding(get_language()->get_language_index())) {
-			// A reference not used in C++
-			get_singleton()->weakref_pool.erase(ptr->get_instance_id());
-			get_singleton()->strongref_pool.erase(ptr->get_instance_id());
-			memdelete(ref);
-		} else {
-			// A reference with other C++ reference
-			// Rescue the ecmascript object as the reference is still alive
-			get_singleton()->set_strong_ref(ref->get_instance_id(), duk_get_heapptr(ctx, 0));
+
+	Variant::Type type = duk_get_godot_variant_type(ctx, -1);
+	if (type == TYPE_GODOT_REFERENCE) {
+		if (Reference *ref = Object::cast_to<Reference>(ptr)) {
+			if (ref->unreference()) {
+				// A reference without C++ usage
+				get_singleton()->weakref_pool.erase(ptr->get_instance_id());
+				memdelete(ref);
+			} else if (ref->get_script_instance_binding(get_language()->get_language_index())) {
+				// A reference not used in C++
+				get_singleton()->weakref_pool.erase(ptr->get_instance_id());
+				get_singleton()->strongref_pool.erase(ptr->get_instance_id());
+				memdelete(ref);
+			} else {
+				// A reference with other C++ reference
+				// Rescue the ecmascript object as the reference is still alive
+				get_singleton()->set_strong_ref(ref->get_instance_id(), duk_get_heapptr(ctx, 0));
+			}
 		}
 	}
+
 	return DUK_NO_RET_VAL;
 }
 
@@ -253,6 +259,24 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 		case Variant::OBJECT:
 			duk_push_godot_object(ctx, var);
 			break;
+		case Variant::ARRAY: {
+			const Array& arr = var;
+			duk_push_array(ctx);
+			for (int i = 0; i < arr.size(); ++i) {
+				duk_push_godot_variant(ctx, arr[i]);
+				duk_put_prop_index(ctx, -2, i);
+			}
+		} break;
+		case Variant::DICTIONARY: {
+			const Dictionary& dict = var;
+			duk_push_object(ctx);
+			for (const Variant * key = dict.next(NULL); key; key = dict.next(key)) {
+				String es_key = *key;
+				if (!es_key.length()) continue;
+				duk_push_godot_variant(ctx, dict[*key]);
+				duk_put_prop_string(ctx, -2, es_key.utf8().ptr());
+			}
+		} break;
 		default:
 			// not supported
 			duk_push_undefined(ctx);
@@ -273,15 +297,55 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 			return str;
 		} break;
 		case DUK_TYPE_OBJECT: {
-			Object *obj = duk_get_godot_object(ctx, idx);
-			if (Reference *r = Object::cast_to<Reference>(obj)) {
-				// Add reference count as the REF construct from Reference* don't increase the reference count
-				// This reference count will minused in the desctuctor of REF
-				REF ref(r);
-				ref->reference();
-				return ref;
+			Variant::Type godot_type = duk_get_godot_variant_type(ctx, idx);
+			if (godot_type == Variant::OBJECT || godot_type == TYPE_GODOT_REFERENCE) {
+				Object *obj = duk_get_godot_object(ctx, idx);
+				if (Reference *r = Object::cast_to<Reference>(obj)) {
+					// Add reference count as the REF construct from Reference* don't increase the reference count
+					// This reference count will minused in the desctuctor of REF
+					REF ref(r);
+					ref->reference();
+					return ref;
+				}
+				return obj;
+			} else if (godot_type == Variant::NIL) {
+
+					if (duk_is_array(ctx, idx)) { // Array
+
+						Array arr;
+						duk_size_t len = duk_get_length(ctx, idx);
+						arr.resize(len);
+
+						for (int i = 0; i < len; ++i) {
+							duk_get_prop_index(ctx, idx, i);
+							arr[i] = duk_get_godot_variant(ctx, -1);
+							duk_pop(ctx);
+						}
+
+						return arr;
+
+					} else { // Dictionary
+
+						Dictionary dict;
+
+						duk_enum(ctx, idx, DUK_ENUM_OWN_PROPERTIES_ONLY);
+						while (duk_next(ctx, -1, true)) {
+							if (!duk_is_function(ctx, -1)) {
+								String name = duk_get_godot_string(ctx, -2);
+								Variant var = duk_get_godot_variant(ctx, -1);
+								dict[name] = var;
+							}
+							duk_pop_2(ctx);
+						}
+						duk_pop(ctx);
+
+						return dict;
+					}
+
+			} else {
+				// builtin types
+				// TODO
 			}
-			return obj;
 		}
 		case DUK_TYPE_NULL:
 		case DUK_TYPE_UNDEFINED:
@@ -299,7 +363,16 @@ String DuktapeBindingHelper::duk_get_godot_string(duk_context *ctx, duk_idx_t id
 
 Object *DuktapeBindingHelper::duk_get_godot_object(duk_context *ctx, duk_idx_t idx) {
 	duk_get_prop_string(ctx, idx, DUK_HIDDEN_SYMBOL("ptr"));
-	return static_cast<Object *>(duk_get_pointer_default(ctx, -1, NULL));
+	Object * ptr = static_cast<Object *>(duk_get_pointer_default(ctx, -1, NULL));
+	duk_pop(ctx);
+	return ptr;
+}
+
+Variant::Type DuktapeBindingHelper::duk_get_godot_variant_type(duk_context *ctx, duk_idx_t idx) {
+	duk_get_prop_string(ctx, idx, DUK_HIDDEN_SYMBOL("type"));
+	Variant::Type type = (Variant::Type) duk_get_int_default(ctx, -1, Variant::NIL);
+	duk_pop(ctx);
+	return type;
 }
 
 void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, bool from_constructor) {
@@ -319,14 +392,20 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 			duk_push_pointer(ctx, obj);
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 
+			int type = Variant::OBJECT;
+
 			heap_obj = duk_get_heapptr(ctx, -1);
 			if (Reference *ref = Object::cast_to<Reference>(obj)) {
 				get_singleton()->set_weak_ref(ref->get_instance_id(), heap_obj);
+				type = TYPE_GODOT_REFERENCE;
 			} else {
 				// The strong reference is released when object is going to die
 				// See godot_free_instance_callback and godot_refcount_decremented
 				get_singleton()->set_strong_ref(obj->get_instance_id(), heap_obj);
 			}
+
+			duk_push_int(ctx, type);
+			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 		}
 	} else {
 		duk_push_undefined(ctx);
@@ -482,6 +561,9 @@ void DuktapeBindingHelper::initialize() {
 			duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 			duk_push_pointer(ctx, s.ptr);
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+			duk_push_int(ctx, Variant::OBJECT);
+			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
 			String name = s.name;
 			duk_put_prop_string(ctx, -2, name.utf8().ptr());
 		}

@@ -11,6 +11,7 @@
 
 #define DUK_NO_RET_VAL 0
 #define DUK_HAS_RET_VAL 1
+#define TYPE_GODOT_REFERENCE Variant::VARIANT_MAX
 
 typedef void DuktapeHeapObject;
 class ECMAScriptLanguage;
@@ -66,6 +67,7 @@ private:
 	static Variant duk_get_godot_variant(duk_context *ctx, duk_idx_t idx);
 	static String duk_get_godot_string(duk_context *ctx, duk_idx_t idx, bool convert_type = false);
 	static Object *duk_get_godot_object(duk_context *ctx, duk_idx_t idx);
+	static Variant::Type duk_get_godot_variant_type(duk_context *ctx, duk_idx_t idx);
 
 	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
 
