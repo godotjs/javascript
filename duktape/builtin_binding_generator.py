@@ -1,9 +1,13 @@
+#!/usr/bin/env python
 import json
 
 variant_types = {
+	"boolean": "Variant::BOOL",
 	"number": "Variant::REAL",
+	"string": "Variant::STRING",
 	"Vector2": "Variant::VECTOR2",
 	"Vector3": "Variant::VECTOR3",
+	"Color": "Variant::COLOR",
 }
 
 def apply_parttern(template, values):
@@ -57,8 +61,7 @@ def process_method(cls, method):
 		"return": {
 			"void": "return DUK_NO_RET_VAL;",
 			"this": 'duk_push_this(ctx);',
-			"Vector2": 'duk_push_variant(ctx, ret);',
-			"Vector3": 'duk_push_variant(ctx, ret);',
+			"Variant": 'duk_push_variant(ctx, ret);',
 		}
 	}
 	
@@ -82,7 +85,9 @@ def process_method(cls, method):
 	duk_put_prop_literal(ctx, -2, "${name}");
 '''
 
-	return_content = sub_tempate['return'][method['return']];
+	return_content = sub_tempate['return']['Variant']
+	if method['return'] in sub_tempate['return']:
+		return_content = sub_tempate['return'][method['return']];
 	if method['return'] != 'void':
 		return_content += '\n		return DUK_HAS_RET_VAL;'
 	
@@ -160,7 +165,7 @@ ${class_properties_func_calls}
 }
 '''
 	classes = json.load(
-		open('E:/Develop/godot/modules/ECMAScript/buitin_api.json', 'r', encoding='utf8')
+		open('buitin_api.gen.json', 'r', encoding='utf8')
 	)
 	class_properties_funcs = ""
 	class_properties_func_calls = ""
@@ -177,4 +182,6 @@ ${class_properties_func_calls}
 	return file_content
 
 if __name__ == "__main__":
-	print(generate_binding_code())
+	file = open('duktape/duktape_builtin_bindings.gen.cpp', 'w')
+	file.write(generate_binding_code())
+	print('Done')

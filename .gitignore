@@ -6,3 +6,4 @@
 *.bc
 *.os
 *.gen.cpp
+*.gen.json
