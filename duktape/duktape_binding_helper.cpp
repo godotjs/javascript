@@ -220,7 +220,7 @@ duk_ret_t DuktapeBindingHelper::duk_godot_object_method(duk_context *ctx) {
 		vargs.write[i] = duk_get_godot_variant(ctx, i);
 		args[i] = (vargs.ptr() + i);
 	}
-	const Variant &ret_val = mb->call(ptr, args, argc, err);
+	Variant ret_val = mb->call(ptr, args, argc, err);
 	if (args != NULL) {
 		memdelete_arr(args);
 	}
@@ -282,7 +282,16 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 		default: {
 			if (DuktapeHeapObject *prototype = get_singleton()->builtin_class_prototypes.get(godot_type)) {
 				duk_push_object(ctx);
-				Variant *ptr = memnew(Variant(var));
+
+				void * ptr = NULL;
+				switch (godot_type) {
+					case Variant::VECTOR2:
+						ptr = memnew(Vector2(var));
+						break;
+					default:
+						break;
+				}
+
 				duk_push_pointer(ctx, ptr);
 				duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 				duk_push_int(ctx, godot_type);
