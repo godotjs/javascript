@@ -8,6 +8,7 @@ sources = [
     'duktape/src/duktape.c',
     'duktape/duktape_binding_helper.cpp',
     'duktape/duktape_builtin_bindings.cpp',
+    'duktape/duktape_builtin_bindings.gen.cpp',
     'ecmascript_library.cpp',
     'ecmascript_language.cpp',
     'ecmascript_instance.cpp',
