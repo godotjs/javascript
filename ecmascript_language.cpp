@@ -8,8 +8,6 @@ void ECMAScriptLanguage::init() {
 	ERR_FAIL_NULL(binding);
 
 	binding->initialize();
-
-	this->execute_file("test.js");
 }
 
 void ECMAScriptLanguage::finish() {
