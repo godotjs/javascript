@@ -85,6 +85,20 @@ void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 	}
 }
 
+bool ECMAScript::has_script_signal(const StringName &p_signal) const {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, false);
+	return cls->signals.has(p_signal);
+}
+
+void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL(cls);
+	for (const StringName* name = cls->signals.next(NULL); name; name = cls->signals.next(name)) {
+		r_signals->push_back(cls->signals.get(*name));
+	}
+}
+
 bool ECMAScript::is_valid() const {
 	return get_ecma_class() != NULL;
 }

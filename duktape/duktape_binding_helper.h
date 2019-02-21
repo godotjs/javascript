@@ -104,6 +104,13 @@ private:
 	 */
 	static duk_ret_t register_ecma_class(duk_context *ctx);
 
+	/**
+	 * godot.register_class = function(ecma_class|ecma_class_prototype, name, arugments) {
+	 *		ecma_class_prototype.signals[name] = arugments
+	 * }
+	 */
+	static duk_ret_t register_signal(duk_context *ctx);
+
 #if 0
 	/**
 	 * godot.GDCLASS = functions(name, icon) {

@@ -51,8 +51,8 @@ public:
 
 	virtual ScriptLanguage *get_language() const;
 
-	/* TODO */ virtual bool has_script_signal(const StringName &p_signal) const { return false; }
-	/* TODO */ virtual void get_script_signal_list(List<MethodInfo> *r_signals) const {};
+	virtual bool has_script_signal(const StringName &p_signal) const;
+	virtual void get_script_signal_list(List<MethodInfo> *r_signals) const;;
 
 	/* TODO */ virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const { return false; }
 

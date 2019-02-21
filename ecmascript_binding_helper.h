@@ -14,7 +14,7 @@ struct ECMAScriptGCHandler {
 };
 
 struct ECMAScriptBindingData : public ECMAScriptGCHandler {
-        Object *godot_object;
+	Object *godot_object;
 	ObjectID instance_id;
 };
 
@@ -26,6 +26,7 @@ struct ECMAClassInfo {
 	String icon_path;
 	ClassDB::ClassInfo *native_class;
 	HashMap<StringName, ECMAMethodInfo> methods;
+	HashMap<StringName, MethodInfo> signals;
 };
 
 class ECMAScriptBindingHelper {
