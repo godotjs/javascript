@@ -54,11 +54,11 @@ public:
 	virtual bool has_script_signal(const StringName &p_signal) const;
 	virtual void get_script_signal_list(List<MethodInfo> *r_signals) const;;
 
-	/* TODO */ virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const { return false; }
+	virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const;
 
 	/* TODO */ virtual void update_exports() {} //editor tool
 	virtual void get_script_method_list(List<MethodInfo> *p_list) const;
-	/* TODO */ virtual void get_script_property_list(List<PropertyInfo> *p_list) const {};
+	virtual void get_script_property_list(List<PropertyInfo> *p_list) const;;
 
 	/* TODO */ virtual int get_member_line(const StringName &p_member) const { return -1; }
 

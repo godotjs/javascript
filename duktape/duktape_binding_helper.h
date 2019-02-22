@@ -69,7 +69,7 @@ private:
 	static Object *duk_get_godot_object(duk_context *ctx, duk_idx_t idx);
 	static Variant::Type duk_get_godot_variant_type(duk_context *ctx, duk_idx_t idx);
 
-	void rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
+	void register_class(duk_context *ctx, const ClassDB::ClassInfo *cls);
 	void register_builtin_classes(duk_context *ctx);
 
 private:
@@ -111,6 +111,12 @@ private:
 	 */
 	static duk_ret_t register_signal(duk_context *ctx);
 
+	/**
+	 * godot.register_property = function(ecma_class|ecma_class_prototype, name, type, default) {
+	 * }
+	 */
+	static duk_ret_t register_property(duk_context *ctx);
+
 #if 0
 	/**
 	 * godot.GDCLASS = functions(name, icon) {
@@ -145,6 +151,8 @@ public:
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object);
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
+	virtual bool get_instance_property(const ECMAScriptGCHandler& p_object, const StringName &p_name, Variant &r_ret);
+	virtual bool set_instance_property(const ECMAScriptGCHandler& p_object, const StringName &p_name, const Variant &p_value);
 };
 
 #endif

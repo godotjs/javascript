@@ -85,6 +85,30 @@ void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 	}
 }
 
+void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL(cls);
+	for (const StringName * name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
+		const ECMAProperyInfo & prop = cls->properties.get(*name);
+		PropertyInfo pi;
+		pi.name = *name;
+		pi.type = prop.type;
+		p_list->push_back(pi);
+	}
+}
+
+bool ECMAScript::get_property_default_value(const StringName &p_property, Variant &r_value) const {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, false);
+
+	if(ECMAProperyInfo * pi = cls->properties.getptr(p_property)) {
+		r_value = pi->default_value;
+		return true;
+	}
+
+	return false;
+}
+
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, false);

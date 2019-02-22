@@ -473,7 +473,7 @@ void DuktapeBindingHelper::duk_put_prop_godot_string_name(duk_context *ctx, duk_
 	duk_put_prop_godot_string(ctx, idx, str);
 }
 
-void DuktapeBindingHelper::rigister_class(duk_context *ctx, const ClassDB::ClassInfo *cls) {
+void DuktapeBindingHelper::register_class(duk_context *ctx, const ClassDB::ClassInfo *cls) {
 	duk_require_stack(ctx, 2);
 
 	// Class constuctor function
@@ -567,7 +567,7 @@ void DuktapeBindingHelper::initialize() {
 		const StringName *key = ClassDB::classes.next(NULL);
 		while (key) {
 			const ClassDB::ClassInfo *cls = ClassDB::classes.getptr(*key);
-			rigister_class(ctx, cls);
+			register_class(ctx, cls);
 			key = ClassDB::classes.next(key);
 		}
 		// setup proto chain for prototypes
@@ -648,6 +648,8 @@ void DuktapeBindingHelper::initialize() {
 		duk_put_prop_literal(ctx, -2, "register_class");
 		duk_push_c_function(ctx, register_signal, 3);
 		duk_put_prop_literal(ctx, -2, "register_signal");
+		duk_push_c_function(ctx, register_property, 4);
+		duk_put_prop_literal(ctx, -2, "register_property");
 
 #if 0
 		// godot.GDCLASS
@@ -845,6 +847,36 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 		duk_pop(ctx); // signals
 	}
 
+	// properties
+	if (duk_has_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("props"))) {
+		duk_get_prop_string(ctx, -1, DUK_HIDDEN_SYMBOL("props"));
+
+		duk_enum(ctx, -1, DUK_ENUM_OWN_PROPERTIES_ONLY);
+		while (duk_next(ctx, -1, true)) {
+			if (duk_is_object(ctx, -1)) {
+				duk_get_prop_literal(ctx, -1, "type");
+				duk_int_t p_type = duk_get_int_default(ctx, -1, Variant::NIL);
+				if (p_type < 0 || p_type >= Variant::VARIANT_MAX) {
+					p_type = Variant::VARIANT_MAX;
+				}
+				duk_pop(ctx);
+
+				duk_get_prop_literal(ctx, -1, "name");
+				const char * p_name = duk_get_string_default(ctx, -1, NULL);
+				duk_pop(ctx);
+
+				duk_get_prop_literal(ctx, -1, "default");
+				Variant value = duk_get_godot_variant(ctx, -1);
+				duk_pop(ctx);
+
+				ecma_class.properties.set(p_name, {(Variant::Type)p_type, value});
+			}
+			duk_pop_2(ctx);
+		}
+		duk_pop(ctx);// enum
+		duk_pop(ctx); // properties
+	}
+
 	duk_dup(ctx, CLASS_FUNC_IDX);
 	// MyClass.class_name = 'MyClass';
 	duk_push_string(ctx, class_name);
@@ -883,12 +915,53 @@ duk_ret_t DuktapeBindingHelper::register_signal(duk_context *ctx) {
 	}
 
 	const char * name = duk_get_string(ctx, 1);
+	ERR_FAIL_NULL_V(name, DUK_ERR_TYPE_ERROR);
+
 	if (argc >= 3 && duk_is_array(ctx, 2)) {
 		duk_dup(ctx, 2);
 	} else {
 		duk_push_null(ctx);
 	}
 	duk_put_prop_string(ctx, -2, name);
+
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::register_property(duk_context *ctx) {
+
+	duk_int_t argc = duk_get_top(ctx);
+	ERR_FAIL_COND_V(argc < 4, DUK_ERR_TYPE_ERROR);
+	ERR_FAIL_COND_V(!duk_is_string(ctx, 1), DUK_ERR_TYPE_ERROR);
+	ERR_FAIL_COND_V(!duk_is_number(ctx, 2), DUK_ERR_TYPE_ERROR);
+
+	if (duk_is_ecmascript_function(ctx, 0)) {
+		duk_get_prop_literal(ctx, 0, PROTOTYPE_LITERAL);
+	} else if (duk_is_object(ctx, 0)) {
+		duk_dup(ctx, 0);
+	} else {
+		ERR_FAIL_V(DUK_ERR_TYPE_ERROR);
+	}
+
+	if (duk_has_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("props"))) {
+		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("props"));
+	} else {
+		duk_push_object(ctx);
+		DuktapeHeapObject * signal_obj = duk_get_heapptr(ctx, -1);
+		duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("props"));
+		duk_push_heapptr(ctx, signal_obj);
+	}
+	const char * name = duk_get_string(ctx, 1);
+	ERR_FAIL_NULL_V(name, DUK_ERR_TYPE_ERROR);
+
+	duk_push_object(ctx);
+	duk_dup(ctx, 1);
+	duk_put_prop_literal(ctx, -2, "name");
+	duk_dup(ctx, 2);
+	duk_put_prop_string(ctx, -2, "type");
+	duk_dup(ctx, 3);
+	duk_put_prop_string(ctx, -2, "default");
+	duk_put_prop_literal(ctx, -2, name);
+
 	return DUK_NO_RET_VAL;
 }
 
@@ -947,4 +1020,22 @@ Variant DuktapeBindingHelper::call_method(const ECMAScriptGCHandler &p_object, c
 	Variant ret = duk_get_godot_variant(ctx, -1);
 	duk_pop(ctx);
 	return ret;
+}
+
+bool DuktapeBindingHelper::get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) {
+	ERR_FAIL_COND_V(p_object.is_null(), false);
+	String name = p_name;
+	duk_push_heapptr(ctx, p_object.ecma_object);
+	duk_get_prop_string(ctx, -1, name.utf8().ptr());
+	r_ret = duk_get_godot_variant(ctx, -1);
+	return !duk_is_undefined(ctx, -1);
+}
+
+bool DuktapeBindingHelper::set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) {
+	ERR_FAIL_COND_V(p_object.is_null(), false);
+	String name = p_name;
+	duk_push_heapptr(ctx, p_object.ecma_object);
+	duk_push_godot_variant(ctx, p_value);
+	duk_put_prop_string(ctx, -2, name.utf8().ptr());
+	return true;
 }
