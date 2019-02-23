@@ -8,6 +8,7 @@ variant_types = {
 	"Vector2": "Variant::VECTOR2",
 	"Vector3": "Variant::VECTOR3",
 	"Color": "Variant::COLOR",
+	"Rect2": "Variant::RECT2",
 }
 
 def apply_parttern(template, values):
@@ -21,6 +22,10 @@ def process_property(cls, prop):
 		'number': {
 			"push": 'duk_push_number(ctx, ptr->${name});',
 			"get": 'ptr->${name} = duk_get_number_default(ctx, 0, DUK_DOUBLE_NAN);',
+		},
+		'Vector2': {
+			"push": 'duk_push_variant(ctx, ptr->${name});',
+			"get": 'ptr->${name} = duk_get_variant(ctx, 0);',
 		}
 	}
 	

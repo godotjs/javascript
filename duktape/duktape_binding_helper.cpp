@@ -141,8 +141,10 @@ bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
 }
 
 Error DuktapeBindingHelper::eval_string(const String &p_source) {
+	ERR_FAIL_COND_V(Thread::get_caller_id() != Thread::get_main_id(), ERR_UNAVAILABLE);
 	ERR_FAIL_NULL_V(ctx, ERR_SKIP);
 	duk_eval_string(ctx, p_source.utf8().ptr());
+	//	duk_peval_string(ctx, p_source.utf8().ptr());
 	return OK;
 }
 
@@ -285,10 +287,13 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 			if (DuktapeHeapObject *prototype = get_singleton()->builtin_class_prototypes.get(godot_type)) {
 				duk_push_object(ctx);
 
-				void * ptr = NULL;
+				void *ptr = NULL;
 				switch (godot_type) {
 					case Variant::VECTOR2:
 						ptr = memnew(Vector2(var));
+						break;
+					case Variant::RECT2:
+						ptr = memnew(Rect2(var));
 						break;
 					default:
 						break;
@@ -643,7 +648,7 @@ void DuktapeBindingHelper::initialize() {
 		}
 
 		// godot.register_class
-		duk_push_c_function(ctx, register_ecma_class, 3);
+		duk_push_c_function(ctx, register_ecma_class, 4);
 		this->duk_ptr_register_ecma_class = duk_get_heapptr(ctx, -1);
 		duk_put_prop_literal(ctx, -2, "register_class");
 		duk_push_c_function(ctx, register_signal, 3);
@@ -761,29 +766,13 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	ERR_FAIL_NULL_V(cls, DUK_ERR_TYPE_ERROR);
 
 	const char *class_name = duk_get_string_default(ctx, 1, NULL);
-	const char *class_icon = duk_get_string_default(ctx, 2, NULL);
-	duk_push_current_function(ctx);
-	if (duk_is_null_or_undefined(ctx, 1) && !class_name) {
-		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls_name"));
-		class_name = duk_get_string_default(ctx, -1, NULL);
-		duk_pop(ctx);
-		if (!class_name) {
-			duk_get_prop_literal(ctx, -1, "name");
-			class_name = duk_get_string_default(ctx, -1, NULL);
-			duk_pop(ctx);
-			ERR_FAIL_COND_V(class_name == NULL || !strlen(class_name), DUK_ERR_EVAL_ERROR);
-		}
-	}
-	if (duk_is_null_or_undefined(ctx, 2) && !class_icon) {
-		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("cls_icon"));
-		class_icon = duk_get_string_default(ctx, -1, "");
-		duk_pop(ctx);
-	}
-	duk_pop(ctx);
+	const duk_bool_t tool = duk_get_boolean_default(ctx, 2, false);
+	const char *class_icon = duk_get_string_default(ctx, 3, NULL);
 
 	ECMAClassInfo ecma_class;
 	ecma_class.class_name = class_name;
 	ecma_class.icon_path = class_icon;
+	ecma_class.tool = tool != 0;
 	ecma_class.native_class = cls;
 	ecma_class.ecma_constructor = { duk_get_heapptr(ctx, CLASS_FUNC_IDX) };
 
@@ -796,7 +785,7 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	// for (var key in MyClass.prototype)
 	duk_enum(ctx, -1, DUK_HINT_NONE);
 	while (duk_next(ctx, -1, true)) {
-		const char * name = duk_get_string(ctx, -2);
+		const char *name = duk_get_string(ctx, -2);
 		if (duk_is_ecmascript_function(ctx, -1)) {
 			StringName method_name = name;
 			ECMAMethodInfo method = { duk_get_heapptr(ctx, -1) };
@@ -829,7 +818,7 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 						duk_pop(ctx);
 
 						duk_get_prop_literal(ctx, -1, "name");
-						const char * p_name = duk_get_string_default(ctx, -1, NULL);
+						const char *p_name = duk_get_string_default(ctx, -1, NULL);
 						duk_pop(ctx);
 
 						PropertyInfo arg;
@@ -843,7 +832,7 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 			duk_pop_2(ctx);
 			ecma_class.signals.set(mi.name, mi);
 		}
-		duk_pop(ctx);// enum
+		duk_pop(ctx); // enum
 		duk_pop(ctx); // signals
 	}
 
@@ -862,18 +851,18 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 				duk_pop(ctx);
 
 				duk_get_prop_literal(ctx, -1, "name");
-				const char * p_name = duk_get_string_default(ctx, -1, NULL);
+				const char *p_name = duk_get_string_default(ctx, -1, NULL);
 				duk_pop(ctx);
 
 				duk_get_prop_literal(ctx, -1, "default");
 				Variant value = duk_get_godot_variant(ctx, -1);
 				duk_pop(ctx);
 
-				ecma_class.properties.set(p_name, {(Variant::Type)p_type, value});
+				ecma_class.properties.set(p_name, { (Variant::Type)p_type, value });
 			}
 			duk_pop_2(ctx);
 		}
-		duk_pop(ctx);// enum
+		duk_pop(ctx); // enum
 		duk_pop(ctx); // properties
 	}
 
@@ -895,7 +884,7 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 duk_ret_t DuktapeBindingHelper::register_signal(duk_context *ctx) {
 	duk_int_t argc = duk_get_top(ctx);
 	ERR_FAIL_COND_V(argc < 2, DUK_ERR_TYPE_ERROR);
-	ERR_FAIL_COND_V( !duk_is_string(ctx, 1), DUK_ERR_TYPE_ERROR);
+	ERR_FAIL_COND_V(!duk_is_string(ctx, 1), DUK_ERR_TYPE_ERROR);
 
 	if (duk_is_ecmascript_function(ctx, 0)) {
 		duk_get_prop_literal(ctx, 0, PROTOTYPE_LITERAL);
@@ -909,12 +898,12 @@ duk_ret_t DuktapeBindingHelper::register_signal(duk_context *ctx) {
 		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("signals"));
 	} else {
 		duk_push_object(ctx);
-		DuktapeHeapObject * signal_obj = duk_get_heapptr(ctx, -1);
+		DuktapeHeapObject *signal_obj = duk_get_heapptr(ctx, -1);
 		duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("signals"));
 		duk_push_heapptr(ctx, signal_obj);
 	}
 
-	const char * name = duk_get_string(ctx, 1);
+	const char *name = duk_get_string(ctx, 1);
 	ERR_FAIL_NULL_V(name, DUK_ERR_TYPE_ERROR);
 
 	if (argc >= 3 && duk_is_array(ctx, 2)) {
@@ -946,11 +935,11 @@ duk_ret_t DuktapeBindingHelper::register_property(duk_context *ctx) {
 		duk_get_prop_literal(ctx, -1, DUK_HIDDEN_SYMBOL("props"));
 	} else {
 		duk_push_object(ctx);
-		DuktapeHeapObject * signal_obj = duk_get_heapptr(ctx, -1);
+		DuktapeHeapObject *signal_obj = duk_get_heapptr(ctx, -1);
 		duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("props"));
 		duk_push_heapptr(ctx, signal_obj);
 	}
-	const char * name = duk_get_string(ctx, 1);
+	const char *name = duk_get_string(ctx, 1);
 	ERR_FAIL_NULL_V(name, DUK_ERR_TYPE_ERROR);
 
 	duk_push_object(ctx);

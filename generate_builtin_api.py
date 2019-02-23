@@ -6,6 +6,7 @@ DOCS_DIR = "../../godot/doc/classes"
 
 BUILTIN_CLASSES = [
 	'Vector2',
+	'Rect2',
 	# 'Vector3',
 	# 'Color',
 ]

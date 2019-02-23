@@ -5,7 +5,7 @@
 #include "core/hash_map.h"
 #include "core/object.h"
 #include "core/reference.h"
-#include "core/string_db.h"
+#include "core/string_name.h"
 #include "core/variant.h"
 #include "src/duktape.h"
 
@@ -151,8 +151,8 @@ public:
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object);
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
-	virtual bool get_instance_property(const ECMAScriptGCHandler& p_object, const StringName &p_name, Variant &r_ret);
-	virtual bool set_instance_property(const ECMAScriptGCHandler& p_object, const StringName &p_name, const Variant &p_value);
+	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
+	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 };
 
 #endif

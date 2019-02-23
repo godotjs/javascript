@@ -20,13 +20,17 @@ private:
 
 	ECMAClassInfo *get_ecma_class() const;
 
+#ifdef TOOLS_ENABLED
+	Set<PlaceHolderScriptInstance *> placeholders;
+	virtual void _placeholder_erased(PlaceHolderScriptInstance *p_placeholder);
+#endif
+
 protected:
-	/* TODO */ virtual bool editor_can_reload_from_file() { return false; } // this is handled by editor better
+	/* TODO */ virtual bool editor_can_reload_from_file() {
+		return false;
+	} // this is handled by editor better
 	/* TODO */ void _notification(int p_what) {}
 	/* TODO */ static void _bind_methods();
-
-	friend class PlaceHolderScriptInstance;
-	/* TODO */ virtual void _placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {}
 
 public:
 	virtual bool can_instance() const;
@@ -35,8 +39,10 @@ public:
 
 	/* TODO */ virtual StringName get_instance_base_type() const { return StringName(); } // this may not work in all scripts, will return empty if so
 	virtual ScriptInstance *instance_create(Object *p_this);
-	/* TODO */ virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this) { return NULL; }
+	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this);
 	virtual bool instance_has(const Object *p_this) const;
+
+	virtual bool is_placeholder_fallback_enabled() const;
 
 	/* TODO */ virtual bool has_source_code() const { return false; }
 	/* TODO */ virtual String get_source_code() const { return ""; }
@@ -46,26 +52,24 @@ public:
 	virtual bool has_method(const StringName &p_method) const;
 	virtual MethodInfo get_method_info(const StringName &p_method) const;
 
-	/* TODO */ virtual bool is_tool() const { return false; }
+	virtual bool is_tool() const;
 	virtual bool is_valid() const;
 
 	virtual ScriptLanguage *get_language() const;
 
 	virtual bool has_script_signal(const StringName &p_signal) const;
-	virtual void get_script_signal_list(List<MethodInfo> *r_signals) const;;
+	virtual void get_script_signal_list(List<MethodInfo> *r_signals) const;
 
 	virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const;
 
-	/* TODO */ virtual void update_exports() {} //editor tool
+	virtual void update_exports(); //editor tool
 	virtual void get_script_method_list(List<MethodInfo> *p_list) const;
-	virtual void get_script_property_list(List<PropertyInfo> *p_list) const;;
+	virtual void get_script_property_list(List<PropertyInfo> *p_list) const;
 
 	/* TODO */ virtual int get_member_line(const StringName &p_member) const { return -1; }
 
 	/* TODO */ virtual void get_constants(Map<StringName, Variant> *p_constants) {}
 	/* TODO */ virtual void get_members(Set<StringName> *p_constants) {}
-
-	/* TODO */ virtual bool is_placeholder_fallback_enabled() const { return false; }
 
 	_FORCE_INLINE_ void set_class_name(const StringName &p_class_name) { class_name = p_class_name; }
 	_FORCE_INLINE_ StringName get_class_name() const { return class_name; }

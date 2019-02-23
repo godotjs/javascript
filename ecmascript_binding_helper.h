@@ -29,6 +29,7 @@ struct ECMAClassInfo {
 	ECMAScriptGCHandler ecma_constructor;
 	StringName class_name;
 	String icon_path;
+	bool tool;
 	ClassDB::ClassInfo *native_class;
 	HashMap<StringName, ECMAMethodInfo> methods;
 	HashMap<StringName, MethodInfo> signals;
@@ -53,10 +54,10 @@ public:
 
 	virtual Error eval_string(const String &p_source) = 0;
 
-	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName& ecma_class_name, Object *p_object) = 0;
-	virtual Variant call_method(const ECMAScriptGCHandler& p_object, const ECMAMethodInfo& p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
-	virtual bool get_instance_property(const ECMAScriptGCHandler& p_object, const StringName &p_name, Variant &r_ret) = 0;
-	virtual bool set_instance_property(const ECMAScriptGCHandler& p_object, const StringName &p_name, const Variant &p_value) = 0;
+	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) = 0;
+	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
+	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
+	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 };
 
 #endif

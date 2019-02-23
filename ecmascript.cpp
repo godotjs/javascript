@@ -1,7 +1,8 @@
 #include "ecmascript.h"
+#include "core/engine.h"
 #include "ecmascript_instance.h"
 #include "ecmascript_language.h"
-#include "scene/resources/scene_format_text.h"
+#include "scene/resources/resource_format_text.h"
 
 ScriptLanguage *ECMAScript::get_language() const {
 	return ECMAScriptLanguage::get_singleton();
@@ -14,7 +15,12 @@ ECMAScript::~ECMAScript() {
 }
 
 bool ECMAScript::can_instance() const {
+
+#ifdef TOOLS_ENABLED
+	return is_valid() && (is_tool() || ScriptServer::is_scripting_enabled());
+#else
 	return is_valid();
+#endif
 }
 
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
@@ -40,6 +46,25 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	return instance;
 }
 
+PlaceHolderScriptInstance *ECMAScript::placeholder_instance_create(Object *p_this) {
+#ifdef TOOLS_ENABLED
+	PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(ECMAScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
+	placeholders.insert(si);
+	update_exports();
+	return si;
+#else
+	return NULL;
+#endif
+}
+
+bool ECMAScript::is_placeholder_fallback_enabled() const {
+#ifdef TOOLS_ENABLED
+	return Engine::get_singleton()->is_editor_hint() && false;
+#else
+	return false;
+#endif
+}
+
 bool ECMAScript::instance_has(const Object *p_this) const {
 	return instances.has(const_cast<Object *>(p_this));
 }
@@ -47,6 +72,12 @@ bool ECMAScript::instance_has(const Object *p_this) const {
 ECMAClassInfo *ECMAScript::get_ecma_class() const {
 	return ECMAScriptLanguage::get_singleton()->binding->ecma_classes.getptr(class_name);
 }
+
+#ifdef TOOLS_ENABLED
+void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
+	placeholders.erase(p_placeholder);
+}
+#endif
 
 bool ECMAScript::has_method(const StringName &p_method) const {
 
@@ -69,6 +100,12 @@ MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 	return mi;
 }
 
+bool ECMAScript::is_tool() const {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, false);
+	return cls->tool;
+}
+
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 
 	ECMAClassInfo *cls = get_ecma_class();
@@ -88,8 +125,8 @@ void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL(cls);
-	for (const StringName * name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
-		const ECMAProperyInfo & prop = cls->properties.get(*name);
+	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
+		const ECMAProperyInfo &prop = cls->properties.get(*name);
 		PropertyInfo pi;
 		pi.name = *name;
 		pi.type = prop.type;
@@ -101,12 +138,36 @@ bool ECMAScript::get_property_default_value(const StringName &p_property, Varian
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, false);
 
-	if(ECMAProperyInfo * pi = cls->properties.getptr(p_property)) {
+	if (ECMAProperyInfo *pi = cls->properties.getptr(p_property)) {
 		r_value = pi->default_value;
 		return true;
 	}
 
 	return false;
+}
+
+void ECMAScript::update_exports() {
+
+#ifdef TOOLS_ENABLED
+
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL(cls);
+
+	List<PropertyInfo> props;
+	Map<StringName, Variant> values;
+	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
+		const ECMAProperyInfo epi = cls->properties.get(*name);
+		PropertyInfo pi;
+		pi.name = *name;
+		pi.type = epi.type;
+		props.push_back(pi);
+		values[*name] = epi.default_value;
+	}
+
+	for (Set<PlaceHolderScriptInstance *>::Element *E = placeholders.front(); E; E = E->next()) {
+		E->get()->update(props, values);
+	}
+#endif
 }
 
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
@@ -118,7 +179,7 @@ bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL(cls);
-	for (const StringName* name = cls->signals.next(NULL); name; name = cls->signals.next(name)) {
+	for (const StringName *name = cls->signals.next(NULL); name; name = cls->signals.next(name)) {
 		r_signals->push_back(cls->signals.get(*name));
 	}
 }
