@@ -3,6 +3,8 @@
 #include "ecmascript_language.h"
 #include "scene/resources/text_file.h"
 
+Ref<ECMAScriptLibrary> *ECMAScriptLibraryResourceLoader::loading_lib = NULL;
+
 RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_original_path, Error *r_error) {
 
 	Ref<ECMAScriptLibrary> file;
@@ -14,7 +16,10 @@ RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_
 	}
 	ERR_FAIL_COND_V(err != OK, NULL);
 
+	loading_lib = &file;
 	err = ECMAScriptLanguage::get_singleton()->eval_text(file->get_text());
+	loading_lib = NULL;
+
 	if (r_error) {
 		*r_error = err;
 	}

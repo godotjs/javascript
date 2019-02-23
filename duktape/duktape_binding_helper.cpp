@@ -876,6 +876,9 @@ duk_ret_t DuktapeBindingHelper::register_ecma_class(duk_context *ctx) {
 	Ref<ECMAScript> script;
 	script.instance();
 	script->class_name = class_name;
+	if (Ref<ECMAScriptLibrary> *lib = ECMAScriptLibraryResourceLoader::get_loading_library()) {
+		script->library = *lib;
+	}
 	get_language()->script_classes.set(class_name, script);
 
 	return DUK_HAS_RET_VAL;

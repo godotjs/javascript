@@ -2,6 +2,7 @@
 
 Import('env')
 Import('env_modules')
+env_module = env_modules.Clone()
 
 sources = [
     'register_types.cpp',
@@ -15,6 +16,7 @@ sources = [
     'ecmascript.cpp',
 ]
 
-env_module = env_modules.Clone()
+if env['tools']:
+	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.add_source_files(env.modules_sources, sources)

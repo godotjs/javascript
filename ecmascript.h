@@ -18,8 +18,6 @@ private:
 	StringName class_name;
 	Ref<ECMAScriptLibrary> library;
 
-	ECMAClassInfo *get_ecma_class() const;
-
 #ifdef TOOLS_ENABLED
 	Set<PlaceHolderScriptInstance *> placeholders;
 	virtual void _placeholder_erased(PlaceHolderScriptInstance *p_placeholder);
@@ -76,6 +74,8 @@ public:
 
 	_FORCE_INLINE_ void set_library(const Ref<ECMAScriptLibrary> &p_library) { library = p_library; }
 	_FORCE_INLINE_ Ref<ECMAScriptLibrary> get_library() const { return library; }
+
+	ECMAClassInfo *get_ecma_class() const;
 
 	ECMAScript();
 	~ECMAScript();

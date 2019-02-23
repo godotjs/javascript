@@ -33,6 +33,12 @@
 #include "ecmascript_language.h"
 #include "ecmascript_library.h"
 
+#ifdef TOOLS_ENABLED
+#include "editor/editor_node.h"
+#include "tools/ecma_class_browser.h"
+void editor_init_callback();
+#endif
+
 Ref<ECMAScriptLibraryResourceLoader> resource_loader_ecmalib;
 Ref<ECMAScriptLibraryResourceSaver> resource_saver_ecmalib;
 Ref<ResourceFormatLoaderECMAScript> resource_loader_ecmascript;
@@ -58,6 +64,10 @@ void register_ECMAScript_types() {
 	script_language_es = memnew(ECMAScriptLanguage);
 	script_language_es->set_language_index(ScriptServer::get_language_count());
 	ScriptServer::register_language(script_language_es);
+
+#ifdef TOOLS_ENABLED
+	EditorNode::add_init_callback(editor_init_callback);
+#endif
 }
 
 void unregister_ECMAScript_types() {
@@ -74,3 +84,10 @@ void unregister_ECMAScript_types() {
 	resource_loader_ecmascript.unref();
 	resource_saver_ecmascript.unref();
 }
+
+#ifdef TOOLS_ENABLED
+void editor_init_callback() {
+	ECMAScriptPlugin *plugin = memnew(ECMAScriptPlugin(EditorNode::get_singleton()));
+	EditorNode::get_singleton()->add_editor_plugin(plugin);
+}
+#endif

@@ -4,6 +4,12 @@
 
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
+void ECMAScriptLanguage::get_registered_classes(List<Ref<ECMAScript> > &r_list) const {
+	for (const StringName *name = script_classes.next(NULL); name; name = script_classes.next(name)) {
+		r_list.push_back(script_classes.get(*name));
+	}
+}
+
 void ECMAScriptLanguage::init() {
 	ERR_FAIL_NULL(binding);
 
