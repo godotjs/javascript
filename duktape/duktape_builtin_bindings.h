@@ -29,6 +29,7 @@ duk_ret_t builtin_finalizer(duk_context *ctx) {
 template<class T>
 void register_builtin_class(duk_context *ctx, duk_c_function ctor, int ctor_argc, Variant::Type type, const char *name) {
 
+	duk_push_string(name);
 	duk_push_c_function(ctx, ctor, ctor_argc);
 	duk_push_object(ctx);
 	class_prototypes->set(type, duk_get_heapptr(ctx, -1));
@@ -40,7 +41,7 @@ void register_builtin_class(duk_context *ctx, duk_c_function ctor, int ctor_argc
 	duk_set_finalizer(ctx, -2);
 
 	duk_put_prop_literal(ctx, -2, PROTOTYPE_LITERAL);
-	duk_put_prop_string(ctx, -2, name);
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 }
 
 void register_builtin_class_properties(duk_context *ctx);

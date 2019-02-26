@@ -96,16 +96,12 @@ private:
 	DuktapeHeapObject *get_strong_ref(Object *obj);
 
 	/**
-	 * godot.register_class = function(ecma_class, name, icon) {
-	 *		ecma_class.name = name;
-	 *		ecma_class.icon = icon;
-	 *		return ecma_class;
-	 * }
+	 * godot.register_class = function(ecma_class, name, tool, icon) {}
 	 */
 	static duk_ret_t register_ecma_class(duk_context *ctx);
 
 	/**
-	 * godot.register_class = function(ecma_class|ecma_class_prototype, name, arugments) {
+	 * godot.register_signal = function(ecma_class|ecma_class_prototype, name, arugments) {
 	 *		ecma_class_prototype.signals[name] = arugments
 	 * }
 	 */
@@ -117,21 +113,11 @@ private:
 	 */
 	static duk_ret_t register_property(duk_context *ctx);
 
-#if 0
-	/**
-	 * godot.GDCLASS = functions(name, icon) {
-	 *		return godot.register_class(ecma_class, name, icon);
-	 * }
-	 */
-	static duk_ret_t decorator_register_ecma_class(duk_context *ctx);
-#endif
-
 	// cached Duktape/C functions
 	DuktapeHeapObject *duk_ptr_godot_object_finalizer;
 	DuktapeHeapObject *duk_ptr_godot_object_free;
 	DuktapeHeapObject *duk_ptr_godot_to_string;
 	DuktapeHeapObject *duk_ptr_godot_object_virtual_method;
-	DuktapeHeapObject *duk_ptr_register_ecma_class;
 
 public:
 	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }

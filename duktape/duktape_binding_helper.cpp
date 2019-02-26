@@ -481,26 +481,27 @@ void DuktapeBindingHelper::duk_put_prop_godot_string_name(duk_context *ctx, duk_
 void DuktapeBindingHelper::register_class(duk_context *ctx, const ClassDB::ClassInfo *cls) {
 	duk_require_stack(ctx, 2);
 
+	duk_push_godot_string_name(ctx, cls->name);
 	// Class constuctor function
 	duk_push_c_function(ctx, duk_godot_object_constructor, 0);
 	{
 		// constants
 		for (const StringName *const_key = cls->constant_map.next(NULL); const_key; const_key = cls->constant_map.next(const_key)) {
+			duk_push_godot_string_name(ctx, *const_key);
 			duk_push_godot_variant(ctx, cls->constant_map.get(*const_key));
-			String name = *const_key;
-			duk_put_prop_string(ctx, -2, name.utf8().ptr());
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 		}
 		// enumrations
 		for (const StringName *enum_key = cls->enum_map.next(NULL); enum_key; enum_key = cls->enum_map.next(enum_key)) {
 			const List<StringName> &consts = cls->enum_map.get(*enum_key);
+			duk_push_godot_string_name(ctx, *enum_key);
 			duk_push_object(ctx);
 			for (const List<StringName>::Element *E = consts.front(); E; E = E->next()) {
+				duk_push_godot_string_name(ctx, E->get());
 				duk_push_godot_variant(ctx, cls->constant_map.get(E->get()));
-				String const_name = E->get();
-				duk_put_prop_string(ctx, -2, const_name.utf8().ptr());
+				duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 			}
-			String enum_name = *enum_key;
-			duk_put_prop_string(ctx, -2, enum_name.utf8().ptr());
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 		}
 		// Class.prototype
 		duk_push_object(ctx);
@@ -517,7 +518,7 @@ void DuktapeBindingHelper::register_class(duk_context *ctx, const ClassDB::Class
 
 		duk_put_prop_literal(ctx, -2, PROTOTYPE_LITERAL);
 	}
-	duk_put_prop_godot_string_name(ctx, -2, cls->name);
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 }
 
 DuktapeBindingHelper *DuktapeBindingHelper::get_singleton() {
@@ -535,7 +536,6 @@ void DuktapeBindingHelper::initialize() {
 
 	// strong reference object pool
 	duk_push_heap_stash(ctx);
-
 	duk_push_object(ctx);
 	this->strongref_pool_ptr = duk_get_heapptr(ctx, -1);
 	duk_put_prop_literal(ctx, -2, "object_pool");
@@ -564,6 +564,8 @@ void DuktapeBindingHelper::initialize() {
 	duk_put_global_literal(ctx, "print");
 
 	// godot namespace
+	duk_push_global_object(ctx);
+	duk_push_literal(ctx, "godot");
 	duk_push_object(ctx);
 	{
 		// register builtin classes
@@ -602,6 +604,7 @@ void DuktapeBindingHelper::initialize() {
 			DuktapeHeapObject *prototype_ptr = native_class_prototypes.get(s.ptr->get_class_name());
 			ERR_CONTINUE(prototype_ptr == NULL);
 
+			duk_push_godot_string_name(ctx, s.name);
 			duk_push_object(ctx);
 			duk_push_heapptr(ctx, prototype_ptr);
 			duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
@@ -610,8 +613,27 @@ void DuktapeBindingHelper::initialize() {
 			duk_push_int(ctx, Variant::OBJECT);
 			duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 
-			String name = s.name;
-			duk_put_prop_string(ctx, -2, name.utf8().ptr());
+			if (ClassDB::ClassInfo * cls = ClassDB::classes.getptr(s.ptr->get_class_name())) {
+				// constants
+				for (const StringName *const_key = cls->constant_map.next(NULL); const_key; const_key = cls->constant_map.next(const_key)) {
+					duk_push_godot_string_name(ctx, *const_key);
+					duk_push_godot_variant(ctx, cls->constant_map.get(*const_key));
+					duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+				}
+				// enumrations
+				for (const StringName *enum_key = cls->enum_map.next(NULL); enum_key; enum_key = cls->enum_map.next(enum_key)) {
+					const List<StringName> &consts = cls->enum_map.get(*enum_key);
+					duk_push_godot_string_name(ctx, *enum_key);
+					duk_push_object(ctx);
+					for (const List<StringName>::Element *E = consts.front(); E; E = E->next()) {
+						duk_push_godot_string_name(ctx, E->get());
+						duk_push_godot_variant(ctx, cls->constant_map.get(E->get()));
+						duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+					}
+					duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+				}
+			}
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE|DUK_DEFPROP_FORCE);
 		}
 		// global constants
 		HashMap<StringName, HashMap<StringName, int> > global_constants;
@@ -621,8 +643,9 @@ void DuktapeBindingHelper::initialize() {
 			const char *const_name = GlobalConstants::get_global_constant_name(i);
 			const int value = GlobalConstants::get_global_constant_value(i);
 
+			duk_push_string(ctx, const_name);
 			duk_push_number(ctx, value);
-			duk_put_prop_string(ctx, -2, const_name);
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 
 			if (HashMap<StringName, int> *consts = global_constants.getptr(enum_name)) {
 				consts->set(const_name, value);
@@ -635,35 +658,32 @@ void DuktapeBindingHelper::initialize() {
 
 		// global enums
 		for (const StringName *enum_name = global_constants.next(NULL); enum_name; enum_name = global_constants.next(enum_name)) {
+			duk_push_godot_string_name(ctx, *enum_name);
 			duk_push_object(ctx);
 			const HashMap<StringName, int> &enum_ = global_constants.get(*enum_name);
 			for (const StringName *const_name = enum_.next(NULL); const_name; const_name = enum_.next(const_name)) {
-				String name = *const_name;
+				duk_push_godot_string_name(ctx, *const_name);
 				const int value = enum_.get(*const_name);
 				duk_push_number(ctx, value);
-				duk_put_prop_string(ctx, -2, name.utf8().ptr());
+				duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 			}
-			String enum_name_str = *enum_name;
-			duk_put_prop_string(ctx, -2, enum_name_str.utf8().ptr());
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 		}
 
-		// godot.register_class
+		// functions ECMAScript binding only
+		duk_push_literal(ctx, "register_class");
 		duk_push_c_function(ctx, register_ecma_class, 4);
-		this->duk_ptr_register_ecma_class = duk_get_heapptr(ctx, -1);
-		duk_put_prop_literal(ctx, -2, "register_class");
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
+		duk_push_literal(ctx, "register_signal");
 		duk_push_c_function(ctx, register_signal, 3);
-		duk_put_prop_literal(ctx, -2, "register_signal");
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
+		duk_push_literal(ctx, "register_property");
 		duk_push_c_function(ctx, register_property, 4);
-		duk_put_prop_literal(ctx, -2, "register_property");
-
-#if 0
-		// godot.GDCLASS
-		duk_push_c_function(ctx, decorator_register_ecma_class, 3);
-		duk_put_prop_literal(ctx, -2, "GDCLASS");
-#endif
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 	}
-
-	duk_put_global_literal(ctx, "godot");
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
 }
 
 void DuktapeBindingHelper::uninitialize() {
@@ -956,23 +976,6 @@ duk_ret_t DuktapeBindingHelper::register_property(duk_context *ctx) {
 
 	return DUK_NO_RET_VAL;
 }
-
-#if 0
-duk_ret_t DuktapeBindingHelper::decorator_register_ecma_class(duk_context *ctx) {
-	// godot.GDCLASS(name, icon)
-
-	const char *class_name = duk_get_string_default(ctx, 0, NULL);
-	const char *icon_path = duk_get_string_default(ctx, 1, NULL);
-
-	duk_push_heapptr(ctx, get_singleton()->duk_ptr_register_ecma_class);
-	duk_push_string(ctx, class_name);
-	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls_name"));
-	duk_push_string(ctx, icon_path);
-	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("cls_icon"));
-
-	return DUK_HAS_RET_VAL;
-}
-#endif
 
 ECMAScriptGCHandler DuktapeBindingHelper::create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) {
 
