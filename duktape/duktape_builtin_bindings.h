@@ -29,7 +29,7 @@ duk_ret_t builtin_finalizer(duk_context *ctx) {
 template<class T>
 void register_builtin_class(duk_context *ctx, duk_c_function ctor, int ctor_argc, Variant::Type type, const char *name) {
 
-	duk_push_string(name);
+	duk_push_string(ctx, name);
 	duk_push_c_function(ctx, ctor, ctor_argc);
 	duk_push_object(ctx);
 	class_prototypes->set(type, duk_get_heapptr(ctx, -1));

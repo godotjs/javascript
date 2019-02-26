@@ -1,25 +1,31 @@
 #!/usr/bin/env python
+import platform, os, sys
 
 Import('env')
 Import('env_modules')
 env_module = env_modules.Clone()
 
-import generate_builtin_api
-generate_builtin_api.generate_api_json()
-import duktape.builtin_binding_generator
-duktape.builtin_binding_generator.generate_duktape_builtin_bindings()
+if platform.python_version() > '3':
+	import generate_builtin_api
+	generate_builtin_api.generate_api_json()
+	import duktape.builtin_binding_generator
+	duktape.builtin_binding_generator.generate_duktape_builtin_bindings()
+else:
+	doc_path = os.path.abspath(os.path.join(Dir('.').srcnode().abspath, "../../doc/classes"))
+	os.system('python generate_builtin_api.py ' + doc_path)
+	os.system('python duktape/builtin_binding_generator.py')
 
 
 sources = [
-    'register_types.cpp',
-    'duktape/src/duktape.c',
-    'duktape/duktape_binding_helper.cpp',
-    'duktape/duktape_builtin_bindings.cpp',
-    'duktape/duktape_builtin_bindings.gen.cpp',
-    'ecmascript_library.cpp',
-    'ecmascript_language.cpp',
-    'ecmascript_instance.cpp',
-    'ecmascript.cpp',
+	'register_types.cpp',
+	'duktape/src/duktape.c',
+	'duktape/duktape_binding_helper.cpp',
+	'duktape/duktape_builtin_bindings.cpp',
+	'duktape/duktape_builtin_bindings.gen.cpp',
+	'ecmascript_library.cpp',
+	'ecmascript_language.cpp',
+	'ecmascript_instance.cpp',
+	'ecmascript.cpp',
 ]
 
 if env['tools']:

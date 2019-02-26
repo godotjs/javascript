@@ -1,16 +1,18 @@
 #!/usr/bin/env python
-import json, os
+import json, os, sys
 import xml.etree.ElementTree as ET
 
 
 MODULE_DIR = os.path.abspath( os.path.dirname(__file__) )
 DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
+if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
+	DOCS_DIR = sys.argv[-1]
 OUTPUT_FILE = os.path.join(MODULE_DIR, "buitin_api.gen.json");
 
 BUILTIN_CLASSES = [
 	'Vector2',
 	'Rect2',
-	# 'Color',
+	'Color',
 	# 'Vector3',
 ]
 
@@ -121,7 +123,8 @@ METHOD_OP_LESS_OR_EQAUL = {
 }
 
 IGNORED_PROPS = {
-	"Rect2": ['end']
+	"Rect2": ['end'],
+	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8']
 }
 
 EXTRAL_METHODS = {
@@ -215,7 +218,7 @@ def generate_api_json():
 		tree = ET.parse(open(os.path.join(DOCS_DIR, cls + '.xml'), 'r'))
 		data = tree.getroot()
 		classes.append(parse_class(data))
-	json.dump(classes, open(OUTPUT_FILE, 'w', encoding='utf8'), ensure_ascii=False, indent=2, sort_keys=True)
+	json.dump(classes, open(OUTPUT_FILE, 'w'), ensure_ascii=False, indent=2, sort_keys=True)
 	
 if __name__ == "__main__":
 	generate_api_json()
