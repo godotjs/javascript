@@ -59,58 +59,6 @@ void vector2_properties(duk_context *ctx) {
 		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
 		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::VECTOR2, DUK_ERR_TYPE_ERROR);
-		Variant ret = ptr->operator+(arg0);
-		duk_push_variant(ctx, ret);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "add");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::VECTOR2, DUK_ERR_TYPE_ERROR);
-		ptr->operator+=(arg0);
-		duk_push_this(ctx);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "add_assign");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::VECTOR2, DUK_ERR_TYPE_ERROR);
-		Variant ret = ptr->operator-(arg0);
-		duk_push_variant(ctx, ret);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "subtract");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::VECTOR2, DUK_ERR_TYPE_ERROR);
-		ptr->operator-=(arg0);
-		duk_push_this(ctx);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "subtract_assign");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		Variant arg0 = duk_get_variant(ctx, 0);
 		Variant::Type type = arg0.get_type();
 		ERR_FAIL_COND_V(!(type == Variant::VECTOR2 || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
 		Variant ret;
@@ -123,8 +71,7 @@ void vector2_properties(duk_context *ctx) {
 		}
 		duk_push_variant(ctx, ret);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -144,8 +91,7 @@ void vector2_properties(duk_context *ctx) {
 		}
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply_assign");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -165,8 +111,7 @@ void vector2_properties(duk_context *ctx) {
 		}
 		duk_push_variant(ctx, ret);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -180,21 +125,8 @@ void vector2_properties(duk_context *ctx) {
 
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide_assign");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-
-		Variant ret = ptr->operator-();
-		duk_push_variant(ctx, ret);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "negate");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
 		duk_push_this(ctx);
@@ -203,35 +135,8 @@ void vector2_properties(duk_context *ctx) {
 		ptr->operator=(ptr->operator-());
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "negate_assign");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::VECTOR2, DUK_ERR_TYPE_ERROR);
-		duk_bool_t ret = ptr->operator<(arg0);
-		duk_push_boolean(ctx, ret);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "less");
-
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
-		duk_push_this(ctx);
-		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
-		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::VECTOR2, DUK_ERR_TYPE_ERROR);
-		duk_bool_t ret = ptr->operator<=(arg0);
-		duk_push_boolean(ctx, ret);
-		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_put_prop_literal(ctx, -2, "less_or_equal");
 
 	duk_pop(ctx);
 }

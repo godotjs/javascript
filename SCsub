@@ -4,6 +4,12 @@ Import('env')
 Import('env_modules')
 env_module = env_modules.Clone()
 
+import generate_builtin_api
+generate_builtin_api.generate_api_json()
+import duktape.builtin_binding_generator
+duktape.builtin_binding_generator.generate_duktape_builtin_bindings()
+
+
 sources = [
     'register_types.cpp',
     'duktape/src/duktape.c',

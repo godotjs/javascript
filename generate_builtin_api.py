@@ -2,13 +2,16 @@
 import json, os
 import xml.etree.ElementTree as ET
 
-DOCS_DIR = "../../godot/doc/classes"
+
+MODULE_DIR = os.path.abspath( os.path.dirname(__file__) )
+DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
+OUTPUT_FILE = os.path.join(MODULE_DIR, "buitin_api.gen.json");
 
 BUILTIN_CLASSES = [
 	'Vector2',
 	'Rect2',
-	# 'Vector3',
 	# 'Color',
+	# 'Vector3',
 ]
 
 TYPE_MAP = {
@@ -18,8 +21,140 @@ TYPE_MAP = {
 	'String': 'string',
 }
 
+METHOD_OP_EQUALS = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "equals",
+	"native_method": "operator==",
+	"return": "boolean"
+}
+
+METHOD_OP_ADD = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "add",
+	"native_method": "operator+",
+	"return": "${class_name}"
+}
+
+METHOD_OP_ADD_ASSIGN = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "add_assign",
+	"native_method": "operator+=",
+	"return": "this"
+}
+
+METHOD_OP_SUB = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "subtract",
+	"native_method": "operator-",
+	"return": "${class_name}"
+}
+
+METHOD_OP_SUB_ASSIGN = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "subtract_assign",
+	"native_method": "operator-=",
+	"return": "this"
+}
+
+METHOD_OP_NEG = {
+	"arguments": [],
+	"name": "negate",
+	"native_method": "operator-",
+	"return": "${class_name}"
+}
+
+METHOD_OP_LESS = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "less",
+	"native_method": "operator<",
+	"return": "boolean"
+}
+
+
+METHOD_OP_LESS_OR_EQAUL = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "less_or_equal",
+	"native_method": "operator<=",
+	"return": "boolean"
+}
+
+IGNORED_PROPS = {
+	"Rect2": ['end']
+}
+
+EXTRAL_METHODS = {
+	"Vector2": [
+		METHOD_OP_NEG,
+		METHOD_OP_EQUALS,
+		METHOD_OP_LESS,
+		METHOD_OP_LESS_OR_EQAUL,
+		METHOD_OP_ADD,
+		METHOD_OP_ADD_ASSIGN,
+		METHOD_OP_SUB,
+		METHOD_OP_SUB_ASSIGN,
+	],
+	"Rect2": [METHOD_OP_EQUALS],
+	"Color": [
+		METHOD_OP_NEG,
+		METHOD_OP_EQUALS,
+		METHOD_OP_LESS,
+		METHOD_OP_ADD,
+		METHOD_OP_ADD_ASSIGN,
+		METHOD_OP_SUB,
+		METHOD_OP_SUB_ASSIGN,
+	],
+}
+
+def apply_parttern(template, values):
+	for key in values:
+		template = template.replace( '${' + key + '}', values[key])
+	return template
+
 def parse_class(cls):
-	ret = {'name': cls.get('name')}
+	class_name = cls.get('name')
+	ret = {'name': class_name}
 	members = []
 	methods = []
 	constants = []
@@ -30,14 +165,17 @@ def parse_class(cls):
 	for m in (cls.find("members") if cls.find("members") is not None else []):
 		m_dict = dict(m.attrib)
 		type = m_dict['type']
+		name = m_dict['name']
+		if (class_name in IGNORED_PROPS) and (name in IGNORED_PROPS[class_name]):
+			continue
 		if type in TYPE_MAP:
 			type = TYPE_MAP[type]
-		members.append({'name': m_dict['name'], 'type': type })
+		members.append({'name': name, 'type': type })
 	
 	for m in (cls.find("methods") if cls.find("methods") is not None else []):
 		m_dict = dict(m.attrib)
-		if m_dict['name'] == cls.get('name'):
-			continue
+		if m_dict['name'] == class_name:
+			continue# ignore constructors
 		return_type = m.find("return").attrib["type"]
 		if return_type in TYPE_MAP:
 			return_type = TYPE_MAP[return_type]
@@ -61,22 +199,15 @@ def parse_class(cls):
 			'return': return_type,
 			'arguments': arguments,
 		})
-	# add equals method
-	methods.append({
-		"arguments": [
-			{
-				"default_value": None,
-				"has_default_value": False,
-				"type": cls.get('name')
-			}
-		],
-		"name": "equals",
-		"native_method": "operator==",
-		"return": "boolean"
-	})
+	# add extral methods
+	if class_name in EXTRAL_METHODS:
+		for em in EXTRAL_METHODS[class_name]:
+			methods.append(em)
 	for c in (cls.find("constants") if cls.find("constants") is not None else []):
 		constants.append(dict(c.attrib))
-	return ret
+	return json.loads(apply_parttern(json.dumps(ret), {
+		'class_name': class_name,
+	}))
 
 def generate_api_json():
 	classes = []
@@ -84,8 +215,7 @@ def generate_api_json():
 		tree = ET.parse(open(os.path.join(DOCS_DIR, cls + '.xml'), 'r'))
 		data = tree.getroot()
 		classes.append(parse_class(data))
-	json.dump(classes, open('buitin_api.gen.json', 'w', encoding='utf8'), ensure_ascii=False, indent=2, sort_keys=True)
-	print('Done')
+	json.dump(classes, open(OUTPUT_FILE, 'w', encoding='utf8'), ensure_ascii=False, indent=2, sort_keys=True)
 	
 if __name__ == "__main__":
 	generate_api_json()

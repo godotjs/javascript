@@ -1,5 +1,9 @@
 #!/usr/bin/env python
-import json
+import json, os
+
+DUKTAPE_DIR = os.path.abspath( os.path.dirname(__file__) )
+API_FILE = os.path.join(DUKTAPE_DIR, "..", "buitin_api.gen.json");
+OUTPUT_FILE = os.path.join(DUKTAPE_DIR, "duktape_builtin_bindings.gen.cpp");
 
 variant_types = {
 	"boolean": "Variant::BOOL",
@@ -170,7 +174,7 @@ ${class_properties_func_calls}
 }
 '''
 	classes = json.load(
-		open('buitin_api.gen.json', 'r', encoding='utf8')
+		open(API_FILE, 'r', encoding='utf8')
 	)
 	class_properties_funcs = ""
 	class_properties_func_calls = ""
@@ -186,7 +190,9 @@ ${class_properties_func_calls}
 	
 	return file_content
 
-if __name__ == "__main__":
-	file = open('duktape/duktape_builtin_bindings.gen.cpp', 'w')
+def generate_duktape_builtin_bindings():
+	file = open(OUTPUT_FILE, 'w')
 	file.write(generate_binding_code())
-	print('Done')
+
+if __name__ == "__main__":
+	generate_duktape_builtin_bindings()
