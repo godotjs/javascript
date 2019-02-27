@@ -1,5 +1,6 @@
 #include "ecma_class_browser.h"
 #include "../ecmascript_language.h"
+#include "../ecmascript_library.h"
 #include "editor/filesystem_dock.h"
 
 struct ECMAScriptAlphCompare {
@@ -50,6 +51,9 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	ecma_class_browser = memnew(ECMAClassBrower);
 	bottom_button = p_node->add_bottom_panel_item("ECMAScript", ecma_class_browser);
 	bottom_button->connect("toggled", this, "_on_bottom_panel_toggled");
+
+	eslib_inspector_plugin.instance();
+	EditorInspector::add_inspector_plugin(eslib_inspector_plugin);
 }
 
 void ECMAClassBrower::_bind_methods() {
@@ -110,4 +114,31 @@ ECMAClassBrower::ECMAClassBrower() :
 	filter_input->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	filter_input->connect("text_changed", this, "_on_filter_changed");
 	add_child(hbox);
+}
+
+void EditorInspectorPluginECMALib::_bind_methods() {
+	ClassDB::bind_method("on_reload_editing_lib", &EditorInspectorPluginECMALib::on_reload_editing_lib);
+}
+
+void EditorInspectorPluginECMALib::on_reload_editing_lib() {
+	ERR_FAIL_NULL(editing_lib);
+	editing_lib->reload_from_file();
+}
+
+bool EditorInspectorPluginECMALib::can_handle(Object *p_object) {
+	return Object::cast_to<ECMAScriptLibrary>(p_object) != NULL;
+}
+
+void EditorInspectorPluginECMALib::parse_begin(Object *p_object) {
+	editing_lib = Object::cast_to<ECMAScriptLibrary>(p_object);
+	ERR_FAIL_COND(!editing_lib);
+
+	Button *button = memnew(Button);
+	button->set_text("Reload");
+	button->connect("pressed", this, "on_reload_editing_lib");
+	add_custom_control(button);
+}
+
+EditorInspectorPluginECMALib::EditorInspectorPluginECMALib() {
+	editing_lib = NULL;
 }

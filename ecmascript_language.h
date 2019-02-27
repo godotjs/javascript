@@ -50,6 +50,7 @@ public:
 
 	virtual Error execute_file(const String &p_path);
 	Error eval_text(const String &p_source);
+	Error safe_eval_text(const String &p_source, String &r_err);
 
 	virtual void get_reserved_words(List<String> *p_words) const;
 	virtual void get_comment_delimiters(List<String> *p_delimiters) const;

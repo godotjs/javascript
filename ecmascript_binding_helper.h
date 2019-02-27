@@ -53,6 +53,7 @@ public:
 	virtual bool godot_refcount_decremented(Reference *p_object) = 0;
 
 	virtual Error eval_string(const String &p_source) = 0;
+	virtual Error safe_eval_text(const String &p_source, String &r_error) = 0;
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) = 0;
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;

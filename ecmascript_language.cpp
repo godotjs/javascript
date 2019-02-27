@@ -42,6 +42,11 @@ Error ECMAScriptLanguage::eval_text(const String &p_source) {
 	return binding->eval_string(p_source);
 }
 
+Error ECMAScriptLanguage::safe_eval_text(const String &p_source, String &err) {
+	ERR_FAIL_NULL_V(binding, ERR_BUG);
+	return binding->safe_eval_text(p_source, err);
+}
+
 void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
 
 	static const char *_reserved_words[] = {

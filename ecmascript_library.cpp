@@ -2,6 +2,7 @@
 #include "core/os/file_access.h"
 #include "ecmascript_language.h"
 #include "scene/resources/text_file.h"
+#include "core/engine.h"
 
 Ref<ECMAScriptLibrary> *ECMAScriptLibraryResourceLoader::loading_lib = NULL;
 
@@ -16,9 +17,7 @@ RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_
 	}
 	ERR_FAIL_COND_V(err != OK, NULL);
 
-	loading_lib = &file;
-	err = ECMAScriptLanguage::get_singleton()->eval_text(file->get_text());
-	loading_lib = NULL;
+	file->eval_text();
 
 	if (r_error) {
 		*r_error = err;
@@ -69,4 +68,23 @@ void ECMAScriptLibraryResourceSaver::get_recognized_extensions(const RES &p_reso
 	if (Object::cast_to<ECMAScriptLibrary>(*p_resource)) {
 		p_extensions->push_front("js");
 	}
+}
+
+void ECMAScriptLibrary::reload_from_file() {
+	TextFile::reload_from_file();
+	eval_text();
+}
+
+void ECMAScriptLibrary::eval_text() {
+	Ref<ECMAScriptLibrary> lib = Variant(this);
+	ECMAScriptLibraryResourceLoader::loading_lib = &lib;
+	if (Engine::get_singleton()->is_editor_hint()) {
+		String err;
+		if (OK != ECMAScriptLanguage::get_singleton()->safe_eval_text(get_text(), err)) {
+			ERR_EXPLAIN(err);
+		}
+	} else {
+		ECMAScriptLanguage::get_singleton()->eval_text(get_text());
+	}
+	ECMAScriptLibraryResourceLoader::loading_lib = NULL;
 }

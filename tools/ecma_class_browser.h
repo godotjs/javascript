@@ -2,6 +2,8 @@
 #define ECMA_CLASS_BROWSER_H
 #include "editor/editor_node.h"
 
+class ECMAScriptLibrary;
+
 class ECMAClassBrower : public VBoxContainer {
 	GDCLASS(ECMAClassBrower, VBoxContainer);
 	Tree *class_tree;
@@ -19,12 +21,26 @@ public:
 	ECMAClassBrower();
 };
 
+class EditorInspectorPluginECMALib : public EditorInspectorPlugin {
+	GDCLASS(EditorInspectorPluginECMALib, EditorInspectorPlugin);
+
+protected:
+	static void _bind_methods();
+	ECMAScriptLibrary *editing_lib;
+	void on_reload_editing_lib();
+public:
+	virtual bool can_handle(Object *p_object);
+	virtual void parse_begin(Object *p_object);
+	EditorInspectorPluginECMALib();
+};
+
 class ECMAScriptPlugin : public EditorPlugin {
 
 	GDCLASS(ECMAScriptPlugin, EditorPlugin);
 
 	ToolButton *bottom_button;
 	ECMAClassBrower *ecma_class_browser;
+	Ref<EditorInspectorPluginECMALib> eslib_inspector_plugin;
 
 protected:
 	static void _bind_methods();

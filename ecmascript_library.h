@@ -8,13 +8,17 @@
 class ECMAScriptLibrary : public TextFile {
 	GDCLASS(ECMAScriptLibrary, TextFile)
 protected:
-	static void _bind_methods() {}
+	static void _bind_methods() {};
+public:
+	virtual void reload_from_file();
+	void eval_text();
 };
 
 class ECMAScriptLibraryResourceLoader : public ResourceFormatLoader {
 	GDCLASS(ECMAScriptLibraryResourceLoader, ResourceFormatLoader)
 
 	static Ref<ECMAScriptLibrary> *loading_lib;
+	friend class ECMAScriptLibrary;
 
 public:
 	virtual RES load(const String &p_path, const String &p_original_path, Error *r_error);

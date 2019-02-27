@@ -148,6 +148,16 @@ Error DuktapeBindingHelper::eval_string(const String &p_source) {
 	return OK;
 }
 
+Error DuktapeBindingHelper::safe_eval_text(const String &p_source, String &r_error) {
+	ERR_FAIL_COND_V(Thread::get_caller_id() != Thread::get_main_id(), ERR_UNAVAILABLE);
+	ERR_FAIL_NULL_V(ctx, ERR_SKIP);
+	if (OK != duk_peval_string(ctx, p_source.utf8().ptr())) {
+		r_error = duk_safe_to_string(ctx, -1);
+		return ERR_INVALID_DATA;
+	}
+	return OK;
+}
+
 void *DuktapeBindingHelper::alloc_object_binding_data(Object *p_object) {
 	ECMAScriptBindingData *handler = NULL;
 	if (DuktapeHeapObject *heap_ptr = get_strong_ref(p_object)) {
