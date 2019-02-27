@@ -13,6 +13,7 @@ variant_types = {
 	"Vector3": "Variant::VECTOR3",
 	"Color": "Variant::COLOR",
 	"Rect2": "Variant::RECT2",
+	"RID": "Variant::_RID",
 }
 
 def apply_parttern(template, values):

@@ -298,6 +298,9 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 					case Variant::COLOR:
 						ptr = memnew(Color(var));
 						break;
+					case Variant::_RID:
+						ptr = memnew(RID(var));
+						break;
 					default:
 						break;
 				}
@@ -394,6 +397,9 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 						break;
 					case Variant::COLOR:
 						ret = *(static_cast<Color *>(ptr));
+						break;
+					case Variant::_RID:
+						ret = *(static_cast<RID *>(ptr));
 						break;
 					default:
 						ret = NULL;

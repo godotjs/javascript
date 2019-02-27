@@ -14,6 +14,7 @@ BUILTIN_CLASSES = [
 	'Rect2',
 	'Color',
 	# 'Vector3',
+	'RID',
 ]
 
 TYPE_MAP = {
@@ -147,6 +148,11 @@ EXTRAL_METHODS = {
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
+	],
+	"RID": [
+		METHOD_OP_EQUALS,
+		METHOD_OP_LESS,
+		METHOD_OP_LESS_OR_EQAUL,
 	],
 }
 

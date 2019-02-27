@@ -1,4 +1,5 @@
 #include "duktape_builtin_bindings.h"
+#include "core/resource.h"
 
 HashMap<Variant::Type, DuktapeHeapObject *> *class_prototypes = NULL;
 Variant (*duk_get_variant)(duk_context *ctx, duk_idx_t idx) = NULL;
@@ -13,6 +14,7 @@ duk_ret_t rect2_constructor(duk_context *ctx);
 void rect2_properties(duk_context *ctx);
 duk_ret_t color_constructor(duk_context *ctx);
 void color_properties(duk_context *ctx);
+duk_ret_t rid_constructor(duk_context *ctx);
 
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
@@ -26,6 +28,7 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 	register_builtin_class<Rect2>(ctx, rect2_constructor, 4, Variant::RECT2, "Rect2");
 	register_builtin_class<Color>(ctx, color_constructor, 4, Variant::COLOR, "Color");
 	register_builtin_class<Vector3>(ctx, vector3_constructor, 3, Variant::VECTOR3, "Vector3");
+	register_builtin_class<RID>(ctx, rid_constructor, 1, Variant::_RID, "RID");
 
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
@@ -414,3 +417,25 @@ void color_properties(duk_context *ctx) {
 
 	duk_pop(ctx);
 }
+
+duk_ret_t rid_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+
+	duk_push_this(ctx);
+
+	Variant from = duk_get_variant(ctx, 0);
+	ERR_FAIL_COND_V(from.get_type() != Variant::OBJECT, DUK_ERR_TYPE_ERROR);
+	Object * obj = from;
+	RID * ptr = NULL;
+	if(Resource * res = Object::cast_to<Resource>(obj)) {
+		ptr = memnew(RID(res->get_rid()));
+	}
+
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::_RID);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
