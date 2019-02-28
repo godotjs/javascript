@@ -1,7 +1,7 @@
 #ifndef ECMA_CLASS_BROWSER_H
 #define ECMA_CLASS_BROWSER_H
-#include "editor/editor_node.h"
 #include "editor/editor_file_dialog.h"
+#include "editor/editor_node.h"
 
 class ECMAScriptLibrary;
 
@@ -30,6 +30,7 @@ protected:
 	static void _bind_methods();
 	ECMAScriptLibrary *editing_lib;
 	void on_reload_editing_lib();
+
 public:
 	virtual bool can_handle(Object *p_object);
 	virtual void parse_begin(Object *p_object);
@@ -39,7 +40,6 @@ public:
 class ECMAScriptPlugin : public EditorPlugin {
 
 	GDCLASS(ECMAScriptPlugin, EditorPlugin);
-
 
 	enum MenuItem {
 		ITEM_RELOAD_LIBS,
@@ -55,6 +55,7 @@ protected:
 	static void _bind_methods();
 	void _on_bottom_panel_toggled(bool pressed);
 	void _on_menu_item_pressed(int item);
+	void _export_typescript_declare_file(const String &p_path);
 
 public:
 	virtual String get_name() const { return "ECMAClassBrowser"; }

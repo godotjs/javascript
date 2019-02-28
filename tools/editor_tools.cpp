@@ -12,6 +12,7 @@ struct ECMAScriptAlphCompare {
 void ECMAScriptPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_bottom_panel_toggled"), &ECMAScriptPlugin::_on_bottom_panel_toggled);
 	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &ECMAScriptPlugin::_on_menu_item_pressed);
+	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &ECMAScriptPlugin::_export_typescript_declare_file);
 }
 
 void ECMAScriptPlugin::_on_bottom_panel_toggled(bool pressed) {
@@ -79,6 +80,7 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	declaration_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	declaration_file_dialog->add_filter(TTR("*.d.ts;TypeScript Declaration file"));
 	declaration_file_dialog->set_current_file("godot.d.ts");
+	declaration_file_dialog->connect("file_selected", this, "_export_typescript_declare_file");
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
 }
 
@@ -207,3 +209,184 @@ void EditorInspectorPluginECMALib::parse_begin(Object *p_object) {
 EditorInspectorPluginECMALib::EditorInspectorPluginECMALib() {
 	editing_lib = NULL;
 }
+
+
+static String applay_partern(const String & p_partern, const Dictionary &p_values) {
+	String ret = p_partern;
+	for (const Variant* key = p_values.next(); key; key = p_values.next(key)) {
+		String p = String("${") + String(*key) + "}";
+		String v = p_values.get(*key, p);
+		ret = ret.replace(p, v);
+	}
+	return ret;
+}
+
+static String format_doc_text(const String &p_source, const String & p_indent = "\t") {
+	Dictionary dict;
+	dict["[code]"] = "`";
+	dict["[/code]"] = "`";
+	dict["[codeblock]"] = "```gdscript";
+	dict["[/codeblock]"] = "```";
+
+	String ret = "";
+	Vector<String> lines = p_source.split("\n");
+	for (int i = 0; i < lines.size(); i++) {
+		String line = lines[i].strip_edges();
+		if (line.strip_edges().empty()) continue;
+		ret += p_indent + lines[i].strip_edges() + "  \n";
+	}
+
+	for (const Variant* key = dict.next(); key; key = dict.next(key)) {
+		String p = *key;
+		String v = dict.get(*key, p);
+		ret = ret.replace(p, v);
+	}
+	return ret;
+}
+
+static String get_type_name(const String &p_type) {
+	if (p_type.empty())
+		return "void";
+	if (p_type == "int" || p_type == "float")
+		return "number";
+	if (p_type == "bool")
+		return "boolean";
+	if (p_type == "String")
+		return "string";
+	return p_type;
+}
+
+String _export_method(const DocData::MethodDoc &p_method) {
+	const String method_template = R"(
+		/**
+${description}
+		*/
+		${name}(${params}) : ${return_type};
+)";
+	Dictionary dict;
+	dict["description"] = format_doc_text(p_method.description, "\t\t ");
+	dict["name"] = p_method.name;
+	dict["return_type"] = get_type_name(p_method.return_type);
+	String params = "";
+	for (int i=0; i<p_method.arguments.size(); i++) {
+		const DocData::ArgumentDoc& arg = p_method.arguments[i];
+		String arg_str = arg.name + ": " + get_type_name(arg.type);
+		if (!arg.default_value.empty()) {
+			arg_str += String(" = ") + arg.default_value;
+		}
+		if (i<p_method.arguments.size() -1) {
+			arg_str += ", ";
+		}
+		params += arg_str;
+	}
+	dict["params"] = params;
+	return applay_partern(method_template, dict);;
+}
+
+String _export_class(const DocData::ClassDoc &class_doc) {
+	const String class_template = R"(
+	/**
+${brief_description}
+
+${description}
+	*/
+	class ${name}${extends}${inherits} {
+${constants}
+${properties}
+${methods}
+	}
+)";
+
+	Dictionary dict;
+	dict["name"] = class_doc.name;
+	dict["inherits"] = class_doc.inherits;
+	dict["extends"] = class_doc.inherits.empty() ? "" : " extends ";
+	String brief_description = format_doc_text(class_doc.brief_description, "\t ");
+	dict["brief_description"] = brief_description;
+	String description = format_doc_text(class_doc.description, "\t ");
+	if (description.length() == brief_description.length() && description == brief_description) {
+		dict["description"] = "";
+	} else {
+		dict["description"] = description;
+	}
+
+	String constants = "";
+	for (int i=0; i<class_doc.constants.size(); i++) {
+		const DocData::ConstantDoc & const_doc = class_doc.constants[i];
+		String const_str = R"(
+		/**
+${description}
+		*/
+		static readonly ${name}: number = ${value};
+)";
+		Dictionary dict;
+		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
+		dict["name"] = const_doc.name;
+		dict["value"] = const_doc.value;
+		constants += applay_partern(const_str, dict);;
+	}
+	dict["constants"] = constants;
+
+
+	String properties = "";
+	for (int i=0; i<class_doc.properties.size(); i++) {
+		const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
+		String prop_str = R"(
+		/**
+${description}
+		*/
+		${name}: ${type};
+)";
+		Dictionary dict;
+		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
+		dict["name"] = prop_doc.name;
+		dict["type"] = get_type_name(prop_doc.type);
+		properties += applay_partern(prop_str, dict);;
+	}
+	dict["properties"] = properties;
+
+	String methods = "";
+	for (int i=0; i<class_doc.methods.size(); i++) {
+		const DocData::MethodDoc & method_doc = class_doc.methods[i];
+		methods += _export_method(method_doc);
+	}
+	dict["methods"] = methods;
+
+	return applay_partern(class_template, dict);
+}
+
+
+void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
+	DocData *doc = EditorHelp::get_doc_data();
+
+	const String godot_module = R"(
+declare module godot {
+	${classes}
+})";
+	String classes = "";
+	Set<String> ignored_classes;
+	ignored_classes.insert("int");
+	ignored_classes.insert("float");
+	ignored_classes.insert("bool");
+	ignored_classes.insert("Array");
+	ignored_classes.insert("Nil");
+
+	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
+		const DocData::ClassDoc & class_doc = E->get();
+		if (class_doc.name.begins_with("@") || ignored_classes.has(class_doc.name)) {
+			continue;
+		}
+		classes += _export_class(class_doc);
+	}
+
+	Dictionary dict;
+	dict["classes"] = classes;
+	String text = applay_partern(godot_module, dict);
+
+	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
+	if (f.f && f->is_open()) {
+		f->store_string(text);
+		f->close();
+	}
+}
+
