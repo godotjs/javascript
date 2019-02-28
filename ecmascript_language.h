@@ -47,6 +47,7 @@ public:
 
 	virtual void init();
 	virtual void finish();
+	void clear_script_classes() { script_classes.clear(); }
 
 	virtual Error execute_file(const String &p_path);
 	Error eval_text(const String &p_source);

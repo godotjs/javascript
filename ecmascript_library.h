@@ -17,7 +17,8 @@ public:
 class ECMAScriptLibraryResourceLoader : public ResourceFormatLoader {
 	GDCLASS(ECMAScriptLibraryResourceLoader, ResourceFormatLoader)
 
-	static Ref<ECMAScriptLibrary> *loading_lib;
+	static Ref<ECMAScriptLibrary> loading_lib;
+	static Set<ObjectID> ecma_libs;
 	friend class ECMAScriptLibrary;
 
 public:
@@ -27,7 +28,8 @@ public:
 	virtual bool handles_type(const String &p_type) const;
 	virtual String get_resource_type(const String &p_path) const;
 
-	static Ref<ECMAScriptLibrary> *get_loading_library() { return loading_lib; }
+	static Ref<ECMAScriptLibrary> get_loading_library() { return loading_lib; }
+	static void reload_cached_libs();;
 };
 
 class ECMAScriptLibraryResourceSaver : public ResourceFormatSaver {

@@ -1,4 +1,4 @@
-#include "ecma_class_browser.h"
+#include "editor_tools.h"
 #include "../ecmascript_language.h"
 #include "../ecmascript_library.h"
 #include "editor/filesystem_dock.h"
@@ -10,12 +10,24 @@ struct ECMAScriptAlphCompare {
 };
 
 void ECMAScriptPlugin::_bind_methods() {
-	ClassDB::bind_method("_on_bottom_panel_toggled", &ECMAScriptPlugin::_on_bottom_panel_toggled);
+	ClassDB::bind_method(D_METHOD("_on_bottom_panel_toggled"), &ECMAScriptPlugin::_on_bottom_panel_toggled);
+	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &ECMAScriptPlugin::_on_menu_item_pressed);
 }
 
 void ECMAScriptPlugin::_on_bottom_panel_toggled(bool pressed) {
 	if (pressed) {
 		ecma_class_browser->update_tree();
+	}
+}
+
+void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
+	switch (item) {
+		case MenuItem::ITEM_RELOAD_LIBS:
+			ecma_class_browser->reload_cached_libs();
+			break;
+		case MenuItem::ITEM_GEN_DECLAR_FILE:
+			declaration_file_dialog->popup_centered_ratio();
+			break;
 	}
 }
 
@@ -54,11 +66,26 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 
 	eslib_inspector_plugin.instance();
 	EditorInspector::add_inspector_plugin(eslib_inspector_plugin);
+
+	PopupMenu *menu = memnew(PopupMenu);
+	add_tool_submenu_item(TTR("ECMAScript"), menu);
+	menu->add_item(TTR("Reload All Cached Libraries"), ITEM_RELOAD_LIBS);
+	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLAR_FILE);
+	menu->connect("id_pressed", this, "_on_menu_item_pressed");
+
+	declaration_file_dialog = memnew(EditorFileDialog);
+	declaration_file_dialog->set_title(TTR("Generate TypeScript Declaration File"));
+	declaration_file_dialog->set_mode(EditorFileDialog::MODE_SAVE_FILE);
+	declaration_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
+	declaration_file_dialog->add_filter(TTR("*.d.ts;TypeScript Declaration file"));
+	declaration_file_dialog->set_current_file("godot.d.ts");
+	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
 }
 
 void ECMAClassBrower::_bind_methods() {
-	ClassDB::bind_method("_on_filter_changed", &ECMAClassBrower::_on_filter_changed);
+	ClassDB::bind_method(D_METHOD("_on_filter_changed"), &ECMAClassBrower::_on_filter_changed);
 	ClassDB::bind_method(D_METHOD("get_drag_data_fw"), &ECMAClassBrower::get_drag_data_fw);
+	ClassDB::bind_method(D_METHOD("reload_cached_libs"), &ECMAClassBrower::reload_cached_libs);
 }
 
 void ECMAClassBrower::update_tree() {
@@ -74,19 +101,43 @@ void ECMAClassBrower::update_tree() {
 
 	TreeItem *root = class_tree->create_item();
 	for (List<Ref<ECMAScript> >::Element *E = classes.front(); E; E = E->next()) {
-		String name = E->get()->get_class_name();
-		String native_class_name = E->get()->get_ecma_class()->native_class->name;
+
+		const Ref<ECMAScript> &script = E->get();
+		if (!script->is_valid()) {
+			continue;
+		}
+
+		String lib_path;
+		const Ref<ECMAScriptLibrary> &lib = script->get_library();
+		if (lib.is_valid()) {
+			lib_path = lib->get_path();
+		}
+
+		String name = script->get_class_name();
+		String native_class_name = script->get_ecma_class()->native_class->name;
 		if (filter.empty() || filter.is_subsequence_ofi(name) || filter.is_subsequence_ofi(native_class_name)) {
 			TreeItem *item = class_tree->create_item(root);
-			item->set_metadata(0, E->get());
-			item->set_metadata(1, E->get());
+			item->set_metadata(0, script);
+			item->set_metadata(1, script);
+			item->set_metadata(2, script);
 			item->set_text(0, name);
 			item->set_text(1, native_class_name);
+
+			if (script->get_library().is_valid()) {
+				lib_path = script->get_library()->get_path();
+			}
+			item->set_text(2, lib_path);
 			item->set_icon(0, script_icon);
 			item->set_text_align(0, TreeItem::ALIGN_LEFT);
 			item->set_text_align(1, TreeItem::ALIGN_CENTER);
+			item->set_text_align(2, TreeItem::ALIGN_CENTER);
 		}
 	}
+}
+
+void ECMAClassBrower::reload_cached_libs() {
+	ECMAScriptLibraryResourceLoader::reload_cached_libs();
+	update_tree();
 }
 
 ECMAClassBrower::ECMAClassBrower() :
@@ -94,14 +145,28 @@ ECMAClassBrower::ECMAClassBrower() :
 
 	set_custom_minimum_size(Size2(0, 300));
 
+	HBoxContainer *hbox_top = memnew(HBoxContainer);
+	Label *title = memnew(Label);
+	title->set_text(TTR("Classes registered in ECMAScript"));
+	title->set_h_size_flags(Control::SIZE_EXPAND);
+	hbox_top->add_child(title);
+	Button *bt_reload = memnew(Button);
+	bt_reload->set_tooltip(TTR("Reload all cached libaries"));
+	bt_reload->connect("pressed", this, "reload_cached_libs");
+	//	bt_reload->set_icon(get_icon("Reload", "EditorIcons"));
+	bt_reload->set_text(TTR("Reload"));
+	hbox_top->add_child(bt_reload);
+	add_child(hbox_top);
+
 	class_tree = memnew(Tree);
 	class_tree->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	class_tree->set_hide_root(true);
 	class_tree->set_column_titles_visible(true);
 	class_tree->set_select_mode(Tree::SELECT_ROW);
-	class_tree->set_columns(2);
+	class_tree->set_columns(3);
 	class_tree->set_column_title(0, TTR("Script Class"));
 	class_tree->set_column_title(1, TTR("Native Class"));
+	class_tree->set_column_title(2, TTR("Library"));
 	class_tree->set_drag_forwarding(this);
 	add_child(class_tree);
 
@@ -117,7 +182,7 @@ ECMAClassBrower::ECMAClassBrower() :
 }
 
 void EditorInspectorPluginECMALib::_bind_methods() {
-	ClassDB::bind_method("on_reload_editing_lib", &EditorInspectorPluginECMALib::on_reload_editing_lib);
+	ClassDB::bind_method(D_METHOD("on_reload_editing_lib"), &EditorInspectorPluginECMALib::on_reload_editing_lib);
 }
 
 void EditorInspectorPluginECMALib::on_reload_editing_lib() {

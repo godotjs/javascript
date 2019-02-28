@@ -35,7 +35,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
-#include "tools/ecma_class_browser.h"
+#include "tools/editor_tools.h"
 void editor_init_callback();
 #endif
 

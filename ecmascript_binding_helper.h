@@ -43,6 +43,8 @@ protected:
 	HashMap<StringName, ECMAClassInfo> ecma_classes;
 
 public:
+	virtual void clear_classes() { ecma_classes.clear(); }
+
 	virtual void initialize() = 0;
 	virtual void uninitialize() = 0;
 

@@ -4,7 +4,8 @@
 #include "scene/resources/text_file.h"
 #include "core/engine.h"
 
-Ref<ECMAScriptLibrary> *ECMAScriptLibraryResourceLoader::loading_lib = NULL;
+Ref<ECMAScriptLibrary> ECMAScriptLibraryResourceLoader::loading_lib;
+Set<ObjectID> ECMAScriptLibraryResourceLoader::ecma_libs;
 
 RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_original_path, Error *r_error) {
 
@@ -23,7 +24,7 @@ RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_
 		*r_error = err;
 	}
 	ERR_FAIL_COND_V(err != OK, NULL);
-
+	ecma_libs.insert(file->get_instance_id());
 	return file;
 }
 
@@ -44,6 +45,19 @@ String ECMAScriptLibraryResourceLoader::get_resource_type(const String &p_path) 
 	if (el == "js")
 		return "ECMAScriptLibrary";
 	return "";
+}
+
+void ECMAScriptLibraryResourceLoader::reload_cached_libs() {
+
+	ECMAScriptLanguage::get_singleton()->clear_script_classes();
+	ECMAScriptLanguage::get_singleton()->get_binder()->clear_classes();
+
+	for (Set<ObjectID>::Element * E = ecma_libs.front(); E; E = E->next()) {
+		ECMAScriptLibrary *lib = Object::cast_to<ECMAScriptLibrary>(ObjectDB::get_instance(E->get()));
+		if (lib) {
+			lib->reload_from_file();
+		}
+	}
 }
 
 Error ECMAScriptLibraryResourceSaver::save(const String &p_path, const RES &p_resource, uint32_t p_flags) {
@@ -76,8 +90,7 @@ void ECMAScriptLibrary::reload_from_file() {
 }
 
 void ECMAScriptLibrary::eval_text() {
-	Ref<ECMAScriptLibrary> lib = Variant(this);
-	ECMAScriptLibraryResourceLoader::loading_lib = &lib;
+	ECMAScriptLibraryResourceLoader::loading_lib = RES(this);
 	if (Engine::get_singleton()->is_editor_hint()) {
 		String err;
 		if (OK != ECMAScriptLanguage::get_singleton()->safe_eval_text(get_text(), err)) {
@@ -86,5 +99,5 @@ void ECMAScriptLibrary::eval_text() {
 	} else {
 		ECMAScriptLanguage::get_singleton()->eval_text(get_text());
 	}
-	ECMAScriptLibraryResourceLoader::loading_lib = NULL;
+	ECMAScriptLibraryResourceLoader::loading_lib = RES();
 }
