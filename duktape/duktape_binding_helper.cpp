@@ -618,6 +618,11 @@ void DuktapeBindingHelper::initialize() {
 			key = ClassDB::classes.next(key);
 		}
 
+		duk_push_literal(ctx, "Singletons");
+		duk_push_object(ctx);
+		DuktapeHeapObject *singletons_object = duk_get_heapptr(ctx, -1);
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
 		// Singletons
 		List<Engine::Singleton> singletons;
 		Engine::get_singleton()->get_singletons(&singletons);
@@ -631,6 +636,7 @@ void DuktapeBindingHelper::initialize() {
 
 			duk_push_godot_string_name(ctx, s.name);
 			duk_push_object(ctx);
+			DuktapeHeapObject *cur_singleton_object = duk_get_heapptr(ctx, -1);
 			duk_push_heapptr(ctx, prototype_ptr);
 			duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 			duk_push_pointer(ctx, s.ptr);
@@ -659,6 +665,13 @@ void DuktapeBindingHelper::initialize() {
 				}
 			}
 			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE | DUK_DEFPROP_FORCE);
+
+			// godot.Singletons.XXX
+			duk_push_heapptr(ctx, singletons_object);
+			duk_push_godot_string_name(ctx, s.name);
+			duk_push_heapptr(ctx, cur_singleton_object);
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE | DUK_DEFPROP_FORCE);
+			duk_pop(ctx);
 		}
 		// global constants
 		HashMap<StringName, HashMap<StringName, int> > global_constants;

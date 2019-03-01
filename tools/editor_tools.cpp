@@ -244,6 +244,24 @@ static String format_doc_text(const String &p_source, const String & p_indent = 
 	return ret;
 }
 
+static String format_identifier(const String &p_ident) {
+	List<String> reserved_words;
+	ECMAScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+	if (reserved_words.find(p_ident)) {
+		return String("p_") + p_ident;
+	}
+	return p_ident;
+}
+
+static String format_property_name(const String &p_ident) {
+	List<String> reserved_words;
+	ECMAScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+	if (reserved_words.find(p_ident) || p_ident.find("/") != -1) {
+		return String("'") + p_ident + "'";
+	}
+	return p_ident;
+}
+
 static String get_type_name(const String &p_type) {
 	if (p_type.empty())
 		return "void";
@@ -253,6 +271,10 @@ static String get_type_name(const String &p_type) {
 		return "boolean";
 	if (p_type == "String")
 		return "string";
+	if (p_type == "Array")
+		return "any[]";
+	if (p_type == "Dictionary")
+		return "object";
 	return p_type;
 }
 
@@ -265,15 +287,16 @@ ${description}
 )";
 	Dictionary dict;
 	dict["description"] = format_doc_text(p_method.description, "\t\t ");
-	dict["name"] = p_method.name;
+	dict["name"] = format_property_name(p_method.name);
 	dict["return_type"] = get_type_name(p_method.return_type);
 	String params = "";
+	bool arg_default_value_started = false;
 	for (int i=0; i<p_method.arguments.size(); i++) {
 		const DocData::ArgumentDoc& arg = p_method.arguments[i];
-		String arg_str = arg.name + ": " + get_type_name(arg.type);
-		if (!arg.default_value.empty()) {
-			arg_str += String(" = ") + arg.default_value;
+		if (!arg_default_value_started && !arg.default_value.empty()) {
+			arg_default_value_started = true;
 		}
+		String arg_str = format_identifier(arg.name) + (arg_default_value_started ? "?: " : ": ") + get_type_name(arg.type);
 		if (i<p_method.arguments.size() -1) {
 			arg_str += ", ";
 		}
@@ -316,12 +339,13 @@ ${methods}
 		String const_str = R"(
 		/**
 ${description}
+		* @value ${value}
 		*/
-		static readonly ${name}: number = ${value};
+		static readonly ${name}: number;
 )";
 		Dictionary dict;
 		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
-		dict["name"] = const_doc.name;
+		dict["name"] = format_property_name(const_doc.name);
 		dict["value"] = const_doc.value;
 		constants += applay_partern(const_str, dict);;
 	}
@@ -339,15 +363,20 @@ ${description}
 )";
 		Dictionary dict;
 		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
-		dict["name"] = prop_doc.name;
+		dict["name"] = format_property_name(prop_doc.name);
 		dict["type"] = get_type_name(prop_doc.type);
 		properties += applay_partern(prop_str, dict);;
 	}
 	dict["properties"] = properties;
 
+	// TODO: Theme properties
+
 	String methods = "";
 	for (int i=0; i<class_doc.methods.size(); i++) {
 		const DocData::MethodDoc & method_doc = class_doc.methods[i];
+		if (method_doc.name == class_doc.name) {
+			continue;
+		}
 		methods += _export_method(method_doc);
 	}
 	dict["methods"] = methods;
@@ -361,7 +390,11 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 
 	const String godot_module = R"(
 declare module godot {
-	${classes}
+${constants}
+${classes}
+	const Singletons : {
+${singletons}
+	}
 })";
 	String classes = "";
 	Set<String> ignored_classes;
@@ -369,6 +402,7 @@ declare module godot {
 	ignored_classes.insert("float");
 	ignored_classes.insert("bool");
 	ignored_classes.insert("Array");
+	ignored_classes.insert("Dictionary");
 	ignored_classes.insert("Nil");
 
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
@@ -379,8 +413,45 @@ declare module godot {
 		classes += _export_class(class_doc);
 	}
 
+	const DocData::ClassDoc & class_doc = doc->class_list["@GlobalScope"];
+	String constants = "";
+	for (int i=0; i<class_doc.constants.size(); i++) {
+		const DocData::ConstantDoc & const_doc = class_doc.constants[i];
+		String const_str = R"(
+	/**
+${description}
+	* @value ${value}
+	*/
+	const ${name}: number;
+)";
+		Dictionary dict;
+		dict["description"] = format_doc_text(const_doc.description, "\t ");
+		dict["name"] = format_property_name(const_doc.name);
+		dict["value"] = const_doc.value;
+		constants += applay_partern(const_str, dict);;
+	}
+
+	String singletons = "";
+	for (int i=0; i<class_doc.properties.size(); i++) {
+		const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
+		String prop_str = R"(
+		/**
+${description}
+		*/
+		${name}: ${type},
+)";
+		Dictionary dict;
+		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
+		dict["name"] = format_property_name(prop_doc.name);
+		dict["type"] = get_type_name(prop_doc.type);
+		singletons += applay_partern(prop_str, dict);;
+	}
+
 	Dictionary dict;
 	dict["classes"] = classes;
+	dict["constants"] = constants;
+	dict["singletons"] = singletons;
+
 	String text = applay_partern(godot_module, dict);
 
 	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
