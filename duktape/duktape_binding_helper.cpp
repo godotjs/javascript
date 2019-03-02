@@ -269,7 +269,8 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 		case Variant::INT:
 			duk_push_number(ctx, var);
 			break;
-		case Variant::STRING: {
+		case Variant::STRING:
+		case Variant::NODE_PATH: {
 			duk_push_godot_string(ctx, var);
 		} break;
 		case Variant::OBJECT:

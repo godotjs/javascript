@@ -22,6 +22,7 @@ TYPE_MAP = {
 	'float': 'number',
 	'bool': 'boolean',
 	'String': 'string',
+	'NodePath': 'string',
 }
 
 METHOD_OP_EQUALS = {
