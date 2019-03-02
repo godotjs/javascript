@@ -351,7 +351,7 @@ ${description}
 	}
 	dict["constants"] = constants;
 
-
+	Vector<DocData::MethodDoc> method_list = class_doc.methods;
 	String properties = "";
 	for (int i=0; i<class_doc.properties.size(); i++) {
 		const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
@@ -365,15 +365,35 @@ ${description}
 		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
 		dict["name"] = format_property_name(prop_doc.name);
 		dict["type"] = get_type_name(prop_doc.type);
-		properties += applay_partern(prop_str, dict);;
+		properties += applay_partern(prop_str, dict);
+
+		if (!prop_doc.getter.empty()) {
+			DocData::MethodDoc md;
+			md.name = prop_doc.getter;
+			md.return_type = get_type_name(prop_doc.type);
+			md.description = String("Getter of `") + prop_doc.name + "' property";
+			method_list.push_back(md);
+		}
+
+		if (!prop_doc.setter.empty()) {
+			DocData::MethodDoc md;
+			md.name = prop_doc.setter;
+			DocData::ArgumentDoc arg;
+			arg.name = "p_value";
+			arg.type = get_type_name(prop_doc.type);
+			md.arguments.push_back(arg);
+			md.return_type = "void";
+			md.description = String("Setter of `") + prop_doc.name + "' property";
+			method_list.push_back(md);
+		}
 	}
 	dict["properties"] = properties;
 
 	// TODO: Theme properties
 
 	String methods = "";
-	for (int i=0; i<class_doc.methods.size(); i++) {
-		const DocData::MethodDoc & method_doc = class_doc.methods[i];
+	for (int i=0; i<method_list.size(); i++) {
+		const DocData::MethodDoc & method_doc = method_list[i];
 		if (method_doc.name == class_doc.name) {
 			continue;
 		}
@@ -401,9 +421,15 @@ ${singletons}
 	ignored_classes.insert("int");
 	ignored_classes.insert("float");
 	ignored_classes.insert("bool");
+	ignored_classes.insert("Nil");
+	ignored_classes.insert("Variant");
 	ignored_classes.insert("Array");
 	ignored_classes.insert("Dictionary");
-	ignored_classes.insert("Nil");
+	ignored_classes.insert("Vector2");
+	ignored_classes.insert("Vector3");
+	ignored_classes.insert("Color");
+	ignored_classes.insert("Rect2");
+	ignored_classes.insert("RID");
 
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
 		const DocData::ClassDoc & class_doc = E->get();
