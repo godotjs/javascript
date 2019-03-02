@@ -228,12 +228,24 @@ static String format_doc_text(const String &p_source, const String & p_indent = 
 	dict["[codeblock]"] = "```gdscript";
 	dict["[/codeblock]"] = "```";
 
-	String ret = "";
+
 	Vector<String> lines = p_source.split("\n");
+	Vector<String> text_lines;
 	for (int i = 0; i < lines.size(); i++) {
 		String line = lines[i].strip_edges();
-		if (line.strip_edges().empty()) continue;
-		ret += p_indent + lines[i].strip_edges() + "  \n";
+		if (line.empty()) continue;
+		text_lines.push_back(line);
+	}
+
+	String ret = "";
+	for (int i = 0; i < text_lines.size(); i++) {
+		if (i>0) {
+			ret += p_indent;
+		}
+		ret += text_lines[i];
+		if((i < text_lines.size() - 1)) {
+			ret += "  \n";
+		}
 	}
 
 	for (const Variant* key = dict.next(); key; key = dict.next(key)) {
@@ -269,20 +281,20 @@ static String get_type_name(const String &p_type) {
 		return "number";
 	if (p_type == "bool")
 		return "boolean";
-	if (p_type == "String")
+	if (p_type == "String" || p_type == "NodePath")
 		return "string";
 	if (p_type == "Array")
 		return "any[]";
 	if (p_type == "Dictionary")
 		return "object";
+	if (p_type == "Variant")
+		return "any";
 	return p_type;
 }
 
 String _export_method(const DocData::MethodDoc &p_method) {
 	const String method_template = R"(
-		/**
-${description}
-		*/
+		/** ${description} */
 		${name}(${params}) : ${return_type};
 )";
 	Dictionary dict;
@@ -308,11 +320,9 @@ ${description}
 
 String _export_class(const DocData::ClassDoc &class_doc) {
 	const String class_template = R"(
-	/**
-${brief_description}
+	/** ${brief_description}
 
-${description}
-	*/
+	 ${description} */
 	class ${name}${extends}${inherits} {
 ${constants}
 ${properties}
@@ -337,10 +347,9 @@ ${methods}
 	for (int i=0; i<class_doc.constants.size(); i++) {
 		const DocData::ConstantDoc & const_doc = class_doc.constants[i];
 		String const_str = R"(
-		/**
-${description}
-		* @value ${value}
-		*/
+		/** ${description}
+		 * @value ${value}
+		 */
 		static readonly ${name}: number;
 )";
 		Dictionary dict;
@@ -356,9 +365,7 @@ ${description}
 	for (int i=0; i<class_doc.properties.size(); i++) {
 		const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
 		String prop_str = R"(
-		/**
-${description}
-		*/
+		/** ${description} */
 		${name}: ${type};
 )";
 		Dictionary dict;
@@ -371,7 +378,7 @@ ${description}
 			DocData::MethodDoc md;
 			md.name = prop_doc.getter;
 			md.return_type = get_type_name(prop_doc.type);
-			md.description = String("Getter of `") + prop_doc.name + "' property";
+			md.description = String("Getter of `") + prop_doc.name + "` property";
 			method_list.push_back(md);
 		}
 
@@ -383,7 +390,7 @@ ${description}
 			arg.type = get_type_name(prop_doc.type);
 			md.arguments.push_back(arg);
 			md.return_type = "void";
-			md.description = String("Setter of `") + prop_doc.name + "' property";
+			md.description = String("Setter of `") + prop_doc.name + "` property";
 			method_list.push_back(md);
 		}
 	}
@@ -430,6 +437,7 @@ ${singletons}
 	ignored_classes.insert("Color");
 	ignored_classes.insert("Rect2");
 	ignored_classes.insert("RID");
+	ignored_classes.insert("NodePath");
 
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
 		const DocData::ClassDoc & class_doc = E->get();
@@ -444,10 +452,9 @@ ${singletons}
 	for (int i=0; i<class_doc.constants.size(); i++) {
 		const DocData::ConstantDoc & const_doc = class_doc.constants[i];
 		String const_str = R"(
-	/**
-${description}
-	* @value ${value}
-	*/
+	/** ${description}
+	 * @value ${value}
+	 */
 	const ${name}: number;
 )";
 		Dictionary dict;
@@ -461,9 +468,7 @@ ${description}
 	for (int i=0; i<class_doc.properties.size(); i++) {
 		const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
 		String prop_str = R"(
-		/**
-${description}
-		*/
+		/** ${description} */
 		${name}: ${type},
 )";
 		Dictionary dict;
