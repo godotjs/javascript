@@ -2,6 +2,7 @@
 #include "core/resource.h"
 
 HashMap<Variant::Type, DuktapeHeapObject *> *class_prototypes = NULL;
+HashMap<Variant::Type, DuktapeHeapObject *> *class_constructors = NULL;
 Variant (*duk_get_variant)(duk_context *ctx, duk_idx_t idx) = NULL;
 void (*duk_push_variant)(duk_context *ctx, const Variant &var) = NULL;
 DuktapeHeapObject *godot_to_string_ptr = NULL;
@@ -19,6 +20,7 @@ duk_ret_t rid_constructor(duk_context *ctx);
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
 	class_prototypes = &builtin_class_prototypes;
+	class_constructors = &builtin_class_constructors;
 	godot_to_string_ptr = duk_ptr_godot_to_string;
 	duk_get_variant = duk_get_godot_variant;
 	duk_push_variant = duk_push_godot_variant;

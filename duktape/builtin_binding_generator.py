@@ -21,6 +21,14 @@ def apply_parttern(template, values):
 		template = template.replace( '${' + key + '}', values[key])
 	return template
 
+def process_constant(cls, const):
+	template = \
+'''
+	duk_push_literal(ctx, "${name}");
+	duk_push_variant(ctx, ${value});
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+'''
+	return apply_parttern(template, const);
 
 def process_property(cls, prop):
 	prop_type_map = {
@@ -141,6 +149,10 @@ def process_class(cls):
 	template = \
 '''
 static void register_properties_${name}(duk_context *ctx) {
+	
+	duk_push_heapptr(ctx, class_constructors->get(${variant_type}));
+	${constants}
+	duk_pop(ctx);
 
 	duk_push_heapptr(ctx, class_prototypes->get(${variant_type}));
 	${properties}
@@ -148,6 +160,11 @@ static void register_properties_${name}(duk_context *ctx) {
 	duk_pop(ctx);
 }
 '''
+
+	constants = ''
+	for const in cls['constants']:
+		constants += process_constant(cls, const)
+	
 	properties = ''
 	for prop in cls['properties']:
 		properties += process_property(cls, prop)
@@ -159,6 +176,7 @@ static void register_properties_${name}(duk_context *ctx) {
 	values = {
 		"name": cls['name'],
 		"variant_type": variant_types[cls['name']],
+		"constants": constants,
 		"properties": properties,
 		"methods": methods,
 	}

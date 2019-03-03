@@ -74,6 +74,7 @@ private:
 
 private:
 	HashMap<Variant::Type, DuktapeHeapObject *> builtin_class_prototypes;
+	HashMap<Variant::Type, DuktapeHeapObject *> builtin_class_constructors;
 	HashMap<StringName, DuktapeHeapObject *> native_class_prototypes;
 	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
 

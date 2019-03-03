@@ -3,7 +3,11 @@
 
 #include "duktape_binding_helper.h"
 
+#define inf Math_INF
+#define nan Math_NAN
+
 extern HashMap<Variant::Type, DuktapeHeapObject *> *class_prototypes;
+extern HashMap<Variant::Type, DuktapeHeapObject *> *class_constructors;
 extern Variant (*duk_get_variant)(duk_context *ctx, duk_idx_t idx);
 extern void (*duk_push_variant)(duk_context *ctx, const Variant &var);
 extern DuktapeHeapObject *godot_to_string_ptr;
@@ -31,6 +35,7 @@ void register_builtin_class(duk_context *ctx, duk_c_function ctor, int ctor_argc
 
 	duk_push_string(ctx, name);
 	duk_push_c_function(ctx, ctor, ctor_argc);
+	class_constructors->set(type, duk_get_heapptr(ctx, -1));
 	duk_push_object(ctx);
 	class_prototypes->set(type, duk_get_heapptr(ctx, -1));
 
