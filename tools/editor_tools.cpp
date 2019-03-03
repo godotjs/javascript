@@ -438,6 +438,7 @@ ${singletons}
 	ignored_classes.insert("Rect2");
 	ignored_classes.insert("RID");
 	ignored_classes.insert("NodePath");
+	ignored_classes.insert("Transform2D");
 
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
 		const DocData::ClassDoc & class_doc = E->get();

@@ -16,6 +16,8 @@ void rect2_properties(duk_context *ctx);
 duk_ret_t color_constructor(duk_context *ctx);
 void color_properties(duk_context *ctx);
 duk_ret_t rid_constructor(duk_context *ctx);
+duk_ret_t transform2d_constructor(duk_context *ctx);
+void transform2d_properties(duk_context *ctx);
 
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
@@ -31,6 +33,7 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 	register_builtin_class<Color>(ctx, color_constructor, 4, Variant::COLOR, "Color");
 	register_builtin_class<Vector3>(ctx, vector3_constructor, 3, Variant::VECTOR3, "Vector3");
 	register_builtin_class<RID>(ctx, rid_constructor, 1, Variant::_RID, "RID");
+	register_builtin_class<Transform2D>(ctx, transform2d_constructor, 1, Variant::TRANSFORM2D, "Transform2D");
 
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
@@ -42,6 +45,7 @@ void register_builtin_class_properties(duk_context *ctx) {
 	vector3_properties(ctx);
 	color_properties(ctx);
 	rect2_properties(ctx);
+	transform2d_properties(ctx);
 }
 
 duk_ret_t vector2_constructor(duk_context *ctx) {
@@ -82,8 +86,7 @@ void vector2_properties(duk_context *ctx) {
 		}
 		duk_push_variant(ctx, ret);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -103,8 +106,7 @@ void vector2_properties(duk_context *ctx) {
 		}
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply_assign");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -124,8 +126,7 @@ void vector2_properties(duk_context *ctx) {
 		}
 		duk_push_variant(ctx, ret);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -139,8 +140,7 @@ void vector2_properties(duk_context *ctx) {
 
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide_assign");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -150,8 +150,7 @@ void vector2_properties(duk_context *ctx) {
 		ptr->operator=(ptr->operator-());
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "negate_assign");
 
 	duk_pop(ctx);
@@ -202,15 +201,21 @@ void rect2_properties(duk_context *ctx) {
 	duk_push_heapptr(ctx, class_prototypes->get(Variant::COLOR));
 
 	duk_push_literal(ctx, "end");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	duk_c_function func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Rect2 *ptr = duk_get_builtin_ptr<Rect2>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc > 0) {
+			Vector2 arg = (duk_get_variant(ctx, 0));
+			ptr->size = arg - ptr->position;
+		}
 		duk_push_variant(ctx, ptr->position + ptr->size);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_pop(ctx);
 }
@@ -262,8 +267,7 @@ void color_properties(duk_context *ctx) {
 		}
 		duk_push_variant(ctx, ret);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -283,8 +287,7 @@ void color_properties(duk_context *ctx) {
 		}
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply_assign");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -304,8 +307,7 @@ void color_properties(duk_context *ctx) {
 		}
 		duk_push_variant(ctx, ret);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -325,8 +327,7 @@ void color_properties(duk_context *ctx) {
 		}
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide_assign");
 
 	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
@@ -336,86 +337,120 @@ void color_properties(duk_context *ctx) {
 		ptr->operator=(ptr->operator-());
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
-	},
-			1);
+	}, 1);
 	duk_put_prop_literal(ctx, -2, "negate_assign");
 
 	duk_push_literal(ctx, "h");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	duk_c_function func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc > 0) {
+			ptr->set_hsv(duk_get_number_default(ctx, 0, 0), ptr->get_s(), ptr->get_v(), ptr->a);
+		}
 		duk_push_number(ctx, ptr->get_h());
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_push_literal(ctx, "s");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc > 0) {
+			ptr->set_hsv(ptr->get_h(), duk_get_number_default(ctx, 0, 0), ptr->get_v(), ptr->a);
+		}
 		duk_push_number(ctx, ptr->get_s());
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_push_literal(ctx, "v");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc > 0) {
+			ptr->set_hsv(ptr->get_h(), ptr->get_s(), duk_get_number_default(ctx, 0, 0), ptr->a);
+		}
 		duk_push_number(ctx, ptr->get_v());
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_push_literal(ctx, "r8");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		duk_push_uint(ctx, ptr->r * 255);
+		if (argc > 0) {
+			ptr->r =  duk_get_number_default(ctx, 0, 0) / 255.0;
+		}
+		duk_push_number(ctx, Math::round(ptr->r * 255.0));
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_push_literal(ctx, "g8");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		duk_push_uint(ctx, ptr->g * 255);
+		if (argc) {
+			ptr->g = duk_get_number_default(ctx, 0, 0) / 255.0;
+		}
+		duk_push_number(ctx, Math::round(ptr->g * 255.0));
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_push_literal(ctx, "b8");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		duk_push_uint(ctx, ptr->b * 255);
+		if (argc) {
+			ptr->b = duk_get_number_default(ctx, 0, 0) / 255.0;
+		}
+		duk_push_number(ctx, Math::round(ptr->b * 255.0));
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_push_literal(ctx, "a8");
-	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_idx_t argc = duk_get_top(ctx);
 		duk_push_this(ctx);
 		Color *ptr = duk_get_builtin_ptr<Color>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
-		duk_push_uint(ctx, ptr->a * 255);
+		if (argc) {
+			ptr->a = duk_get_number_default(ctx, 0, 0) / 255.0;
+		}
+		duk_push_number(ctx, Math::round(ptr->a * 255.0));
 		return DUK_HAS_RET_VAL;
-	},
-			1);
-	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_ENUMERABLE);
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_pop(ctx);
 }
@@ -439,5 +474,134 @@ duk_ret_t rid_constructor(duk_context *ctx) {
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 
 	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t transform2d_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+
+	duk_push_this(ctx);
+	Transform2D *ptr = NULL;
+
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+		case Variant::NIL:
+			ptr = memnew(Transform2D());
+			break;
+		case Variant::TRANSFORM:
+			// TODO: construct from Transform
+			break;
+		case Variant::VECTOR2: {
+				Vector2 arg1 = duk_get_variant(ctx, 1);
+				Vector2 arg2 = duk_get_variant(ctx, 2);
+				ptr = memnew(Transform2D());
+				ptr->elements[0] = arg0;
+				ptr->elements[1] = arg1;
+				ptr->elements[2] = arg2;
+			} break;
+		case Variant::REAL:
+			Vector2 arg1 = duk_get_variant(ctx, 1);
+			ptr = memnew(Transform2D(arg0, arg1));
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::TRANSFORM2D);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+void transform2d_properties(duk_context *ctx) {
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::TRANSFORM2D));
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Transform2D *ptr = duk_get_builtin_ptr<Transform2D>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		Variant arg0 = duk_get_variant(ctx, 0);
+		Variant ret;
+		switch (arg0.get_type()) {
+			case Variant::VECTOR2: ret = ptr->xform(Vector2(arg0));
+			case Variant::RECT2: ret = ptr->xform(Rect2(arg0));
+			default:
+				return DUK_ERR_TYPE_ERROR;
+		}
+		duk_push_variant(ctx, ret);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "xform");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Transform2D *ptr = duk_get_builtin_ptr<Transform2D>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		Variant arg0 = duk_get_variant(ctx, 0);
+		Variant ret;
+		switch (arg0.get_type()) {
+			case Variant::VECTOR2: ret = ptr->xform_inv(Vector2(arg0));
+			case Variant::RECT2: ret = ptr->xform_inv(Rect2(arg0));
+			default:
+				return DUK_ERR_TYPE_ERROR;
+		}
+		duk_push_variant(ctx, ret);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "xform_inv");
+
+	duk_push_literal(ctx, "x");
+	duk_c_function func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		Transform2D *ptr = duk_get_builtin_ptr<Transform2D>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			Vector2 arg = duk_get_variant(ctx, 0);
+			ptr->elements[0] = arg;
+		}
+		duk_push_variant(ctx, ptr->elements[0]);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+
+	duk_push_literal(ctx, "y");
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		Transform2D *ptr = duk_get_builtin_ptr<Transform2D>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			Vector2 arg = duk_get_variant(ctx, 0);
+			ptr->elements[1] = arg;
+		}
+		duk_push_variant(ctx, ptr->elements[1]);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+	duk_push_literal(ctx, "origin");
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		Transform2D *ptr = duk_get_builtin_ptr<Transform2D>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			Vector2 arg = duk_get_variant(ctx, 0);
+			ptr->elements[1] = arg;
+		}
+		duk_push_variant(ctx, ptr->elements[1]);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+	duk_pop(ctx);
 }
 

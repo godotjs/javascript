@@ -14,6 +14,7 @@ variant_types = {
 	"Color": "Variant::COLOR",
 	"Rect2": "Variant::RECT2",
 	"RID": "Variant::_RID",
+	"Transform2D": "Variant::TRANSFORM2D",
 }
 
 def apply_parttern(template, values):

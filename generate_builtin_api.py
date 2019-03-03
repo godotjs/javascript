@@ -15,6 +15,7 @@ BUILTIN_CLASSES = [
 	'Color',
 	# 'Vector3',
 	'RID',
+	'Transform2D',
 ]
 
 TYPE_MAP = {
@@ -90,6 +91,32 @@ METHOD_OP_SUB_ASSIGN = {
 	"return": "this"
 }
 
+METHOD_OP_MUL = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "multiply",
+	"native_method": "operator*",
+	"return": "${class_name}"
+}
+
+METHOD_OP_MUL_ASSIGN = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "multiply_assign",
+	"native_method": "operator*=",
+	"return": "this"
+}
+
 METHOD_OP_NEG = {
 	"arguments": [],
 	"name": "negate",
@@ -111,7 +138,7 @@ METHOD_OP_LESS = {
 }
 
 
-METHOD_OP_LESS_OR_EQAUL = {
+METHOD_OP_LESS_EQAUL = {
 	"arguments": [
 		{
 			"default_value": None,
@@ -119,14 +146,15 @@ METHOD_OP_LESS_OR_EQAUL = {
 			"type": "${class_name}"
 		}
 	],
-	"name": "less_or_equal",
+	"name": "less_equal",
 	"native_method": "operator<=",
 	"return": "boolean"
 }
 
 IGNORED_PROPS = {
 	"Rect2": ['end'],
-	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8']
+	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8'],
+	"Transform2D": ['x', 'y', 'origin', 'xform', 'xform_inv'],
 }
 
 EXTRAL_METHODS = {
@@ -134,13 +162,18 @@ EXTRAL_METHODS = {
 		METHOD_OP_NEG,
 		METHOD_OP_EQUALS,
 		METHOD_OP_LESS,
-		METHOD_OP_LESS_OR_EQAUL,
+		METHOD_OP_LESS_EQAUL,
 		METHOD_OP_ADD,
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
 	],
 	"Rect2": [METHOD_OP_EQUALS],
+	"Transform2D": [
+		METHOD_OP_EQUALS,
+		METHOD_OP_MUL,
+		METHOD_OP_MUL_ASSIGN,
+	],
 	"Color": [
 		METHOD_OP_NEG,
 		METHOD_OP_EQUALS,
@@ -153,7 +186,7 @@ EXTRAL_METHODS = {
 	"RID": [
 		METHOD_OP_EQUALS,
 		METHOD_OP_LESS,
-		METHOD_OP_LESS_OR_EQAUL,
+		METHOD_OP_LESS_EQAUL,
 	],
 }
 
@@ -184,8 +217,11 @@ def parse_class(cls):
 	
 	for m in (cls.find("methods") if cls.find("methods") is not None else []):
 		m_dict = dict(m.attrib)
-		if m_dict['name'] == class_name:
+		method_name = m_dict['name']
+		if method_name == class_name:
 			continue# ignore constructors
+		if class_name in IGNORED_PROPS and method_name in IGNORED_PROPS[class_name]:
+			continue# ignored methods
 		return_type = m.find("return").attrib["type"]
 		if return_type in TYPE_MAP:
 			return_type = TYPE_MAP[return_type]
@@ -204,8 +240,8 @@ def parse_class(cls):
 				'has_default_value': "default" in dictArg
 			})
 		methods.append({
-			'name': m_dict['name'],
-			'native_method': m_dict['name'],
+			'name': method_name,
+			'native_method': method_name,
 			'return': return_type,
 			'arguments': arguments,
 		})
