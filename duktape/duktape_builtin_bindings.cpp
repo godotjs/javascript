@@ -593,9 +593,9 @@ void transform2d_properties(duk_context *ctx) {
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
 		if (argc) {
 			Vector2 arg = duk_get_variant(ctx, 0);
-			ptr->elements[1] = arg;
+			ptr->elements[2] = arg;
 		}
-		duk_push_variant(ctx, ptr->elements[1]);
+		duk_push_variant(ctx, ptr->elements[2]);
 		return DUK_HAS_RET_VAL;
 	};
 	duk_push_c_function(ctx, func, 0);
