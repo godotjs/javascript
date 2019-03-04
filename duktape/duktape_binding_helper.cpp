@@ -384,10 +384,12 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 			if (godot_type == Variant::OBJECT || godot_type == TYPE_GODOT_REFERENCE) {
 				Object *obj = duk_get_godot_object(ctx, idx);
 				if (Reference *r = Object::cast_to<Reference>(obj)) {
+					REF ref(r);
+					#if 0 // We have done this when passing object to ECMAScript
 					// Add reference count as the REF construct from Reference* don't increase the reference count
 					// This reference count will minused in the desctuctor of REF
-					REF ref(r);
-					ref->reference();
+					//ref->reference();
+					#endif
 					return ref;
 				}
 				return obj;
@@ -509,6 +511,9 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 			heap_obj = duk_get_heapptr(ctx, -1);
 			if (Reference *ref = Object::cast_to<Reference>(obj)) {
 				get_singleton()->set_weak_ref(ref->get_instance_id(), heap_obj);
+				if (!from_constructor) {
+					ref->reference();
+				}
 				type = TYPE_GODOT_REFERENCE;
 			} else {
 				// The strong reference is released when object is going to die
