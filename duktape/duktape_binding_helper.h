@@ -53,6 +53,7 @@ private:
 	}
 	static duk_ret_t duk_godot_object_method(duk_context *ctx);
 	static duk_ret_t godot_to_string(duk_context *ctx);
+	static duk_ret_t godot_builtin_function(duk_context *ctx);
 
 	static duk_ret_t godot_print_function(duk_context *ctx);
 

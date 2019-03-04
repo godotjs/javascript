@@ -4,6 +4,7 @@
 #include "../ecmascript_language.h"
 #include "core/engine.h"
 #include "core/global_constants.h"
+#include "core/math/expression.h"
 
 Object *DuktapeBindingHelper::ecma_instance_target = NULL;
 
@@ -253,6 +254,36 @@ duk_ret_t DuktapeBindingHelper::godot_to_string(duk_context *ctx) {
 	duk_push_this(ctx);
 	Variant var = duk_get_godot_variant(ctx, -1);
 	duk_push_godot_string(ctx, var);
+	return DUK_HAS_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::godot_builtin_function(duk_context *ctx) {
+	duk_idx_t argc = duk_get_top(ctx);
+
+	Variant ret;
+	Variant::CallError err;
+	String err_msg;
+
+	const Variant **args = memnew_arr(const Variant *, argc);
+	Vector<Variant> vargs;
+	vargs.resize(argc);
+	for (duk_idx_t i = 0; i < argc; ++i) {
+		vargs.write[i] = duk_get_godot_variant(ctx, i);
+		args[i] = (vargs.ptr() + i);
+	}
+
+	Expression::BuiltinFunc func = (Expression::BuiltinFunc)duk_get_current_magic(ctx);
+	Expression::exec_func(func, args, &ret, err, err_msg);
+	if (args != NULL) {
+		memdelete_arr(args);
+	}
+
+	if (err.error != Variant::CallError::CALL_OK) {
+		ERR_EXPLAIN(err_msg);
+		return DUK_ERR_TYPE_ERROR;
+	}
+
+	duk_push_godot_variant(ctx, ret);
 	return DUK_HAS_RET_VAL;
 }
 
@@ -715,6 +746,16 @@ void DuktapeBindingHelper::initialize() {
 				duk_push_number(ctx, value);
 				duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
 			}
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
+		}
+
+		// buitin functions
+		for (int i = 0; i < Expression::FUNC_MAX; ++i) {
+			Expression::BuiltinFunc func = (Expression::BuiltinFunc)i;
+			String name = Expression::get_func_name(func);
+			duk_push_godot_string(ctx, name);
+			duk_push_c_function(ctx, godot_builtin_function, DUK_VARARGS);
+			duk_set_magic(ctx, -1, func);
 			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
 		}
 
