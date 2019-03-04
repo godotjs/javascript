@@ -207,7 +207,6 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 			(*script_ptr)->set_library(script->get_library());
 			script->set_name((*script_ptr)->get_name());
 			script->set_path((*script_ptr)->get_path());
-			script->set_import_path((*script_ptr)->get_import_path());
 			script->set_subindex((*script_ptr)->get_subindex());
 			script = *script_ptr;
 		}

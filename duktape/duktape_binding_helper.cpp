@@ -13,7 +13,7 @@ void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fflush(stderr);
 #ifdef DEBUG_ENABLED
 	CRASH_NOW();
-#elif
+#else
 	abort();
 #endif
 }
