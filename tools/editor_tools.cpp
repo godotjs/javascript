@@ -434,6 +434,8 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 								"${singletons}""\n"
 								"	}""\n"
 								"}""\n"
+								"""\n"
+								"${buitins}"
 								"""\n";
 
 	String classes = "";
@@ -511,6 +513,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	}
 	dict["constants"] = constants;
 	dict["classes"] = classes;
+	dict["buitins"] = BUILTIN_DECLEARATION_TEXT;
 
 	String text = applay_partern(godot_module, dict);
 	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);

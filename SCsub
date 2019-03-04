@@ -15,6 +15,12 @@ else:
 	os.system('python generate_builtin_api.py ' + doc_path)
 	os.system('python duktape/builtin_binding_generator.py')
 
+with open("tools/godot.builtin.d.ts.gen.cpp", "w") as f:
+	text = '#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = "${source}";'
+	source = open("misc/godot.builtin.d.ts", 'r').read()
+	source = source.replace("\n", "\\n")
+	source = source.replace('"', '\\"')
+	f.write(text.replace('${source}', source))
 
 sources = [
 	'register_types.cpp',

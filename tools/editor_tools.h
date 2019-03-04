@@ -52,6 +52,7 @@ class ECMAScriptPlugin : public EditorPlugin {
 	Ref<EditorInspectorPluginECMALib> eslib_inspector_plugin;
 
 protected:
+	static String BUILTIN_DECLEARATION_TEXT;
 	static void _bind_methods();
 	void _on_bottom_panel_toggled(bool pressed);
 	void _on_menu_item_pressed(int item);
