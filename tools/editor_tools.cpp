@@ -43,9 +43,9 @@ Variant ECMAClassBrower::get_drag_data_fw(const Point2 &p_point, Control *p_from
 		if (item) {
 			Ref<ECMAScript> script = item->get_metadata(0);
 			Vector<String> paths;
-
-			String class_dir = String("res://ECMAClass/");
-			String path = class_dir + script->get_class_name() + ".es";
+			String class_dir = GLOBAL_DEF("ecmascript/class_path", "res://bin");
+			class_dir.simplify_path();
+			String path = class_dir  + "/" + script->get_class_name() + ".es";
 			if (!res_dir->dir_exists(class_dir)) {
 				res_dir->make_dir_recursive(class_dir);
 			}
@@ -83,6 +83,9 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	declaration_file_dialog->set_current_file("godot.d.ts");
 	declaration_file_dialog->connect("file_selected", this, "_export_typescript_declare_file");
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
+
+	GLOBAL_DEF("ecmascript/class_path", "res://bin");
+	ProjectSettings::get_singleton()->set_custom_property_info("ecmascript/class_path", PropertyInfo(Variant::STRING, "ecmascript/class_path", PROPERTY_HINT_DIR));
 }
 
 void ECMAClassBrower::_bind_methods() {
