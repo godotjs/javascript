@@ -343,7 +343,26 @@ declare module godot {
 		 The vector's z component. Also accessible by using the index position `[2]`.
 		*/
 		z: number;
+		
+		add(p_value: Vector3): Vector3;
+		add_assign(p_value: Vector3): Vector3;
 
+		subtract(p_value: Vector3): Vector3;
+		subtract_assign(p_value: Vector3): Vector3;
+
+		multiply(p_value: Vector3 | number): Vector3;
+		multiply_assign(p_value: Vector3 | number): Vector3;
+
+		divide(p_value: Vector3 | number): Vector3;
+		divide_assign(p_value: number|Vector3): Vector3;
+
+		negate(): Vector3;
+		negate_assign(): Vector3;
+
+		equals(p_value: Vector3): boolean;
+
+		less(p_value: Vector3): boolean;
+		less_equal(p_value: Vector3): boolean;
 
 		/**
 		 Returns a new vector with all components in absolute values (i.e. positive).

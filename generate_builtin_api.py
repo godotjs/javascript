@@ -13,7 +13,7 @@ BUILTIN_CLASSES = [
 	'Vector2',
 	'Rect2',
 	'Color',
-	# 'Vector3',
+	'Vector3',
 	'RID',
 	'Transform2D',
 ]
@@ -159,6 +159,16 @@ IGNORED_PROPS = {
 
 EXTRAL_METHODS = {
 	"Vector2": [
+		METHOD_OP_NEG,
+		METHOD_OP_EQUALS,
+		METHOD_OP_LESS,
+		METHOD_OP_LESS_EQAUL,
+		METHOD_OP_ADD,
+		METHOD_OP_ADD_ASSIGN,
+		METHOD_OP_SUB,
+		METHOD_OP_SUB_ASSIGN,
+	],
+	"Vector3": [
 		METHOD_OP_NEG,
 		METHOD_OP_EQUALS,
 		METHOD_OP_LESS,
