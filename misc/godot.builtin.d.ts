@@ -106,7 +106,7 @@ declare module godot {
 		equals(p_value: Vector2): boolean;
 
 		less(p_value: Vector2): boolean;
-		less_or_equal(p_value: Vector2): boolean;
+		less_equal(p_value: Vector2): boolean;
 
 		/**
 		 Returns a new vector with all components in absolute values (i.e. positive).
@@ -1536,6 +1536,90 @@ declare module godot {
 		get_id() : number;
 
 		equals(p_value: RID): boolean;
+		
+		less(p_value: RID): boolean;
+		
+		less_equal(p_value: RID): boolean;
+	}
+	
+	/** 2D Transformation. 3x2 matrix.
+
+	 Represents one or many transformations in 2D space such as translation, rotation, or scaling. It consists of a two [Vector2] x, y and [Vector2] "origin". It is similar to a 3x2 matrix. */
+	class Transform2D {
+
+		/** 
+		 * @value Transform2D( 1, 0, 0, 1, 0, 0 )
+		 */
+		static readonly IDENTITY: number;
+
+		/** 
+		 * @value Transform2D( -1, 0, 0, 1, 0, 0 )
+		 */
+		static readonly FLIP_X: number;
+
+		/** 
+		 * @value Transform2D( 1, 0, 0, -1, 0, 0 )
+		 */
+		static readonly FLIP_Y: number;
+
+
+		/** The X axis of 2x2 basis matrix containing 2 [Vector2]s as its columns: X axis and Y axis. These vectors can be interpreted as the basis vectors of local coordinate system traveling with the object. */
+		x: Vector2;
+
+		/** The Y axis of 2x2 basis matrix containing 2 [Vector2]s as its columns: X axis and Y axis. These vectors can be interpreted as the basis vectors of local coordinate system traveling with the object. */
+		y: Vector2;
+
+		/** The transform's translation offset. */
+		origin: Vector2;
+
+
+		/** Returns the inverse of the matrix. */
+		affine_inverse() : Transform2D;
+
+		/** Transforms the given vector by this transform's basis (no translation). */
+		basis_xform(v: Vector2) : Vector2;
+
+		/** Inverse-transforms the given vector by this transform's basis (no translation). */
+		basis_xform_inv(v: Vector2) : Vector2;
+
+		/** Returns the transform's origin (translation). */
+		get_origin() : Vector2;
+
+		/** Returns the transform's rotation (in radians). */
+		get_rotation() : number;
+
+		/** Returns the scale. */
+		get_scale() : Vector2;
+
+		/** Returns a transform interpolated between this transform and another by a given weight (0-1). */
+		interpolate_with(transform: Transform2D, weight: number) : Transform2D;
+
+		/** Returns the inverse of the transform, under the assumption that the transformation is composed of rotation and translation (no scaling, use affine_inverse for transforms with scaling). */
+		inverse() : Transform2D;
+
+		/** Returns the transform with the basis orthogonal (90 degrees), and normalized axis vectors. */
+		orthonormalized() : Transform2D;
+
+		/** Rotates the transform by the given angle (in radians). */
+		rotated(phi: number) : Transform2D;
+
+		/** Scales the transform by the given factor. */
+		scaled(scale: Vector2) : Transform2D;
+
+		/** Translates the transform by the given offset. */
+		translated(offset: Vector2) : Transform2D;
+
+		/** Transforms the given [Vector2] or [Rect2] by this transform. */
+		xform(v: Vector2|Rect2) : Vector2|Rect2;
+
+		/** Inverse-transforms the given [Vector2] or [Rect2] by this transform. */
+		xform_inv(v: Vector2|Rect2) : Vector2|Rect2;
+		
+		equals(p_value: Transform2D): boolean;
+		
+		multiply(p_value: Transform2D): Transform2D;
+		
+		multiply_assign(p_value: Transform2D): Transform2D;
 
 	}
 }

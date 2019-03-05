@@ -15,6 +15,23 @@ else:
 	os.system('python generate_builtin_api.py ' + doc_path)
 	os.system('python duktape/builtin_binding_generator.py')
 
+with open("tools/godot.builtin.d.ts.gen.cpp", "w") as f:
+	text = '''/* THIS FILE IS GENERATED DO NOT EDIT */
+#include "editor_tools.h"
+String ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT =
+${source};
+''';
+	source = open("misc/godot.builtin.d.ts", 'r').read()
+	lines = source.split('\n')
+	source = ""
+	length = len(lines)
+	for i in range(length):
+		line = lines[i].replace('"', '\\"')
+		line = '\t"' + line + '\\n"';
+		if i < length -1:
+			line += "\n"
+		source += line
+	f.write(text.replace('${source}', source))
 
 sources = [
 	'register_types.cpp',

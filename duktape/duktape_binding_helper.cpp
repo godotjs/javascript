@@ -13,7 +13,7 @@ void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 	fflush(stderr);
 #ifdef DEBUG_ENABLED
 	CRASH_NOW();
-#elif
+#else
 	abort();
 #endif
 }
@@ -511,7 +511,9 @@ void DuktapeBindingHelper::duk_push_godot_object(duk_context *ctx, Object *obj, 
 			heap_obj = duk_get_heapptr(ctx, -1);
 			if (Reference *ref = Object::cast_to<Reference>(obj)) {
 				get_singleton()->set_weak_ref(ref->get_instance_id(), heap_obj);
-				ref->reference();
+				if (!from_constructor) {
+					ref->reference();
+				}
 				type = TYPE_GODOT_REFERENCE;
 			} else {
 				// The strong reference is released when object is going to die
@@ -662,11 +664,6 @@ void DuktapeBindingHelper::initialize() {
 			key = ClassDB::classes.next(key);
 		}
 
-		duk_push_literal(ctx, "Singletons");
-		duk_push_object(ctx);
-		DuktapeHeapObject *singletons_object = duk_get_heapptr(ctx, -1);
-		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
-
 		// Singletons
 		List<Engine::Singleton> singletons;
 		Engine::get_singleton()->get_singletons(&singletons);
@@ -709,13 +706,6 @@ void DuktapeBindingHelper::initialize() {
 				}
 			}
 			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE | DUK_DEFPROP_FORCE);
-
-			// godot.Singletons.XXX
-			duk_push_heapptr(ctx, singletons_object);
-			duk_push_godot_string_name(ctx, s.name);
-			duk_push_heapptr(ctx, cur_singleton_object);
-			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE | DUK_DEFPROP_FORCE);
-			duk_pop(ctx);
 		}
 		// global constants
 		HashMap<StringName, HashMap<StringName, int> > global_constants;
