@@ -349,6 +349,10 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 					case Variant::VECTOR3:
 						ptr = memnew(Vector3(var));
 						break;
+					case Variant::BASIS: {
+						Basis b = var;
+						ptr = memnew(Basis(b.elements[0], b.elements[1], b.elements[2]));
+					} break;
 					default:
 						break;
 				}
@@ -453,6 +457,9 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 						break;
 					case Variant::TRANSFORM2D:
 						ret = *(static_cast<Transform2D*>(ptr));
+						break;
+					case Variant::BASIS:
+						ret = *(static_cast<Basis*>(ptr));
 						break;
 					default:
 						ret = NULL;

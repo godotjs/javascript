@@ -14,6 +14,7 @@ BUILTIN_CLASSES = [
 	'Rect2',
 	'Color',
 	'Vector3',
+	'Basis',
 	'RID',
 	'Transform2D',
 ]
@@ -155,6 +156,7 @@ IGNORED_PROPS = {
 	"Rect2": ['end'],
 	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8'],
 	"Transform2D": ['x', 'y', 'origin', 'xform', 'xform_inv'],
+	"Basis": ['x', 'y', 'z'],
 }
 
 EXTRAL_METHODS = {
@@ -173,6 +175,13 @@ EXTRAL_METHODS = {
 		METHOD_OP_EQUALS,
 		METHOD_OP_LESS,
 		METHOD_OP_LESS_EQAUL,
+		METHOD_OP_ADD,
+		METHOD_OP_ADD_ASSIGN,
+		METHOD_OP_SUB,
+		METHOD_OP_SUB_ASSIGN,
+	],
+	"Basis": [
+		METHOD_OP_EQUALS,
 		METHOD_OP_ADD,
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,

@@ -11,6 +11,7 @@ variant_types = {
 	"string": "Variant::STRING",
 	"Vector2": "Variant::VECTOR2",
 	"Vector3": "Variant::VECTOR3",
+	"Basis": "Variant::BASIS",
 	"Color": "Variant::COLOR",
 	"Rect2": "Variant::RECT2",
 	"RID": "Variant::_RID",

@@ -1641,4 +1641,82 @@ declare module godot {
 		multiply_assign(p_value: Transform2D): Transform2D;
 
 	}
+	
+	/** 3x3 matrix datatype.
+
+	 3x3 matrix used for 3D rotation and scale. Contains 3 vector fields x,y and z as its columns, which can be interpreted as the local basis vectors of a transformation. Can also be accessed as array of 3D vectors. These vectors are orthogonal to each other, but are not necessarily normalized (due to scaling). Almost always used as orthogonal basis for a [Transform].  
+	 For such use, it is composed of a scaling and a rotation matrix, in that order (M = R.S). */
+	class Basis {
+
+
+		/** The basis matrix's x vector. */
+		x: Vector3;
+
+		/** The basis matrix's y vector. */
+		y: Vector3;
+
+		/** The basis matrix's z vector. */
+		z: Vector3;
+		
+		add(p_value: Basis): Basis;
+		add_assign(p_value: Basis): Basis;
+
+		subtract(p_value: Basis): Basis;
+		subtract_assign(p_value: Basis): Basis;
+
+		multiply(p_value: Basis | number): Basis;
+		multiply_assign(p_value: Basis | number): Basis;
+		
+		equals(p_value: Basis): boolean;
+		
+		/** convert to a `Quat` */
+		to_quat(): Quat;
+
+
+		/** Return the determinant of the matrix. */
+		determinant() : number;
+
+		/** Assuming that the matrix is a proper rotation matrix (orthonormal matrix with determinant +1), return Euler angles (in the YXZ convention: first Z, then X, and Y last). Returned vector contains the rotation angles in the format (X-angle, Y-angle, Z-angle). */
+		get_euler() : Vector3;
+
+		/** This function considers a discretization of rotations into 24 points on unit sphere, lying along the vectors (x,y,z) with each component being either -1,0 or 1, and returns the index of the point best representing the orientation of the object. It is mainly used by the grid map editor. For further details, refer to Godot source code. */
+		get_orthogonal_index() : number;
+
+		/** Assuming that the matrix is the combination of a rotation and scaling, return the absolute value of scaling factors along each axis. */
+		get_scale() : Vector3;
+
+		/** Return the inverse of the matrix. */
+		inverse() : Basis;
+
+		/** Return the orthonormalized version of the matrix (useful to call from time to time to avoid rounding error for orthogonal matrices). This performs a Gram-Schmidt orthonormalization on the basis of the matrix. */
+		orthonormalized() : Basis;
+
+		/** Introduce an additional rotation around the given axis by phi (radians). The axis must be a normalized vector. */
+		rotated(axis: Vector3, phi: number) : Basis;
+
+		/** Introduce an additional scaling specified by the given 3D scaling factor. */
+		scaled(scale: Vector3) : Basis;
+
+		/** Assuming that the matrix is a proper rotation matrix, slerp performs a spherical-linear interpolation with another rotation matrix. */
+		slerp(b: Basis, t: number) : Basis;
+
+		/** Transposed dot product with the x axis of the matrix. */
+		tdotx(p_with: Vector3) : number;
+
+		/** Transposed dot product with the y axis of the matrix. */
+		tdoty(p_with: Vector3) : number;
+
+		/** Transposed dot product with the z axis of the matrix. */
+		tdotz(p_with: Vector3) : number;
+
+		/** Return the transposed version of the matrix. */
+		transposed() : Basis;
+
+		/** Return a vector transformed (multiplied) by the matrix. */
+		xform(v: Vector3) : Vector3;
+
+		/** Return a vector transformed (multiplied) by the transposed matrix. Note that this results in a multiplication by the inverse of the matrix only if it represents a rotation-reflection. */
+		xform_inv(v: Vector3) : Vector3;
+		
+	}
 }
