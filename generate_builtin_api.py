@@ -15,6 +15,7 @@ BUILTIN_CLASSES = [
 	'Color',
 	'Vector3',
 	'Basis',
+	'Quat',
 	'RID',
 	'Transform2D',
 ]
@@ -187,6 +188,14 @@ EXTRAL_METHODS = {
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
 	],
+	"Quat": [
+		METHOD_OP_NEG,
+		METHOD_OP_EQUALS,
+		METHOD_OP_ADD,
+		METHOD_OP_ADD_ASSIGN,
+		METHOD_OP_SUB,
+		METHOD_OP_SUB_ASSIGN,
+	],
 	"Rect2": [METHOD_OP_EQUALS],
 	"Transform2D": [
 		METHOD_OP_EQUALS,
@@ -241,7 +250,7 @@ def parse_class(cls):
 			continue# ignore constructors
 		if class_name in IGNORED_PROPS and method_name in IGNORED_PROPS[class_name]:
 			continue# ignored methods
-		return_type = m.find("return").attrib["type"]
+		return_type = m.find("return").attrib["type"] if m.find("return") != None else "void"
 		if return_type in TYPE_MAP:
 			return_type = TYPE_MAP[return_type]
 		arguments = []

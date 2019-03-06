@@ -21,6 +21,8 @@ duk_ret_t vector3_constructor(duk_context *ctx);
 void vector3_properties(duk_context *ctx);
 duk_ret_t basis_constructor(duk_context *ctx);
 void basis_properties(duk_context *ctx);
+duk_ret_t quat_constructor(duk_context *ctx);
+void quat_properties(duk_context *ctx);
 
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
@@ -39,6 +41,7 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
 	register_builtin_class<Vector3>(ctx, vector3_constructor, 3, Variant::VECTOR3, "Vector3");
 	register_builtin_class<Basis>(ctx, basis_constructor, 3, Variant::BASIS, "Basis");
+	register_builtin_class<Quat>(ctx, quat_constructor, 3, Variant::QUAT, "Quat");
 
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
@@ -53,19 +56,25 @@ void register_builtin_class_properties(duk_context *ctx) {
 
 	vector3_properties(ctx);
 	basis_properties(ctx);
+	quat_properties(ctx);
 }
 
 duk_ret_t vector2_constructor(duk_context *ctx) {
 	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
 
-	duk_double_t x = duk_get_number_default(ctx, 0, 0);
-	duk_double_t y = duk_get_number_default(ctx, 1, 0);
+	Vector2 *ptr = NULL;
+	if (duk_is_object(ctx, 0)) {
+		Vector2 v = duk_get_variant(ctx, 0);
+		ptr = memnew(Vector2(v));
+	} else {
+		duk_double_t x = duk_get_number_default(ctx, 0, 0);
+		duk_double_t y = duk_get_number_default(ctx, 1, 0);
+		ptr = memnew(Vector2(x, y));
+	}
 
 	duk_push_this(ctx);
-
-	duk_push_pointer(ctx, memnew(Vector2(x, y)));
+	duk_push_pointer(ctx, ptr);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-
 	duk_push_int(ctx, Variant::VECTOR2);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 
@@ -166,15 +175,20 @@ void vector2_properties(duk_context *ctx) {
 duk_ret_t vector3_constructor(duk_context *ctx) {
 	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
 
-	duk_double_t x = duk_get_number_default(ctx, 0, 0);
-	duk_double_t y = duk_get_number_default(ctx, 1, 0);
-	duk_double_t z = duk_get_number_default(ctx, 2, 0);
+	Vector3 *ptr = NULL;
+	if (duk_is_object(ctx, 0)) {
+		Vector3 v = duk_get_variant(ctx, 0);
+		ptr = memnew(Vector3(v));
+	} else {
+		duk_double_t x = duk_get_number_default(ctx, 0, 0);
+		duk_double_t y = duk_get_number_default(ctx, 1, 0);
+		duk_double_t z = duk_get_number_default(ctx, 2, 0);
+		ptr = memnew(Vector3(x, y, z));
+	}
 
 	duk_push_this(ctx);
-
-	duk_push_pointer(ctx, memnew(Vector3(x, y, z)));
+	duk_push_pointer(ctx, ptr);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-
 	duk_push_int(ctx, Variant::VECTOR3);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 
@@ -281,16 +295,34 @@ void vector3_properties(duk_context *ctx) {
 duk_ret_t rect2_constructor(duk_context *ctx) {
 	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
 
-	duk_double_t x = duk_get_number_default(ctx, 0, 0);
-	duk_double_t y = duk_get_number_default(ctx, 1, 0);
-	duk_double_t w = duk_get_number_default(ctx, 2, 0);
-	duk_double_t h = duk_get_number_default(ctx, 3, 0);
+	Rect2 *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+		case Variant::REAL: {
+			real_t x = arg0;
+			real_t y = duk_get_number_default(ctx, 1, 0);
+			real_t w = duk_get_number_default(ctx, 2, 0);
+			real_t h = duk_get_number_default(ctx, 3, 0);
+			ptr = memnew(Rect2(x, y, w, h));
+		} break;
+		case Variant::VECTOR2: {
+			Vector2 pos = arg0;
+			Vector2 size = duk_get_variant(ctx, 1);
+			ptr = memnew(Rect2(pos, size));
+		} break;
+		case Variant::RECT2: {
+			Rect2 r = arg0;
+			ptr = memnew(Rect2(r));
+		} break;
+		default:
+			ptr = memnew(Rect2());
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
 
 	duk_push_this(ctx);
-
-	duk_push_pointer(ctx, memnew(Rect2(x, y, w, h)));
+	duk_push_pointer(ctx, ptr);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-
 	duk_push_int(ctx, Variant::RECT2);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 
@@ -331,6 +363,9 @@ duk_ret_t color_constructor(duk_context *ctx) {
 		ptr = memnew(Color(Color::html(duk_get_string(ctx, 0))));
 	} else if (duk_is_undefined(ctx, 1) && duk_is_number(ctx, 0)) {
 		ptr = memnew(Color(Color::hex(duk_get_uint(ctx, 0))));
+	} else if (duk_is_object(ctx, 0)) {
+		Color c = duk_get_variant(ctx, 0);
+		ptr = memnew(Color(c));
 	} else {
 		duk_double_t r = duk_get_number_default(ctx, 0, 0);
 		duk_double_t g = duk_get_number_default(ctx, 1, 0);
@@ -561,13 +596,18 @@ duk_ret_t rid_constructor(duk_context *ctx) {
 
 	duk_push_this(ctx);
 
+	RID *ptr = NULL;
 	Variant from = duk_get_variant(ctx, 0);
-	ERR_FAIL_COND_V(from.get_type() != Variant::OBJECT, DUK_ERR_TYPE_ERROR);
-	Object * obj = from;
-	RID * ptr = NULL;
-	if(Resource * res = Object::cast_to<Resource>(obj)) {
-		ptr = memnew(RID(res->get_rid()));
+	if (from.get_type() == Variant::_RID) {
+		RID rid = from;
+		ptr = memnew(RID(rid));
+	} else {
+		Object * obj = from;
+		if(Resource * res = Object::cast_to<Resource>(obj)) {
+			ptr = memnew(RID(res->get_rid()));
+		}
 	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
 
 	duk_push_pointer(ctx, ptr);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
@@ -581,16 +621,14 @@ duk_ret_t transform2d_constructor(duk_context *ctx) {
 	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
 
 	duk_push_this(ctx);
-	Transform2D *ptr = NULL;
 
+	Transform2D *ptr = NULL;
 	Variant arg0 = duk_get_variant(ctx, 0);
 	switch (arg0.get_type()) {
-		case Variant::NIL:
-			ptr = memnew(Transform2D());
-			break;
-		case Variant::TRANSFORM:
-			// TODO: construct from Transform
-			break;
+		case Variant::TRANSFORM: {
+			Transform xf = arg0;
+			// TODO
+		} break;
 		case Variant::VECTOR2: {
 				Vector2 arg1 = duk_get_variant(ctx, 1);
 				Vector2 arg2 = duk_get_variant(ctx, 2);
@@ -599,9 +637,16 @@ duk_ret_t transform2d_constructor(duk_context *ctx) {
 				ptr->elements[1] = arg1;
 				ptr->elements[2] = arg2;
 			} break;
-		case Variant::REAL:
+		case Variant::REAL: {
 			Vector2 arg1 = duk_get_variant(ctx, 1);
 			ptr = memnew(Transform2D(arg0, arg1));
+		} break;
+		case Variant::TRANSFORM2D: {
+			Transform2D xf = arg0;
+			ptr = memnew(Transform2D(xf));
+		} break;
+		default:
+			ptr = memnew(Transform2D());
 			break;
 	}
 	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
@@ -710,13 +755,10 @@ duk_ret_t basis_constructor(duk_context *ctx) {
 	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
 
 	duk_push_this(ctx);
-	Basis *ptr = NULL;
 
+	Basis *ptr = NULL;
 	Variant arg0 = duk_get_variant(ctx, 0);
 	switch (arg0.get_type()) {
-		case Variant::NIL:
-			ptr = memnew(Basis);
-			break;
 		case Variant::QUAT: {
 			Quat q = arg0;
 			ptr = memnew(Basis(q));
@@ -732,9 +774,16 @@ duk_ret_t basis_constructor(duk_context *ctx) {
 				ptr = memnew(Basis(p1, p2, p3));
 			}
 		} break;
+		case Variant::BASIS: {
+			Basis b = arg0;
+			ptr = memnew(Basis(b));
+		} break;
+		default:
+			ptr = memnew(Basis);
+			break;
 	}
-
 	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
 	duk_push_pointer(ctx, ptr);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 	duk_push_int(ctx, Variant::BASIS);
@@ -844,6 +893,139 @@ void basis_properties(duk_context *ctx) {
 		return DUK_HAS_RET_VAL;
 	}, 1);
 	duk_put_prop_literal(ctx, -2, "multiply_assign");
+
+	duk_pop(ctx);
+}
+
+duk_ret_t quat_constructor(duk_context *ctx) {
+
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+
+	duk_push_this(ctx);
+
+	Quat *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+		case Variant::BASIS: {
+			Basis b = arg0;
+			ptr = memnew(Quat(b));
+		} break;
+		case Variant::VECTOR3: {
+			Vector3 p1 = arg0;
+			Variant arg1 = duk_get_variant(ctx, 1);
+			if (arg1.get_type() == Variant::REAL) {
+				ptr = memnew(Quat(p1, real_t(arg1)));
+			} else {
+				ptr = memnew(Quat(p1));
+			}
+		} break;
+		case Variant::REAL: {
+			real_t x = arg0;
+			real_t y = duk_get_number_default(ctx, 1, 0);
+			real_t z = duk_get_number_default(ctx, 2, 0);
+			real_t w = duk_get_number_default(ctx, 3, 0);
+			ptr = memnew(Quat(x, y, z, w));
+		} break;
+		case Variant::QUAT: {
+			Quat q = arg0;
+			ptr = memnew(Quat(q));
+		} break;
+		default:
+			ptr = memnew(Quat);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::BASIS);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+	return DUK_NO_RET_VAL;
+
+}
+
+void quat_properties(duk_context *ctx) {
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::QUAT));
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Quat *ptr = duk_get_builtin_ptr<Quat>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		ptr->operator=(ptr->operator-());
+		duk_push_this(ctx);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "negate_assign");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Quat *ptr = duk_get_builtin_ptr<Quat>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		Variant arg0 = duk_get_variant(ctx, 0);
+		Variant::Type type = arg0.get_type();
+		ERR_FAIL_COND_V(!(type == Variant::VECTOR3 || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
+		Variant ret;
+		if (type == Variant::VECTOR3) {
+			Vector3 arg = arg0;
+			ret = ptr->operator*(arg);
+		} else if (type == Variant::REAL) {
+			real_t arg = arg0;
+			ret = ptr->operator*(arg);
+		} else if (type == Variant::QUAT) {
+			Quat arg = arg0;
+			ret = ptr->operator*(arg);
+		}
+		duk_push_variant(ctx, ret);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "multiply");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Quat *ptr = duk_get_builtin_ptr<Quat>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		Variant arg0 = duk_get_variant(ctx, 0);
+		Variant::Type type = arg0.get_type();
+		ERR_FAIL_COND_V(!(type == Variant::VECTOR3 || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
+
+		if (type == Variant::VECTOR3) {
+			Vector3 arg = arg0;
+			ptr->operator*=(arg);
+		} else if (type == Variant::REAL) {
+			real_t arg = arg0;
+			ptr->operator*=(arg);
+		} else if (type == Variant::QUAT) {
+			Quat arg = arg0;
+			ptr->operator*=(arg);
+		}
+
+		duk_push_this(ctx);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "multiply_assign");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Quat *ptr = duk_get_builtin_ptr<Quat>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		real_t arg = duk_get_number_default(ctx, 0, 0);
+		Variant ret = ptr->operator/(arg);
+		duk_push_variant(ctx, ret);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "divide");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Quat *ptr = duk_get_builtin_ptr<Quat>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		real_t arg = duk_get_number_default(ctx, 0, 0);
+		ptr->operator=( ptr->operator/(arg) );
+		duk_push_this(ctx);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "divide_assign");
 
 	duk_pop(ctx);
 }

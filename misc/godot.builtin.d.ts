@@ -33,7 +33,7 @@ declare module godot {
 	*/
 	class Vector2 {
 
-		constructor(x?: number, y?: number);
+		constructor(x_pos?: number|Vector2, y?: number);
 
 		/**
 		 Zero vector.
@@ -254,7 +254,7 @@ declare module godot {
 	*/
 	class Vector3 {
 
-		constructor(x?: number, y?: number, z?: number)
+		constructor(x_pos?: number|Vector3, y?: number, z?: number)
 
 		/**
 		 Enumerated value for the X axis. Returned by [method max_axis] and [method min_axis].
@@ -511,7 +511,7 @@ declare module godot {
 	*/
 	class Color {
 
-		constructor(name_or_hex_or_r?:string|number, g?: number, b?: number, a?: number);
+		constructor(name_hex_r_color?:string|number|Color, g?: number, b?: number, a?: number);
 
 		add(p_value: Color): Color;
 		add_assign(p_value: Color): Color;
@@ -1550,7 +1550,7 @@ declare module godot {
 	 The RID type is used to access the unique integer ID of a resource. They are opaque, so they do not grant access to the associated resource by themselves. They are used by and with the low-level Server classes such as [VisualServer].
 	*/
 	class RID {
-		constructor(p_object?: Object)
+		constructor(p_object_rid?: Object|RID)
 		/** Returns the ID of the referenced resource.  */
 		get_id() : number;
 
@@ -1580,6 +1580,8 @@ declare module godot {
 		 * @value Transform2D( 1, 0, 0, -1, 0, 0 )
 		 */
 		static readonly FLIP_Y: number;
+		
+		constructor(x_rot_xf ?:Transform2D|Transform|Vector2|number, y_pos?: Vector2, origin?: Vector2);
 
 
 		/** The X axis of 2x2 basis matrix containing 2 [Vector2]s as its columns: X axis and Y axis. These vectors can be interpreted as the basis vectors of local coordinate system traveling with the object. */
@@ -1648,6 +1650,7 @@ declare module godot {
 	 For such use, it is composed of a scaling and a rotation matrix, in that order (M = R.S). */
 	class Basis {
 
+		constructor(p1: Vector3|Quat|Basis, y_phi?: Vector3|number, z?:Vector3);
 
 		/** The basis matrix's x vector. */
 		x: Vector3;
@@ -1718,5 +1721,91 @@ declare module godot {
 		/** Return a vector transformed (multiplied) by the transposed matrix. Note that this results in a multiplication by the inverse of the matrix only if it represents a rotation-reflection. */
 		xform_inv(v: Vector3) : Vector3;
 		
+	}
+	
+	/** Quaternion.
+
+	 A unit quaternion used for representing 3D rotations.  
+	 It is similar to [Basis], which implements matrix representation of rotations, and can be parametrized using both an axis-angle pair or Euler angles. But due to its compactness and the way it is stored in memory, certain operations (obtaining axis-angle and performing SLERP, in particular) are more efficient and robust against floating point errors.  
+	 Quaternions need to be (re)normalized. */
+	class Quat {
+
+		/** 
+		 * @value `Quat( 0, 0, 0, 1 )`
+		 */
+		static readonly IDENTITY: number;
+		
+		constructor(p1: Basis|Vector3|number|Quat, y_angle?: number, z?:number, w?: number);
+
+
+		/** X component of the quaternion. Default value: `0` */
+		x: number;
+
+		/** Y component of the quaternion. Default value: `0` */
+		y: number;
+
+		/** Z component of the quaternion. Default value: `0` */
+		z: number;
+
+		/** W component of the quaternion. Default value: `1` */
+		w: number;
+
+
+		/** Performs a cubic spherical-linear interpolation with another quaternion. */
+		cubic_slerp(b: Quat, pre_a: Quat, post_b: Quat, t: number) : Quat;
+
+		/** Returns the dot product of two quaternions. */
+		dot(b: Quat) : number;
+
+		/** Return Euler angles (in the YXZ convention: first Z, then X, and Y last) corresponding to the rotation represented by the unit quaternion. Returned vector contains the rotation angles in the format (X-angle, Y-angle, Z-angle). */
+		get_euler() : Vector3;
+
+		/** Returns the inverse of the quaternion. */
+		inverse() : Quat;
+
+		/** Returns whether the quaternion is normalized or not. */
+		is_normalized() : boolean;
+
+		/** Returns the length of the quaternion. */
+		length() : number;
+
+		/** Returns the length of the quaternion, squared. */
+		length_squared() : number;
+
+		/** Returns a copy of the quaternion, normalized to unit length. */
+		normalized() : Quat;
+
+		/** Set the quaternion to a rotation which rotates around axis by the specified angle, in radians. The axis must be a normalized vector. */
+		set_axis_angle(axis: Vector3, angle: number) : void;
+
+		/** Set the quaternion to a rotation specified by Euler angles (in the YXZ convention: first Z, then X, and Y last), given in the vector format as (X-angle, Y-angle, Z-angle). */
+		set_euler(euler: Vector3) : void;
+
+		/** Performs a spherical-linear interpolation with another quaternion. */
+		slerp(b: Quat, t: number) : Quat;
+
+		/** Performs a spherical-linear interpolation with another quaterion without checking if the rotation path is not bigger than 90°. */
+		slerpni(b: Quat, t: number) : Quat;
+
+		/** Transforms the vector `v` by this quaternion. */
+		xform(v: Vector3) : Vector3;
+		
+		add(p_value: Quat): Quat;
+		add_assign(p_value: Quat): Quat;
+
+		subtract(p_value: Quat): Quat;
+		subtract_assign(p_value: Quat): Quat;
+
+		multiply(p_value: Quat | Vector3 | number): Quat;
+		multiply_assign(p_value: Quat | Vector3 | number): Quat;
+
+		divide(p_value: number): Quat;
+		divide_assign(p_value: number): Quat;
+
+		negate(): Quat;
+		negate_assign(): Quat;
+
+		equals(p_value: Quat): boolean;
+
 	}
 }

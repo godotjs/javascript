@@ -353,6 +353,10 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 						Basis b = var;
 						ptr = memnew(Basis(b.elements[0], b.elements[1], b.elements[2]));
 					} break;
+					case Variant::QUAT: {
+						Quat q = var;
+						ptr = memnew(Quat(q));
+					} break;
 					default:
 						break;
 				}
@@ -461,8 +465,10 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 					case Variant::BASIS:
 						ret = *(static_cast<Basis*>(ptr));
 						break;
+					case Variant::QUAT:
+						ret = *(static_cast<Quat*>(ptr));
+						break;
 					default:
-						ret = NULL;
 						break;
 				}
 				return ret;
