@@ -63,13 +63,13 @@ Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_a
 	ECMAClassInfo *cls = script->get_ecma_class();
 	if (cls == NULL) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
-		return NULL;
+		return Variant();
 	}
 
 	ECMAMethodInfo *method = cls->methods.getptr(p_method);
 	if (method == NULL) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
-		return NULL;
+		return Variant();
 	}
 
 	return ECMAScriptLanguage::get_singleton()->binding->call_method(ecma_object, *method, p_args, p_argcount, r_error);

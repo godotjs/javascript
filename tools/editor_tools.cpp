@@ -58,7 +58,7 @@ Variant ECMAClassBrower::get_drag_data_fw(const Point2 &p_point, Control *p_from
 			return drag_data;
 		}
 	}
-	return NULL;
+	return Variant();
 }
 
 ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
