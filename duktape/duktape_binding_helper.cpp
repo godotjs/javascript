@@ -1085,12 +1085,12 @@ ECMAScriptGCHandler DuktapeBindingHelper::create_ecma_instance_for_godot_object(
 Variant DuktapeBindingHelper::call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
 	if (p_object.is_null()) {
 		r_error.error = Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL;
-		return NULL;
+		return Variant();
 	}
 
 	if (p_method.is_null()) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
-		return NULL;
+		return Variant();
 	}
 	duk_push_heapptr(ctx, p_method.ecma_object);
 	duk_push_heapptr(ctx, p_object.ecma_object);
