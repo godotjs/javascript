@@ -194,7 +194,7 @@ ${class_properties_func_calls}
 }
 '''
 	classes = json.load(
-		open(API_FILE, 'r', encoding='utf8')
+		open(API_FILE, 'r')
 	)
 	class_properties_funcs = ""
 	class_properties_func_calls = ""
