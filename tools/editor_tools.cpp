@@ -336,10 +336,10 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 String _export_class(const DocData::ClassDoc &class_doc) {
 
 	const String class_template = """\n"
-								  "	namespace ${name} {""\n"
 								  """\n"
-								  "		enum Signal {""\n"
-								  "			${signals}""\n"
+								  "	namespace ${name} {""\n"
+								  "		interface Signal${extends}${base_signal} {""\n"
+								  "${signals}"
 								  "		}""\n"
 								  "	}""\n"
 								  """\n"
@@ -347,6 +347,9 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 								  """\n"
 								  "	 ${description} */""\n"
 								  "	class ${name}${extends}${inherits} {""\n"
+								  """\n"
+								  "		static readonly Signal: ${name}.Signal;""\n"
+								  "		readonly Signal: ${name}.Signal;""\n"
 								  "${constants}""\n"
 								  "${properties}""\n"
 								  "${methods}""\n"
@@ -354,6 +357,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	Dictionary dict;
 	dict["name"] = class_doc.name;
 	dict["inherits"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits);
+	dict["base_signal"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits) + ".Signal";
 	dict["extends"] = class_doc.inherits.empty() ? "" : " extends ";
 	String brief_description = format_doc_text(class_doc.brief_description, "\t ");
 	dict["brief_description"] = brief_description;
@@ -432,7 +436,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		const DocData::MethodDoc & signal = class_doc.signals[i];
 		String signal_str = """\n"
 							"			/** ${description} */""\n"
-							"			${name} = '${name}';""\n";
+							"			${name}: '${name}',""\n";
 		Dictionary dict;
 		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
 		dict["name"] = signal.name;

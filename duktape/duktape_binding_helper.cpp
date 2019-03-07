@@ -588,9 +588,11 @@ void DuktapeBindingHelper::register_class(duk_context *ctx, const ClassDB::Class
 			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
 		}
 
-		// signals
+		// Class.Signals
 		duk_push_literal(ctx, "Signal");
 		duk_push_object(ctx);
+		DuktapeHeapObject * signal_obj = duk_get_heapptr(ctx, -1);
+		native_class_signal_objects.set(cls->name, signal_obj);
 		for (const StringName *signal_key = cls->signal_map.next(NULL); signal_key; signal_key = cls->signal_map.next(signal_key)) {
 			duk_push_godot_string_name(ctx, *signal_key);
 			duk_dup_top(ctx);
@@ -607,6 +609,9 @@ void DuktapeBindingHelper::register_class(duk_context *ctx, const ClassDB::Class
 			// members
 			register_class_members(ctx, cls);
 		}
+		// Class.prototype.Signal
+		duk_push_heapptr(ctx, signal_obj);
+		duk_put_prop_literal(ctx, -2, "Signal");
 
 		DuktapeHeapObject *proto_ptr = duk_get_heapptr(ctx, -1);
 		get_singleton()->native_class_prototypes[cls->name] = proto_ptr;
@@ -672,16 +677,25 @@ void DuktapeBindingHelper::initialize() {
 			register_class(ctx, cls);
 			key = ClassDB::classes.next(key);
 		}
-		// setup proto chain for prototypes
+		// setup proto chain for prototypes and signals
 		key = ClassDB::classes.next(NULL);
 		while (key) {
 			const ClassDB::ClassInfo *cls = ClassDB::classes.getptr(*key);
 			if (cls->inherits_ptr) {
+
 				duk_require_stack(ctx, 2);
 				DuktapeHeapObject *prototype_ptr = native_class_prototypes.get(cls->name);
 				duk_push_heapptr(ctx, prototype_ptr);
 				DuktapeHeapObject *base_prototype_ptr = native_class_prototypes.get(cls->inherits_ptr->name);
 				duk_push_heapptr(ctx, base_prototype_ptr);
+				duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
+				duk_pop(ctx);
+
+				duk_require_stack(ctx, 3);
+				DuktapeHeapObject *signal_obj = native_class_signal_objects.get(cls->name);
+				DuktapeHeapObject *base_signal_obj = native_class_signal_objects.get(cls->inherits_ptr->name);
+				duk_push_heapptr(ctx, signal_obj);
+				duk_push_heapptr(ctx, base_signal_obj);
 				duk_put_prop_literal(ctx, -2, PROTO_LITERAL);
 				duk_pop(ctx);
 			}

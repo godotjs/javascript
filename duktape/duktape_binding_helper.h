@@ -77,6 +77,7 @@ private:
 	HashMap<Variant::Type, DuktapeHeapObject *> builtin_class_prototypes;
 	HashMap<Variant::Type, DuktapeHeapObject *> builtin_class_constructors;
 	HashMap<StringName, DuktapeHeapObject *> native_class_prototypes;
+	HashMap<StringName, DuktapeHeapObject *> native_class_signal_objects;
 	HashMap<const MethodBind *, DuktapeHeapObject *, MethodPtrHash> method_bindings;
 
 	HashMap<ObjectID, DuktapeHeapObject *> weakref_pool;
