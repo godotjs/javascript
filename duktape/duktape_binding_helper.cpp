@@ -587,6 +587,17 @@ void DuktapeBindingHelper::register_class(duk_context *ctx, const ClassDB::Class
 			}
 			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
 		}
+
+		// signals
+		duk_push_literal(ctx, "Signal");
+		duk_push_object(ctx);
+		for (const StringName *signal_key = cls->signal_map.next(NULL); signal_key; signal_key = cls->signal_map.next(signal_key)) {
+			duk_push_godot_string_name(ctx, *signal_key);
+			duk_dup_top(ctx);
+			duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
+		}
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
+
 		// Class.prototype
 		duk_push_object(ctx);
 		// Class.prototype.cls

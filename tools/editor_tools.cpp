@@ -336,6 +336,13 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 String _export_class(const DocData::ClassDoc &class_doc) {
 
 	const String class_template = """\n"
+								  "	namespace ${name} {""\n"
+								  """\n"
+								  "		enum Signal {""\n"
+								  "			${signals}""\n"
+								  "		}""\n"
+								  "	}""\n"
+								  """\n"
 								  "	/** ${brief_description}""\n"
 								  """\n"
 								  "	 ${description} */""\n"
@@ -419,6 +426,19 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		}
 	}
 	dict["properties"] = properties;
+
+	String signals = "";
+	for (int i = 0; i < class_doc.signals.size(); ++i) {
+		const DocData::MethodDoc & signal = class_doc.signals[i];
+		String signal_str = """\n"
+							"			/** ${description} */""\n"
+							"			${name} = '${name}';""\n";
+		Dictionary dict;
+		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
+		dict["name"] = signal.name;
+		signals += applay_partern(signal_str, dict);
+	}
+	dict["signals"] = signals;
 
 	// TODO: Theme properties
 
