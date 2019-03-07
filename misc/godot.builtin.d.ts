@@ -1863,4 +1863,84 @@ declare module godot {
 		equals(p_value: Plane): boolean;
 
 	}
+	
+	/** Axis-Aligned Bounding Box.
+
+	 AABB consists of a position, a size, and several utility functions. It is typically used for fast overlap tests. */
+	class AABB {
+		
+		constructor(pos?: Vector3|AABB, size?: Vector3)
+
+		/** Beginning corner. */
+		position: Vector3;
+
+		/** Size from position to end. */
+		size: Vector3;
+
+		/** Ending corner. */
+		end: Vector3;
+
+
+		/** Returns `true` if this `AABB` completely encloses another one. */
+		encloses(p_with: AABB) : boolean;
+
+		/** Returns this `AABB` expanded to include a given point. */
+		expand(to_point: Vector3) : AABB;
+
+		/** Gets the area of the `AABB`. */
+		get_area() : number;
+
+		/** Gets the position of the 8 endpoints of the `AABB` in space. */
+		get_endpoint(idx: number) : Vector3;
+
+		/** Returns the normalized longest axis of the `AABB`. */
+		get_longest_axis() : Vector3;
+
+		/** Returns the index of the longest axis of the `AABB` (according to [Vector3]::AXIS* enum). */
+		get_longest_axis_index() : number;
+
+		/** Returns the scalar length of the longest axis of the `AABB`. */
+		get_longest_axis_size() : number;
+
+		/** Returns the normalized shortest axis of the `AABB`. */
+		get_shortest_axis() : Vector3;
+
+		/** Returns the index of the shortest axis of the `AABB` (according to [Vector3]::AXIS* enum). */
+		get_shortest_axis_index() : number;
+
+		/** Returns the scalar length of the shortest axis of the `AABB`. */
+		get_shortest_axis_size() : number;
+
+		/** Returns the support point in a given direction. This is useful for collision detection algorithms. */
+		get_support(dir: Vector3) : Vector3;
+
+		/** Returns a copy of the `AABB` grown a given amount of units towards all the sides. */
+		grow(by: number) : AABB;
+
+		/** Returns `true` if the `AABB` is flat or empty. */
+		has_no_area() : boolean;
+
+		/** Returns `true` if the `AABB` is empty. */
+		has_no_surface() : boolean;
+
+		/** Returns `true` if the `AABB` contains a point. */
+		has_point(point: Vector3) : boolean;
+
+		/** Returns the intersection between two `AABB`. An empty AABB (size 0,0,0) is returned on failure. */
+		intersection(p_with: AABB) : AABB;
+
+		/** Returns `true` if the `AABB` overlaps with another. */
+		intersects(p_with: AABB) : boolean;
+
+		/** Returns `true` if the `AABB` is on both sides of a plane. */
+		intersects_plane(plane: Plane) : boolean;
+
+		/** Returns `true` if the `AABB` intersects the line segment between `from` and `to`. */
+		intersects_segment(from: Vector3, to: Vector3) : boolean;
+
+		/** Returns a larger AABB that contains this AABB and `with`. */
+		merge(p_with: AABB) : AABB;
+
+	}
+	
 }

@@ -360,6 +360,9 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 					case Variant::PLANE:
 						ptr = memnew(Plane(var));
 						break;
+					case Variant::AABB:
+						ptr = memnew(AABB(var));
+						break;
 					default:
 						break;
 				}
@@ -473,6 +476,9 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 						break;
 					case Variant::PLANE:
 						ret = *(static_cast<Plane*>(ptr));
+						break;
+					case Variant::AABB:
+						ret = *(static_cast<AABB*>(ptr));
 						break;
 					default:
 						break;

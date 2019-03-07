@@ -18,7 +18,8 @@ BUILTIN_CLASSES = [
 	'Quat',
 	'RID',
 	'Transform2D',
-	'Plane'
+	'Plane',
+	'AABB',
 ]
 
 TYPE_MAP = {
@@ -160,6 +161,7 @@ IGNORED_PROPS = {
 	"Transform2D": ['x', 'y', 'origin', 'xform', 'xform_inv'],
 	"Basis": ['x', 'y', 'z'],
 	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
+	"AABB": ['end'],
 }
 
 EXTRAL_METHODS = {
@@ -221,6 +223,9 @@ EXTRAL_METHODS = {
 	"Plane": [
 		METHOD_OP_EQUALS,
 		METHOD_OP_NEG,
+	],
+	"AABB": [
+		METHOD_OP_EQUALS,
 	]
 }
 

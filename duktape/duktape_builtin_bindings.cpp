@@ -25,6 +25,8 @@ duk_ret_t quat_constructor(duk_context *ctx);
 void quat_properties(duk_context *ctx);
 duk_ret_t plane_constructor(duk_context *ctx);
 void plane_properties(duk_context *ctx);
+duk_ret_t aabb_constructor(duk_context *ctx);
+void aabb_properties(duk_context *ctx);
 
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
@@ -45,6 +47,7 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 	register_builtin_class<Basis>(ctx, basis_constructor, 3, Variant::BASIS, "Basis");
 	register_builtin_class<Quat>(ctx, quat_constructor, 3, Variant::QUAT, "Quat");
 	register_builtin_class<Plane>(ctx, plane_constructor, 4, Variant::PLANE, "Plane");
+	register_builtin_class<AABB>(ctx, aabb_constructor, 4, Variant::AABB, "AABB");
 
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
@@ -61,6 +64,7 @@ void register_builtin_class_properties(duk_context *ctx) {
 	basis_properties(ctx);
 	quat_properties(ctx);
 	plane_properties(ctx);
+	aabb_properties(ctx);
 }
 
 duk_ret_t vector2_constructor(duk_context *ctx) {
@@ -1180,6 +1184,59 @@ void plane_properties(duk_context *ctx) {
 			ptr->normal.z = duk_get_number_default(ctx, 0, 0);
 		}
 		duk_push_variant(ctx, ptr->normal.z);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+	duk_pop(ctx);
+}
+
+duk_ret_t aabb_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+
+	duk_push_this(ctx);
+
+	AABB *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+		case Variant::VECTOR3: {
+			Vector3 p1 = arg0;
+			Vector3 p2 = duk_get_variant(ctx, 1);
+			ptr = memnew(AABB(p1, p2));
+		} break;
+		case Variant::AABB: {
+			AABB p = arg0;
+			ptr = memnew(AABB(p));
+		} break;
+		default:
+			ptr = memnew(AABB);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::AABB);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+	return DUK_NO_RET_VAL;
+}
+
+void aabb_properties(duk_context *ctx) {
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::AABB));
+
+	duk_push_literal(ctx, "end");
+	duk_c_function func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		AABB *ptr = duk_get_builtin_ptr<AABB>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			Vector3 arg = duk_get_variant(ctx, 0);
+			ptr->size = arg - ptr->position;
+		}
+		duk_push_variant(ctx, ptr->size + ptr->position);
 		return DUK_HAS_RET_VAL;
 	};
 	duk_push_c_function(ctx, func, 0);
