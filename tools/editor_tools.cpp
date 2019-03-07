@@ -494,6 +494,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("Transform2D");
 	ignored_classes.insert("Basis");
 	ignored_classes.insert("Quat");
+	ignored_classes.insert("Plane");
 
 	String constants = "";
 

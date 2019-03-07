@@ -17,6 +17,7 @@ variant_types = {
 	"Rect2": "Variant::RECT2",
 	"RID": "Variant::_RID",
 	"Transform2D": "Variant::TRANSFORM2D",
+	"Plane": "Variant::PLANE",
 }
 
 def apply_parttern(template, values):
@@ -39,7 +40,7 @@ def process_property(cls, prop):
 			"push": 'duk_push_number(ctx, ptr->${name});',
 			"get": 'ptr->${name} = duk_get_number_default(ctx, 0, DUK_DOUBLE_NAN);',
 		},
-		'Vector2': {
+		'Variant': {
 			"push": 'duk_push_variant(ctx, ptr->${name});',
 			"get": 'ptr->${name} = duk_get_variant(ctx, 0);',
 		}
@@ -68,7 +69,8 @@ def process_property(cls, prop):
 	duk_push_c_function(ctx, property_${name}_c_func, 1);
 	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER);
 '''
-	template = apply_parttern(template, prop_type_map[prop['type']])
+	type_config = prop_type_map[prop['type']] if prop['type'] in prop_type_map else prop_type_map['Variant']
+	template = apply_parttern(template, type_config)
 	values = {
 		'name': prop['name'],
 		'class': cls['name']

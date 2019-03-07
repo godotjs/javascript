@@ -1650,7 +1650,7 @@ declare module godot {
 	 For such use, it is composed of a scaling and a rotation matrix, in that order (M = R.S). */
 	class Basis {
 
-		constructor(p1: Vector3|Quat|Basis, y_phi?: Vector3|number, z?:Vector3);
+		constructor(p1?: Vector3|Quat|Basis, y_phi?: Vector3|number, z?:Vector3);
 
 		/** The basis matrix's x vector. */
 		x: Vector3;
@@ -1735,7 +1735,7 @@ declare module godot {
 		 */
 		static readonly IDENTITY: number;
 		
-		constructor(p1: Basis|Vector3|number|Quat, y_angle?: number, z?:number, w?: number);
+		constructor(p1?: Basis|Vector3|number|Quat, y_angle?: number, z?:number, w?: number);
 
 
 		/** X component of the quaternion. Default value: `0` */
@@ -1806,6 +1806,80 @@ declare module godot {
 		negate_assign(): Quat;
 
 		equals(p_value: Quat): boolean;
+
+	}
+	
+	/** Plane in hessian form.
+
+	 Plane represents a normalized plane equation. Basically, "normal" is the normal of the plane (a,b,c normalized), and "d" is the distance from the origin to the plane (in the direction of "normal"). "Over" or "Above" the plane is considered the side of the plane towards where the normal is pointing. */
+	class Plane {
+
+		/** 
+		 * @value `Plane( 1, 0, 0, 0 )`
+		 */
+		static readonly PLANE_YZ: Plane;
+
+		/** 
+		 * @value `Plane( 0, 1, 0, 0 )`
+		 */
+		static readonly PLANE_XZ: Plane;
+
+		/** 
+		 * @value `Plane( 0, 0, 1, 0 )`
+		 */
+		static readonly PLANE_XY: Plane;
+
+		constructor(x_normal_v1?: number|Vector3|Plane, y_v2_d?: number|Vector3, v3_z?: number|Vector3, d?:number);
+
+		/**  */
+		normal: Vector3;
+
+		/**  */
+		x: number;
+
+		/**  */
+		y: number;
+
+		/**  */
+		z: number;
+
+		/**  */
+		d: number;
+
+
+		/** Returns the center of the plane. */
+		center() : Vector3;
+
+		/** Returns the shortest distance from the plane to the position "point". */
+		distance_to(point: Vector3) : number;
+
+		/** Returns a point on the plane. */
+		get_any_point() : Vector3;
+
+		/** Returns true if "point" is inside the plane (by a very minimum threshold). */
+		has_point(point: Vector3, epsilon?: number) : boolean;
+
+		/** Returns the intersection point of the three planes "b", "c" and this plane. If no intersection is found null is returned. */
+		intersect_3(b: Plane, c: Plane) : Vector3;
+
+		/** Returns the intersection point of a ray consisting of the position "from" and the direction normal "dir" with this plane. If no intersection is found null is returned. */
+		intersects_ray(from: Vector3, dir: Vector3) : Vector3;
+
+		/** Returns the intersection point of a segment from position "begin" to position "end" with this plane. If no intersection is found null is returned. */
+		intersects_segment(begin: Vector3, end: Vector3) : Vector3;
+
+		/** Returns true if "point" is located above the plane. */
+		is_point_over(point: Vector3) : boolean;
+
+		/** Returns a copy of the plane, normalized. */
+		normalized() : Plane;
+
+		/** Returns the orthogonal projection of point "p" into a point in the plane. */
+		project(point: Vector3) : Vector3;
+		
+		negate(): Plane;
+		negate_assign(): Plane;
+		equals(p_value: Plane): boolean;
 
 	}
 }

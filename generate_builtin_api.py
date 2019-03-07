@@ -18,6 +18,7 @@ BUILTIN_CLASSES = [
 	'Quat',
 	'RID',
 	'Transform2D',
+	'Plane'
 ]
 
 TYPE_MAP = {
@@ -158,6 +159,7 @@ IGNORED_PROPS = {
 	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8'],
 	"Transform2D": ['x', 'y', 'origin', 'xform', 'xform_inv'],
 	"Basis": ['x', 'y', 'z'],
+	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
 }
 
 EXTRAL_METHODS = {
@@ -216,6 +218,10 @@ EXTRAL_METHODS = {
 		METHOD_OP_LESS,
 		METHOD_OP_LESS_EQAUL,
 	],
+	"Plane": [
+		METHOD_OP_EQUALS,
+		METHOD_OP_NEG,
+	]
 }
 
 def apply_parttern(template, values):

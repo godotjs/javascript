@@ -23,6 +23,8 @@ duk_ret_t basis_constructor(duk_context *ctx);
 void basis_properties(duk_context *ctx);
 duk_ret_t quat_constructor(duk_context *ctx);
 void quat_properties(duk_context *ctx);
+duk_ret_t plane_constructor(duk_context *ctx);
+void plane_properties(duk_context *ctx);
 
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
@@ -42,6 +44,7 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 	register_builtin_class<Vector3>(ctx, vector3_constructor, 3, Variant::VECTOR3, "Vector3");
 	register_builtin_class<Basis>(ctx, basis_constructor, 3, Variant::BASIS, "Basis");
 	register_builtin_class<Quat>(ctx, quat_constructor, 3, Variant::QUAT, "Quat");
+	register_builtin_class<Plane>(ctx, plane_constructor, 4, Variant::PLANE, "Plane");
 
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
@@ -57,6 +60,7 @@ void register_builtin_class_properties(duk_context *ctx) {
 	vector3_properties(ctx);
 	basis_properties(ctx);
 	quat_properties(ctx);
+	plane_properties(ctx);
 }
 
 duk_ret_t vector2_constructor(duk_context *ctx) {
@@ -1026,6 +1030,161 @@ void quat_properties(duk_context *ctx) {
 		return DUK_HAS_RET_VAL;
 	}, 1);
 	duk_put_prop_literal(ctx, -2, "divide_assign");
+
+	duk_pop(ctx);
+}
+
+duk_ret_t plane_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+
+	duk_push_this(ctx);
+
+	Plane *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+		case Variant::VECTOR3: {
+			Vector3 p1 = arg0;
+			Variant arg1 = duk_get_variant(ctx, 1);
+			if (arg1.get_type() == Variant::REAL) {
+				ptr = memnew(Plane(p1, real_t(arg1)));
+			} else {
+				Vector3 p2 = arg1;
+				Vector3 p3 = duk_get_variant(ctx, 2);
+				ptr = memnew(Plane(p1, p2, p3));
+			}
+		} break;
+		case Variant::REAL: {
+			real_t x = arg0;
+			real_t y = duk_get_number_default(ctx, 1, 0);
+			real_t z = duk_get_number_default(ctx, 2, 0);
+			real_t d = duk_get_number_default(ctx, 3, 0);
+			ptr = memnew(Plane(x, y, z, d));
+		} break;
+		case Variant::PLANE: {
+			Plane p = arg0;
+			ptr = memnew(Plane(p));
+		} break;
+		default:
+			ptr = memnew(Plane);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::PLANE);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+	return DUK_NO_RET_VAL;
+}
+
+void plane_properties(duk_context *ctx) {
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::PLANE));
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		ptr->operator=(ptr->operator-());
+		duk_push_this(ctx);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "negate_assign");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+		Plane p1 = duk_get_variant(ctx, 0);
+		Plane p2 = duk_get_variant(ctx, 1);
+
+		Vector3 ret;
+		ptr->intersect_3(p1, p2, &ret);
+		duk_push_variant(ctx, ret);
+
+		return DUK_HAS_RET_VAL;
+	}, 2);
+	duk_put_prop_literal(ctx, -2, "intersect_3");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+		Vector3 p1 = duk_get_variant(ctx, 0);
+		Vector3 p2 = duk_get_variant(ctx, 1);
+
+		Vector3 ret;
+		ptr->intersects_ray(p1, p2, &ret);
+		duk_push_variant(ctx, ret);
+
+		return DUK_HAS_RET_VAL;
+	}, 2);
+	duk_put_prop_literal(ctx, -2, "intersects_ray");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+		Vector3 p1 = duk_get_variant(ctx, 0);
+		Vector3 p2 = duk_get_variant(ctx, 1);
+
+		Vector3 ret;
+		ptr->intersects_segment(p1, p2, &ret);
+		duk_push_variant(ctx, ret);
+
+		return DUK_HAS_RET_VAL;
+	}, 2);
+	duk_put_prop_literal(ctx, -2, "intersects_segment");
+
+	duk_push_literal(ctx, "x");
+	duk_c_function func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			ptr->normal.x = duk_get_number_default(ctx, 0, 0);
+		}
+		duk_push_variant(ctx, ptr->normal.x);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+	duk_push_literal(ctx, "y");
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			ptr->normal.y = duk_get_number_default(ctx, 0, 0);
+		}
+		duk_push_variant(ctx, ptr->normal.y);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+	duk_push_literal(ctx, "z");
+	func = [](duk_context *ctx) -> duk_ret_t {
+		duk_int_t argc = duk_get_top(ctx);
+		duk_push_this(ctx);
+		Plane *ptr = duk_get_builtin_ptr<Plane>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+		if (argc) {
+			ptr->normal.z = duk_get_number_default(ctx, 0, 0);
+		}
+		duk_push_variant(ctx, ptr->normal.z);
+		return DUK_HAS_RET_VAL;
+	};
+	duk_push_c_function(ctx, func, 0);
+	duk_push_c_function(ctx, func, 1);
+	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
 
 	duk_pop(ctx);
 }
