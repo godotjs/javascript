@@ -375,19 +375,25 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
 		dict["name"] = format_property_name(const_doc.name);
 		dict["value"] = const_doc.value;
+		String type = "number";
+		if (const_doc.value.find("(") != -1) {
+			type = const_doc.value.split("(")[0];
+		}
+		dict["type"] = type;
+
 		if (class_doc.name.begins_with("_")) {
 			String signleton_const_str = """\n"
 										 "		/** ${description}""\n"
 										 "		 * @value `${value}`""\n"
 										 "		 */""\n"
-										 "		readonly ${name}: number;""\n";
+										 "		readonly ${name}: ${type};""\n";
 			constants += applay_partern(signleton_const_str, dict);
 		} else {
 			String const_str = """\n"
 							   "		/** ${description}""\n"
 							   "		 * @value `${value}`""\n"
 							   "		 */""\n"
-							   "		static readonly ${name}: number;""\n";
+							   "		static readonly ${name}: ${type};""\n";
 			constants += applay_partern(const_str, dict);
 		}
 
