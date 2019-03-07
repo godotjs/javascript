@@ -28,6 +28,10 @@ void plane_properties(duk_context *ctx);
 duk_ret_t aabb_constructor(duk_context *ctx);
 void aabb_properties(duk_context *ctx);
 
+
+duk_ret_t transform_constructor(duk_context *ctx);
+void transform_properties(duk_context *ctx);
+
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
 	class_prototypes = &builtin_class_prototypes;
@@ -41,13 +45,14 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 	register_builtin_class<Rect2>(ctx, rect2_constructor, 4, Variant::RECT2, "Rect2");
 	register_builtin_class<Color>(ctx, color_constructor, 4, Variant::COLOR, "Color");
 	register_builtin_class<RID>(ctx, rid_constructor, 1, Variant::_RID, "RID");
-	register_builtin_class<Transform2D>(ctx, transform2d_constructor, 1, Variant::TRANSFORM2D, "Transform2D");
+	register_builtin_class<Transform2D>(ctx, transform2d_constructor, 3, Variant::TRANSFORM2D, "Transform2D");
 
 	register_builtin_class<Vector3>(ctx, vector3_constructor, 3, Variant::VECTOR3, "Vector3");
 	register_builtin_class<Basis>(ctx, basis_constructor, 3, Variant::BASIS, "Basis");
-	register_builtin_class<Quat>(ctx, quat_constructor, 3, Variant::QUAT, "Quat");
+	register_builtin_class<Quat>(ctx, quat_constructor, 4, Variant::QUAT, "Quat");
 	register_builtin_class<Plane>(ctx, plane_constructor, 4, Variant::PLANE, "Plane");
-	register_builtin_class<AABB>(ctx, aabb_constructor, 4, Variant::AABB, "AABB");
+	register_builtin_class<AABB>(ctx, aabb_constructor, 2, Variant::AABB, "AABB");
+	register_builtin_class<Transform>(ctx, transform_constructor, 4, Variant::TRANSFORM, "Transform");
 
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
@@ -65,6 +70,7 @@ void register_builtin_class_properties(duk_context *ctx) {
 	quat_properties(ctx);
 	plane_properties(ctx);
 	aabb_properties(ctx);
+	transform_properties(ctx);
 }
 
 duk_ret_t vector2_constructor(duk_context *ctx) {
@@ -1242,6 +1248,140 @@ void aabb_properties(duk_context *ctx) {
 	duk_push_c_function(ctx, func, 0);
 	duk_push_c_function(ctx, func, 1);
 	duk_def_prop(ctx, -4, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER| DUK_DEFPROP_ENUMERABLE);
+
+	duk_pop(ctx);
+}
+
+duk_ret_t transform_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+
+	duk_push_this(ctx);
+
+	Transform *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+		case Variant::VECTOR3: {
+			Basis b;
+			b.elements[0] = arg0;
+			b.elements[1] = duk_get_variant(ctx, 1);
+			b.elements[2] = duk_get_variant(ctx, 2);
+			Vector3 origin = duk_get_variant(ctx, 3);
+			ptr = memnew(Transform(b, origin));
+		} break;
+		case Variant::BASIS: {
+			Basis p1 = arg0;
+			Variant p2 = duk_get_variant(ctx, 1);
+			if (p2.get_type() == Variant::VECTOR3) {
+				Vector3 arg2 = p2;
+				ptr = memnew(Transform(p1, arg2));
+			} else {
+				ptr = memnew(Transform(p1));
+			}
+		} break;
+		case Variant::QUAT: {
+			Quat p1 = arg0;
+			ptr = memnew(Transform(p1));
+		} break;
+		case Variant::TRANSFORM2D: {
+			Transform2D p1 = arg0;
+			// TODO: construct from Transform2D
+//			ptr = memnew(Transform(p1));
+		} break;
+		case Variant::TRANSFORM: {
+			Transform p = arg0;
+			ptr = memnew(Transform(p));
+		} break;
+		default:
+			ptr = memnew(Transform);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::AABB);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+	return DUK_NO_RET_VAL;
+}
+
+void transform_properties(duk_context *ctx) {
+	duk_push_heapptr(ctx, class_constructors->get(Variant::TRANSFORM));
+
+	duk_push_literal(ctx, "IDENTITY");
+	duk_push_variant(ctx, Transform(Basis(1, 0, 0, 0, 1, 0, 0, 0, 1), Vector3(0, 0, 0 )));
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
+	duk_push_literal(ctx, "FLIP_X");
+	duk_push_variant(ctx, Transform(Basis(-1, 0, 0, 0, 1, 0, 0, 0, 1), Vector3(0, 0, 0 )));
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
+	duk_push_literal(ctx, "FLIP_Y");
+	duk_push_variant(ctx, Transform(Basis(1, 0, 0, 0, 1, 0, 0, 0, 1), Vector3(0, 0, 0 )));
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
+	duk_push_literal(ctx, "FLIP_Z");
+	duk_push_variant(ctx, Transform(Basis(1, 0, 0, 0, 1, 0, 0, 0, 1), Vector3(0, 0, 0 )));
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE|DUK_DEFPROP_ENUMERABLE);
+
+	duk_pop(ctx);
+
+
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::TRANSFORM));
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Transform *ptr = duk_get_builtin_ptr<Transform>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+		Variant arg0 = duk_get_variant(ctx, 0);
+		Variant r_ret;
+		switch (arg0.get_type()) {
+			case Variant::VECTOR3: {
+				Vector3 v = arg0;
+				r_ret = ptr->xform(v);
+			} break;
+			case Variant::PLANE: {
+				Plane v = arg0;
+				r_ret = ptr->xform(v);
+			} break;
+			case Variant::AABB: {
+				AABB v = arg0;
+				r_ret = ptr->xform(v);
+			} break;
+			default: r_ret = Variant();
+		}
+		duk_push_variant(ctx, r_ret);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "xform");
+
+	duk_push_c_function(ctx, [](duk_context *ctx) -> duk_ret_t {
+		duk_push_this(ctx);
+		Transform *ptr = duk_get_builtin_ptr<Transform>(ctx, -1);
+		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+		Variant arg0 = duk_get_variant(ctx, 0);
+		Variant r_ret;
+		switch (arg0.get_type()) {
+			case Variant::VECTOR3: {
+				Vector3 v = arg0;
+				r_ret = ptr->xform_inv(v);
+			} break;
+			case Variant::PLANE: {
+				Plane v = arg0;
+				r_ret = ptr->xform_inv(v);
+			} break;
+			case Variant::AABB: {
+				AABB v = arg0;
+				r_ret = ptr->xform_inv(v);
+			} break;
+			default: r_ret = Variant();
+		}
+		duk_push_variant(ctx, r_ret);
+		return DUK_HAS_RET_VAL;
+	}, 1);
+	duk_put_prop_literal(ctx, -2, "xform_inv");
 
 	duk_pop(ctx);
 }

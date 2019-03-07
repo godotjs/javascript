@@ -19,6 +19,7 @@ variant_types = {
 	"Transform2D": "Variant::TRANSFORM2D",
 	"Plane": "Variant::PLANE",
 	"AABB": "Variant::AABB",
+	"Transform": "Variant::TRANSFORM",
 }
 
 def apply_parttern(template, values):

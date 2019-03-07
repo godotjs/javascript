@@ -1943,4 +1943,76 @@ declare module godot {
 
 	}
 	
+	/** 3D Transformation. 3x4 matrix.
+
+	 Represents one or many transformations in 3D space such as translation, rotation, or scaling. It consists of a [Basis] "basis" and an [Vector3] "origin". It is similar to a 3x4 matrix. */
+	class Transform {
+		
+		constructor(from_x_axis?: Transform|Transform2D|Quat|Basis|Vector3, y_axis?: Vector3, z_axis?:Vector3, origin?: Vector3);
+
+		/** 
+		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )`
+		 */
+		static readonly IDENTITY: Transform;
+
+		/** 
+		 * @value `Transform( -1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )`
+		 */
+		static readonly FLIP_X: Transform;
+
+		/** 
+		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )`
+		 */
+		static readonly FLIP_Y: Transform;
+
+		/** 
+		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )`
+		 */
+		static readonly FLIP_Z: Transform;
+
+
+		/** The basis is a matrix containing 3 [Vector3] as its columns: X axis, Y axis, and Z axis. These vectors can be interpreted as the basis vectors of local coordinate system traveling with the object. */
+		basis: Basis;
+
+		/** The translation offset of the transform. */
+		origin: Vector3;
+
+
+		/** Returns the inverse of the transform, under the assumption that the transformation is composed of rotation, scaling and translation. */
+		affine_inverse() : Transform;
+
+		/** Interpolates the transform to other Transform by weight amount (0-1). */
+		interpolate_with(transform: Transform, weight: number) : Transform;
+
+		/** Returns the inverse of the transform, under the assumption that the transformation is composed of rotation and translation (no scaling, use affine_inverse for transforms with scaling). */
+		inverse() : Transform;
+
+		/** Returns a copy of the transform rotated such that its -Z axis points towards the `target` position.  
+		 The transform will first be rotated around the given `up` vector, and then fully aligned to the target by a further rotation around an axis perpendicular to both the `target` and `up` vectors.  
+		 Operations take place in global space. */
+		looking_at(target: Vector3, up: Vector3) : Transform;
+
+		/** Returns the transform with the basis orthogonal (90 degrees), and normalized axis vectors. */
+		orthonormalized() : Transform;
+
+		/** Rotates the transform around given axis by phi. The axis must be a normalized vector. */
+		rotated(axis: Vector3, phi: number) : Transform;
+
+		/** Scales the transform by the specified 3D scaling factors. */
+		scaled(scale: Vector3) : Transform;
+
+		/** Translates the transform by the specified offset. */
+		translated(ofs: Vector3) : Transform;
+
+		/** Transforms the given [Vector3], [Plane], or [AABB] by this transform. */
+		xform(v: Vector3|AABB|Plane) : Vector3|AABB|Plane;
+
+		/** Inverse-transforms the given [Vector3], [Plane], or [AABB] by this transform. */
+		xform_inv(v: Vector3|AABB|Plane) : Vector3|AABB|Plane;
+		
+		multiply(p_value: Transform): Transform;
+		multiply_assign(p_value: Transform): Transform;
+		equals(p_value: Transform): boolean;
+	}
+	
 }

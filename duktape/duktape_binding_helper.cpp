@@ -363,6 +363,11 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 					case Variant::AABB:
 						ptr = memnew(AABB(var));
 						break;
+					case Variant::TRANSFORM: {
+						Transform xf;
+						xf = var;
+						ptr = memnew(Transform(xf));
+					} break;
 					default:
 						break;
 				}
@@ -479,6 +484,9 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 						break;
 					case Variant::AABB:
 						ret = *(static_cast<AABB*>(ptr));
+						break;
+					case Variant::TRANSFORM:
+						ret = *(static_cast<Transform*>(ptr));
 						break;
 					default:
 						break;

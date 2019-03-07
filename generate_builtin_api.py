@@ -20,6 +20,7 @@ BUILTIN_CLASSES = [
 	'Transform2D',
 	'Plane',
 	'AABB',
+	"Transform",
 ]
 
 TYPE_MAP = {
@@ -162,6 +163,7 @@ IGNORED_PROPS = {
 	"Basis": ['x', 'y', 'z'],
 	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
 	"AABB": ['end'],
+	"Transform": ['xform', 'xform_inv', 'IDENTITY', 'FLIP_X', 'FLIP_Y', 'FLIP_Z'],
 }
 
 EXTRAL_METHODS = {
@@ -226,6 +228,11 @@ EXTRAL_METHODS = {
 	],
 	"AABB": [
 		METHOD_OP_EQUALS,
+	],
+	"Transform": [
+		METHOD_OP_EQUALS,
+		METHOD_OP_MUL,
+		METHOD_OP_MUL_ASSIGN,
 	]
 }
 
@@ -289,6 +296,9 @@ def parse_class(cls):
 		for em in EXTRAL_METHODS[class_name]:
 			methods.append(em)
 	for c in (cls.find("constants") if cls.find("constants") is not None else []):
+		const_name = c.get("name")
+		if class_name in IGNORED_PROPS and const_name in IGNORED_PROPS[class_name]:
+			continue
 		constants.append(dict(c.attrib))
 	return json.loads(apply_parttern(json.dumps(ret), {
 		'class_name': class_name,

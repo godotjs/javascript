@@ -502,6 +502,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("Quat");
 	ignored_classes.insert("Plane");
 	ignored_classes.insert("AABB");
+	ignored_classes.insert("Transform");
 
 	String constants = "";
 
