@@ -1204,6 +1204,8 @@ Variant DuktapeBindingHelper::call_method(const ECMAScriptGCHandler &p_object, c
 	duk_call_method(ctx, p_argcount);
 	Variant ret = duk_get_godot_variant(ctx, -1);
 	duk_pop(ctx);
+
+	r_error.error = Variant::CallError::CALL_OK;
 	return ret;
 }
 

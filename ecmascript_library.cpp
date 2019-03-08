@@ -16,14 +16,14 @@ RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_
 	if (r_error) {
 		*r_error = err;
 	}
-	ERR_FAIL_COND_V(err != OK, NULL);
+	ERR_FAIL_COND_V(err != OK, RES());
 
-	file->eval_text();
+	err = file->eval_text();
 
 	if (r_error) {
 		*r_error = err;
 	}
-	ERR_FAIL_COND_V(err != OK, NULL);
+	ERR_FAIL_COND_V(err != OK, RES());
 	ecma_libs.insert(file->get_instance_id());
 	return file;
 }
@@ -89,15 +89,18 @@ void ECMAScriptLibrary::reload_from_file() {
 	eval_text();
 }
 
-void ECMAScriptLibrary::eval_text() {
+Error ECMAScriptLibrary::eval_text() {
+	Error err = ERR_UNAVAILABLE;
 	ECMAScriptLibraryResourceLoader::loading_lib = RES(this);
 	if (Engine::get_singleton()->is_editor_hint()) {
-		String err;
-		if (OK != ECMAScriptLanguage::get_singleton()->safe_eval_text(get_text(), err)) {
-			ERR_EXPLAIN(err);
+		String err_msg;
+		err = ECMAScriptLanguage::get_singleton()->safe_eval_text(get_text(), err_msg);
+		if (OK != err) {
+			ERR_EXPLAIN(err_msg);
 		}
 	} else {
-		ECMAScriptLanguage::get_singleton()->eval_text(get_text());
+		err = ECMAScriptLanguage::get_singleton()->eval_text(get_text());
 	}
 	ECMAScriptLibraryResourceLoader::loading_lib = RES();
+	return err;
 }

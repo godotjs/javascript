@@ -11,7 +11,7 @@ protected:
 	static void _bind_methods() {};
 public:
 	virtual void reload_from_file();
-	void eval_text();
+	Error eval_text();
 };
 
 class ECMAScriptLibraryResourceLoader : public ResourceFormatLoader {
