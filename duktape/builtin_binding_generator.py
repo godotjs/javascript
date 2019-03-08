@@ -20,6 +20,13 @@ variant_types = {
 	"Plane": "Variant::PLANE",
 	"AABB": "Variant::AABB",
 	"Transform": "Variant::TRANSFORM",
+	"PoolByteArray": "Variant::POOL_BYTE_ARRAY",
+	"PoolIntArray": "Variant::POOL_INT_ARRAY",
+	"PoolRealArray": "Variant::POOL_REAL_ARRAY",
+	"PoolStringArray": "Variant::POOL_STRING_ARRAY",
+	"PoolVector2Array": "Variant::POOL_VECTOR2_ARRAY",
+	"PoolVector3Array": "Variant::POOL_VECTOR3_ARRAY",
+	"PoolColorArray": "Variant::POOL_COLOR_ARRAY",
 }
 
 def apply_parttern(template, values):

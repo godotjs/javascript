@@ -503,6 +503,14 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("Plane");
 	ignored_classes.insert("AABB");
 	ignored_classes.insert("Transform");
+	ignored_classes.insert("PoolByteArray");
+	ignored_classes.insert("PoolIntArray");
+	ignored_classes.insert("PoolRealArray");
+	ignored_classes.insert("PoolStringArray");
+	ignored_classes.insert("PoolVector2Array");
+	ignored_classes.insert("PoolVector3Array");
+	ignored_classes.insert("PoolColorArray");
+
 
 	String constants = "";
 

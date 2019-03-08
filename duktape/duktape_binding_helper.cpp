@@ -368,6 +368,27 @@ void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Varian
 						xf = var;
 						ptr = memnew(Transform(xf));
 					} break;
+					case Variant::POOL_BYTE_ARRAY:
+						ptr = memnew(PoolByteArray(var));
+						break;
+					case Variant::POOL_INT_ARRAY:
+						ptr = memnew(PoolIntArray(var));
+						break;
+					case Variant::POOL_REAL_ARRAY:
+						ptr = memnew(PoolRealArray(var));
+						break;
+					case Variant::POOL_STRING_ARRAY:
+						ptr = memnew(PoolByteArray(var));
+						break;
+					case Variant::POOL_VECTOR2_ARRAY:
+						ptr = memnew(PoolVector2Array(var));
+						break;
+					case Variant::POOL_VECTOR3_ARRAY:
+						ptr = memnew(PoolVector3Array(var));
+						break;
+					case Variant::POOL_COLOR_ARRAY:
+						ptr = memnew(PoolColorArray(var));
+						break;
 					default:
 						break;
 				}
@@ -487,6 +508,27 @@ Variant DuktapeBindingHelper::duk_get_godot_variant(duk_context *ctx, duk_idx_t 
 						break;
 					case Variant::TRANSFORM:
 						ret = *(static_cast<Transform*>(ptr));
+						break;
+					case Variant::POOL_BYTE_ARRAY:
+						ret = *(static_cast<PoolByteArray*>(ptr));
+						break;
+					case Variant::POOL_INT_ARRAY:
+						ret = *(static_cast<PoolIntArray*>(ptr));
+						break;
+					case Variant::POOL_REAL_ARRAY:
+						ret = *(static_cast<PoolRealArray*>(ptr));
+						break;
+					case Variant::POOL_STRING_ARRAY:
+						ret = *(static_cast<PoolStringArray*>(ptr));
+						break;
+					case Variant::POOL_VECTOR2_ARRAY:
+						ret = *(static_cast<PoolVector2Array*>(ptr));
+						break;
+					case Variant::POOL_VECTOR3_ARRAY:
+						ret = *(static_cast<PoolVector3Array*>(ptr));
+						break;
+					case Variant::POOL_COLOR_ARRAY:
+						ret = *(static_cast<PoolColorArray*>(ptr));
 						break;
 					default:
 						break;

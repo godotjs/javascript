@@ -1,5 +1,6 @@
 #include "duktape_builtin_bindings.h"
 #include "core/resource.h"
+#include "core/io/compression.h"
 
 HashMap<Variant::Type, DuktapeHeapObject *> *class_prototypes = NULL;
 HashMap<Variant::Type, DuktapeHeapObject *> *class_constructors = NULL;
@@ -27,10 +28,17 @@ duk_ret_t plane_constructor(duk_context *ctx);
 void plane_properties(duk_context *ctx);
 duk_ret_t aabb_constructor(duk_context *ctx);
 void aabb_properties(duk_context *ctx);
-
-
 duk_ret_t transform_constructor(duk_context *ctx);
 void transform_properties(duk_context *ctx);
+
+duk_ret_t pool_byte_array_constructor(duk_context *ctx);
+duk_ret_t pool_int_array_constructor(duk_context *ctx);
+duk_ret_t pool_real_array_constructor(duk_context *ctx);
+duk_ret_t pool_string_array_constructor(duk_context *ctx);
+duk_ret_t pool_vector2_array_constructor(duk_context *ctx);
+duk_ret_t pool_vector3_array_constructor(duk_context *ctx);
+duk_ret_t pool_color_array_constructor(duk_context *ctx);
+void pool_array_properties(duk_context *ctx);
 
 void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 
@@ -54,6 +62,14 @@ void DuktapeBindingHelper::register_builtin_classes(duk_context *ctx) {
 	register_builtin_class<AABB>(ctx, aabb_constructor, 2, Variant::AABB, "AABB");
 	register_builtin_class<Transform>(ctx, transform_constructor, 4, Variant::TRANSFORM, "Transform");
 
+	register_builtin_class<PoolByteArray>(ctx, pool_byte_array_constructor, 1, Variant::POOL_BYTE_ARRAY, "PoolByteArray");
+	register_builtin_class<PoolIntArray>(ctx, pool_int_array_constructor, 1, Variant::POOL_INT_ARRAY, "PoolIntArray");
+	register_builtin_class<PoolRealArray>(ctx, pool_real_array_constructor, 1, Variant::POOL_REAL_ARRAY, "PoolRealArray");
+	register_builtin_class<PoolStringArray>(ctx, pool_string_array_constructor, 1, Variant::POOL_STRING_ARRAY, "PoolStringArray");
+	register_builtin_class<PoolVector2Array>(ctx, pool_vector2_array_constructor, 1, Variant::POOL_VECTOR2_ARRAY, "PoolVector2Array");
+	register_builtin_class<PoolVector3Array>(ctx, pool_vector3_array_constructor, 1, Variant::POOL_VECTOR3_ARRAY, "PoolVector3Array");
+	register_builtin_class<PoolColorArray>(ctx, pool_color_array_constructor, 1, Variant::POOL_COLOR_ARRAY, "PoolColorArray");
+
 	// define properties of builtin classes
 	register_builtin_class_properties(ctx);
 	register_builtin_class_properties_gen(ctx);
@@ -71,6 +87,8 @@ void register_builtin_class_properties(duk_context *ctx) {
 	plane_properties(ctx);
 	aabb_properties(ctx);
 	transform_properties(ctx);
+
+	pool_array_properties(ctx);
 }
 
 duk_ret_t vector2_constructor(duk_context *ctx) {
@@ -1299,7 +1317,7 @@ duk_ret_t transform_constructor(duk_context *ctx) {
 
 	duk_push_pointer(ctx, ptr);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
-	duk_push_int(ctx, Variant::AABB);
+	duk_push_int(ctx, Variant::TRANSFORM);
 	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
 	return DUK_NO_RET_VAL;
 }
@@ -1386,3 +1404,329 @@ void transform_properties(duk_context *ctx) {
 	duk_pop(ctx);
 }
 
+duk_ret_t pool_byte_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolByteArray *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_BYTE_ARRAY: {
+			PoolByteArray p = arg0;
+			ptr = memnew(PoolByteArray(p));
+		} break;
+		default:
+			ptr = memnew(PoolByteArray);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_BYTE_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t pool_int_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolIntArray *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_INT_ARRAY: {
+			PoolIntArray p = arg0;
+			ptr = memnew(PoolIntArray(p));
+		} break;
+		default:
+			ptr = memnew(PoolIntArray);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_INT_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t pool_real_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolRealArray *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_REAL_ARRAY: {
+			PoolRealArray p = arg0;
+			ptr = memnew(PoolRealArray(p));
+		} break;
+		default:
+			ptr = memnew(PoolRealArray);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_REAL_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t pool_string_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolStringArray *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_STRING_ARRAY: {
+			PoolStringArray p = arg0;
+			ptr = memnew(PoolStringArray(p));
+		} break;
+		default:
+			ptr = memnew(PoolStringArray);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_STRING_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t pool_vector2_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolVector2Array *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_VECTOR2_ARRAY: {
+			PoolVector2Array p = arg0;
+			ptr = memnew(PoolVector2Array(p));
+		} break;
+		default:
+			ptr = memnew(PoolVector2Array);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_VECTOR2_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t pool_vector3_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolVector3Array *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_VECTOR3_ARRAY: {
+			PoolVector3Array p = arg0;
+			ptr = memnew(PoolVector3Array(p));
+		} break;
+		default:
+			ptr = memnew(PoolVector3Array);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_VECTOR3_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+
+duk_ret_t pool_color_array_constructor(duk_context *ctx) {
+	ERR_FAIL_COND_V(!duk_is_constructor_call(ctx), DUK_ERR_SYNTAX_ERROR);
+	duk_push_this(ctx);
+
+	PoolColorArray *ptr = NULL;
+	Variant arg0 = duk_get_variant(ctx, 0);
+	switch (arg0.get_type()) {
+
+		case Variant::ARRAY: {
+			// TODO: constuct from array
+		} break;
+		case Variant::POOL_COLOR_ARRAY: {
+			PoolColorArray p = arg0;
+			ptr = memnew(PoolColorArray(p));
+		} break;
+		default:
+			ptr = memnew(PoolColorArray);
+			break;
+	}
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	duk_push_pointer(ctx, ptr);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
+	duk_push_int(ctx, Variant::POOL_COLOR_ARRAY);
+	duk_put_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("type"));
+
+	return DUK_NO_RET_VAL;
+}
+
+template<class T>
+duk_ret_t pool_array_index_getter(duk_context* ctx) {
+	duk_push_this(ctx);
+	T *ptr = duk_get_builtin_ptr<T>(ctx, -1);
+	ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+	int idx = duk_get_int_default(ctx, 0, -1);
+	ERR_FAIL_COND_V(idx < 0 || idx >= ptr->size(), DUK_ERR_RANGE_ERROR);
+	duk_push_variant(ctx, (*ptr)[idx]);
+	return DUK_HAS_RET_VAL;
+};
+
+void pool_array_properties(duk_context *ctx) {
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_BYTE_ARRAY));
+
+	duk_push_c_function(ctx, pool_array_index_getter<PoolByteArray>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+
+	duk_push_c_function(ctx, ([](duk_context *ctx) -> duk_ret_t{
+							duk_push_this(ctx);
+							PoolByteArray *ptr = duk_get_builtin_ptr<PoolByteArray>(ctx, -1);
+							ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+							PoolByteArray compressed;
+							Compression::Mode mode = (Compression::Mode)(int)(duk_get_int_default(ctx, 0, 0));
+							compressed.resize(Compression::get_max_compressed_buffer_size(ptr->size(), mode));
+							int result = Compression::compress(compressed.write().ptr(), ptr->read().ptr(), ptr->size(), mode);
+							result = result >= 0 ? result : 0;
+							compressed.resize(result);
+
+							duk_push_variant(ctx, compressed);
+							return DUK_HAS_RET_VAL;
+						}), 1);
+	duk_put_prop_literal(ctx, -2, "compress");
+
+	duk_push_c_function(ctx, ([](duk_context *ctx) -> duk_ret_t{
+							duk_push_this(ctx);
+							PoolByteArray *ptr = duk_get_builtin_ptr<PoolByteArray>(ctx, -1);
+							ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+							PoolByteArray decompressed;
+							Compression::Mode mode = (Compression::Mode)(int)(duk_get_int_default(ctx, 1, 0));
+
+							int buffer_size = (int)(duk_get_int_default(ctx, 0, 0));
+							if (buffer_size < 0) {
+								ERR_EXPLAIN("Decompression buffer size is less than zero");
+								ERR_FAIL_V(DUK_ERR_RANGE_ERROR);
+							}
+
+							decompressed.resize(buffer_size);
+							int result = Compression::decompress(decompressed.write().ptr(), buffer_size, ptr->read().ptr(), ptr->size(), mode);
+
+							result = result >= 0 ? result : 0;
+							decompressed.resize(result);
+
+							duk_push_variant(ctx, decompressed);
+							return DUK_HAS_RET_VAL;
+						}), 2);
+	duk_put_prop_literal(ctx, -2, "decompress");
+
+	duk_push_c_function(ctx, ([](duk_context *ctx) -> duk_ret_t{
+							duk_push_this(ctx);
+							PoolByteArray *ptr = duk_get_builtin_ptr<PoolByteArray>(ctx, -1);
+							ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+							String s;
+							if (ptr->size() >= 0) {
+								PoolByteArray::Read r = ptr->read();
+								CharString cs;
+								cs.resize(ptr->size() + 1);
+								copymem(cs.ptrw(), r.ptr(), ptr->size());
+								cs[ptr->size()] = 0;
+
+								s = cs.get_data();
+							}
+
+							duk_push_variant(ctx, s);
+							return DUK_HAS_RET_VAL;
+						}), 0);
+	duk_put_prop_literal(ctx, -2, "get_string_from_ascii");
+
+	duk_push_c_function(ctx, ([](duk_context *ctx) -> duk_ret_t{
+							duk_push_this(ctx);
+							PoolByteArray *ptr = duk_get_builtin_ptr<PoolByteArray>(ctx, -1);
+							ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
+
+							String s;
+							if (ptr->size() >= 0) {
+								PoolByteArray::Read r = ptr->read();
+								s.parse_utf8((const char *)r.ptr(), ptr->size());
+							}
+
+							duk_push_variant(ctx, s);
+							return DUK_HAS_RET_VAL;
+						}), 0);
+	duk_put_prop_literal(ctx, -2, "get_string_from_utf8");
+
+	duk_pop(ctx);
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_INT_ARRAY));
+	duk_push_c_function(ctx, pool_array_index_getter<PoolIntArray>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+	duk_pop(ctx);
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_REAL_ARRAY));
+	duk_push_c_function(ctx, pool_array_index_getter<PoolRealArray>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+	duk_pop(ctx);
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_STRING_ARRAY));
+	duk_push_c_function(ctx, pool_array_index_getter<PoolStringArray>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+	duk_pop(ctx);
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_VECTOR2_ARRAY));
+	duk_push_c_function(ctx, pool_array_index_getter<PoolVector2Array>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+	duk_pop(ctx);
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_VECTOR3_ARRAY));
+	duk_push_c_function(ctx, pool_array_index_getter<PoolVector3Array>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+	duk_pop(ctx);
+
+	duk_push_heapptr(ctx, class_prototypes->get(Variant::POOL_COLOR_ARRAY));
+	duk_push_c_function(ctx, pool_array_index_getter<PoolColorArray>, 1);
+	duk_put_prop_literal(ctx, -2, "get");
+	duk_pop(ctx);
+}

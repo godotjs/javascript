@@ -2015,4 +2015,300 @@ declare module godot {
 		equals(p_value: Transform): boolean;
 	}
 	
+	/** A pooled [Array] of bytes.
+
+	 An [Array] specifically designed to hold bytes. Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolByteArray {
+		
+		constructor(from?:Array<number>|PoolByteArray);
+		
+		/** Get element at `index` */
+		get(index: number): number;
+
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(byte: number) : void;
+
+		/** Append a `PoolByteArray` at the end of this array. */
+		append_array(array: PoolByteArray) : void;
+
+		/** Returns a new `PoolByteArray` with the data compressed. Set the compression mode using one of [enum File.CompressionMode]'s constants. */
+		compress(compression_mode?: number) : PoolByteArray;
+
+		/** Returns a new `PoolByteArray` with the data decompressed. Set `buffer_size` to the size of the uncompressed data. Set the compression mode using one of [enum File.CompressionMode]'s constants. */
+		decompress(buffer_size: number, compression_mode?: number) : PoolByteArray;
+
+		/** Returns a copy of the array's contents as [String]. Fast alternative to [method get_string_from_utf8] if the content is ASCII-only. Unlike the UTF-8 function this function maps every byte to a character in the array. Multibyte sequences will not be interpreted correctly. For parsing user input always use [method get_string_from_utf8]. */
+		get_string_from_ascii() : string;
+
+		/** Returns a copy of the array's contents as [String]. Slower than [method get_string_from_ascii] but supports UTF-8 encoded data. Use this function if you are unsure about the source of the data. For user input this function should always be preferred. */
+		get_string_from_utf8() : string;
+
+		/** Insert a new element at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, byte: number) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Append an element at the end of the array. */
+		push_back(byte: number) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the byte at the given index. */
+		set(idx: number, byte: number) : void;
+
+		/** Return the size of the array. */
+		size() : number;
+
+		/** Returns the slice of the `PoolByteArray` between indices (inclusive) as a new `PoolByteArray`. Any negative index is considered to be from the end of the array. */
+		subarray(from: number, to: number) : PoolByteArray;
+
+	}
+	
+	/** A pooled [Array] of integers ([int]).
+
+	 An [Array] specifically designed to hold integer values ([int]). Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolIntArray {
+		
+		constructor(from?:Array<number>|PoolIntArray);
+		
+		/** Get element at `index` */
+		get(index: number): number;
+
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(integer: number) : void;
+
+		/** Append a `PoolIntArray` at the end of this array. */
+		append_array(array: PoolIntArray) : void;
+
+		/** Insert a new int at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, integer: number) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Append a value to the array. */
+		push_back(integer: number) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the int at the given index. */
+		set(idx: number, integer: number) : void;
+
+		/** Return the array size. */
+		size() : number;
+
+	}
+	
+	
+	/** A pooled [Array] of reals ([float]).
+
+	 An [Array] specifically designed to hold floating point values ([float]). Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolRealArray {
+
+		constructor(from?:Array<number>|PoolRealArray);
+		
+		/** Get element at `index` */
+		get(index: number): number;
+		
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(value: number) : void;
+
+		/** Append a `PoolRealArray` at the end of this array. */
+		append_array(array: PoolRealArray) : void;
+
+		/** Insert a new element at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, value: number) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Append an element at the end of the array. */
+		push_back(value: number) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the float at the given index. */
+		set(idx: number, value: number) : void;
+
+		/** Return the size of the array. */
+		size() : number;
+
+	}
+	
+	/** A pooled [Array] of [String].
+
+	 An [Array] specifically designed to hold [String]. Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolStringArray {
+
+		constructor(from?:Array<string>|PoolStringArray);
+		
+		/** Get element at `index` */
+		get(index: number): string;
+
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(string: string) : void;
+
+		/** Append a `PoolStringArray` at the end of this array. */
+		append_array(array: PoolStringArray) : void;
+
+		/** Insert a new element at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, string: string) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Returns a [String] with each element of the array joined with the given `delimiter`. */
+		join(delimiter: string) : string;
+
+		/** Append a string element at end of the array. */
+		push_back(string: string) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the [String] at the given index. */
+		set(idx: number, string: string) : void;
+
+		/** Return the size of the array. */
+		size() : number;
+
+	}
+	
+	/** A pooled [Array] of [Vector2].
+
+	 An [Array] specifically designed to hold [Vector2]. Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolVector2Array {
+
+
+		constructor(from?:Array<Vector2>|PoolVector2Array);
+		
+		/** Get element at `index` */
+		get(index: number): Vector2;
+
+
+
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(vector2: Vector2) : void;
+
+		/** Append a `PoolVector2Array` at the end of this array. */
+		append_array(array: PoolVector2Array) : void;
+
+		/** Insert a new element at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, vector2: Vector2) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Insert a [Vector2] at the end. */
+		push_back(vector2: Vector2) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the [Vector2] at the given index. */
+		set(idx: number, vector2: Vector2) : void;
+
+		/** Return the size of the array. */
+		size() : number;
+
+	}
+	
+	/** A pooled [Array] of [Vector3].
+
+	 An [Array] specifically designed to hold [Vector3]. Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolVector3Array {
+
+		constructor(from?:Array<Vector3>|PoolVector3Array);
+		
+		/** Get element at `index` */
+		get(index: number): Vector3;
+
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(vector3: Vector3) : void;
+
+		/** Append a `PoolVector3Array` at the end of this array. */
+		append_array(array: PoolVector3Array) : void;
+
+		/** Insert a new element at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, vector3: Vector3) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Insert a [Vector3] at the end. */
+		push_back(vector3: Vector3) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the [Vector3] at the given index. */
+		set(idx: number, vector3: Vector3) : void;
+
+		/** Return the size of the array. */
+		size() : number;
+
+	}
+	
+	
+	/** A pooled [Array] of [Color].
+
+	 An [Array] specifically designed to hold [Color]. Optimized for memory usage, does not fragment the memory. Note that this type is passed by value and not by reference. */
+	class PoolColorArray {
+
+		constructor(from?:Array<Color>|PoolColorArray);
+		
+		/** Get element at `index` */
+		get(index: number): Color;
+
+		/** Append an element at the end of the array (alias of [method push_back]). */
+		append(color: Color) : void;
+
+		/** Append a `PoolColorArray` at the end of this array. */
+		append_array(array: PoolColorArray) : void;
+
+		/** Insert a new element at a given position in the array. The position must be valid, or at the end of the array (`idx == size()`). */
+		insert(idx: number, color: Color) : number;
+
+		/** Reverse the order of the elements in the array. */
+		invert() : void;
+
+		/** Append a value to the array. */
+		push_back(color: Color) : void;
+
+		/** Remove an element from the array by index. */
+		remove(idx: number) : void;
+
+		/** Set the size of the array. If the array is grown reserve elements at the end of the array. If the array is shrunk truncate the array to the new size. */
+		resize(idx: number) : void;
+
+		/** Change the [Color] at the given index. */
+		set(idx: number, color: Color) : void;
+
+		/** Return the size of the array. */
+		size() : number;
+
+	}
+	
 }

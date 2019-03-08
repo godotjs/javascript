@@ -21,6 +21,13 @@ BUILTIN_CLASSES = [
 	'Plane',
 	'AABB',
 	"Transform",
+	"PoolByteArray",
+	"PoolIntArray",
+	"PoolRealArray",
+	"PoolStringArray",
+	"PoolVector2Array",
+	"PoolVector3Array",
+	"PoolColorArray",
 ]
 
 TYPE_MAP = {
@@ -164,6 +171,7 @@ IGNORED_PROPS = {
 	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
 	"AABB": ['end'],
 	"Transform": ['xform', 'xform_inv', 'IDENTITY', 'FLIP_X', 'FLIP_Y', 'FLIP_Z'],
+	"PoolByteArray": ['compress', 'decompress', 'get_string_from_ascii', 'get_string_from_utf8'],
 }
 
 EXTRAL_METHODS = {
