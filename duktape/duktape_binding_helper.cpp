@@ -287,6 +287,12 @@ duk_ret_t DuktapeBindingHelper::godot_builtin_function(duk_context *ctx) {
 	return DUK_HAS_RET_VAL;
 }
 
+duk_ret_t DuktapeBindingHelper::godot_typeof(duk_context *ctx) {
+	Variant var = duk_get_godot_variant(ctx, 0);
+	duk_push_number(ctx, var.get_type());
+	return DUK_HAS_RET_VAL;
+}
+
 void DuktapeBindingHelper::duk_push_godot_variant(duk_context *ctx, const Variant &var) {
 	Variant::Type godot_type = var.get_type();
 	switch (godot_type) {
@@ -863,6 +869,10 @@ void DuktapeBindingHelper::initialize() {
 
 		duk_push_literal(ctx, "register_property");
 		duk_push_c_function(ctx, register_property, 4);
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
+
+		duk_push_literal(ctx, "get_type");
+		duk_push_c_function(ctx, godot_typeof, 1);
 		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
 	}
 	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);

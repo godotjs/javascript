@@ -24,7 +24,11 @@ declare module godot {
 	 * @param value The default value of the property
 	 */
 	function register_property(target: Function|object, name: string, type: number, value: any);
-
+	
+	/**
+	 * Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
+	 */
+	function get_type(val: any): number;
 
 	/**
 	 Vector used for 2D math.
