@@ -5,6 +5,7 @@
 #include "core/engine.h"
 #include "core/global_constants.h"
 #include "core/math/expression.h"
+#include "core/os/os.h"
 
 Object *DuktapeBindingHelper::ecma_instance_target = NULL;
 
@@ -16,6 +17,40 @@ void DuktapeBindingHelper::fatal_function(void *udata, const char *msg) {
 #else
 	abort();
 #endif
+}
+
+duk_ret_t DuktapeBindingHelper::console_log_function(duk_context *ctx) {
+	int size = duk_get_top(ctx);
+	PoolStringArray args;
+	args.resize(size);
+	for (int i = 0; i < size; ++i) {
+		args.write()[i] = DuktapeBindingHelper::duk_get_godot_string(ctx, i, true);
+	}
+	print_line(args.join(" "));
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::console_warn_function(duk_context *ctx) {
+	int size = duk_get_top(ctx);
+	PoolStringArray args;
+	args.resize(size);
+	for (int i = 0; i < size; ++i) {
+		args.write()[i] = DuktapeBindingHelper::duk_get_godot_string(ctx, i, true);
+	}
+	// TODO: implement warning logger
+	print_error(args.join(" "));
+	return DUK_NO_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::console_error_function(duk_context *ctx) {
+	int size = duk_get_top(ctx);
+	PoolStringArray args;
+	args.resize(size);
+	for (int i = 0; i < size; ++i) {
+		args.write()[i] = DuktapeBindingHelper::duk_get_godot_string(ctx, i, true);
+	}
+	print_error(args.join(" "));
+	return DUK_NO_RET_VAL;
 }
 
 void DuktapeBindingHelper::set_weak_ref(ObjectID p_id, DuktapeHeapObject *ptr) {
@@ -193,19 +228,6 @@ duk_ret_t DuktapeBindingHelper::godot_object_free(duk_context *ctx) {
 		memdelete(obj);
 		duk_del_prop_literal(ctx, -2, DUK_HIDDEN_SYMBOL("ptr"));
 	}
-	return DUK_NO_RET_VAL;
-}
-
-duk_ret_t DuktapeBindingHelper::godot_print_function(duk_context *ctx) {
-	int size = duk_get_top(ctx);
-	String msg;
-	for (int i = 0; i < size; ++i) {
-		msg += DuktapeBindingHelper::duk_get_godot_string(ctx, i, true);
-		if (i < size - 1) {
-			msg += " ";
-		}
-	}
-	print_line(msg);
 	return DUK_NO_RET_VAL;
 }
 
@@ -728,11 +750,27 @@ void DuktapeBindingHelper::initialize() {
 	duk_pop(ctx);
 
 	// global scope
-	duk_push_c_function(ctx, godot_print_function, DUK_VARARGS);
-	duk_put_global_literal(ctx, "print");
+	duk_push_global_object(ctx);
+#if 1 // global.console
+	duk_push_literal(ctx, "console");
+	duk_push_object(ctx);
+	{
+		duk_push_literal(ctx, "log");
+		duk_push_c_function(ctx, console_log_function, DUK_VARARGS);
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE);
+
+		duk_push_literal(ctx, "error");
+		duk_push_c_function(ctx, console_error_function, DUK_VARARGS);
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE);
+
+		duk_push_literal(ctx, "warn");
+		duk_push_c_function(ctx, console_warn_function, DUK_VARARGS);
+		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE);
+	}
+	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE);
+#endif
 
 	// godot namespace
-	duk_push_global_object(ctx);
 	duk_push_literal(ctx, "godot");
 	duk_push_object(ctx);
 	{

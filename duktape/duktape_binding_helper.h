@@ -56,7 +56,9 @@ private:
 	static duk_ret_t godot_builtin_function(duk_context *ctx);
 	static duk_ret_t godot_typeof(duk_context *ctx);
 
-	static duk_ret_t godot_print_function(duk_context *ctx);
+	static duk_ret_t console_log_function(duk_context *ctx);
+	static duk_ret_t console_warn_function(duk_context *ctx);
+	static duk_ret_t console_error_function(duk_context *ctx);
 
 	static void duk_push_godot_variant(duk_context *ctx, const Variant &var);
 	static void duk_push_godot_object(duk_context *ctx, Object *obj, bool from_constructor = false);
