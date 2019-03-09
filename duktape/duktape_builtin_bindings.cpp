@@ -892,10 +892,10 @@ void basis_properties(duk_context *ctx) {
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
 		Variant arg0 = duk_get_variant(ctx, 0);
 		Variant::Type type = arg0.get_type();
-		ERR_FAIL_COND_V(!(type == Variant::VECTOR3 || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
+		ERR_FAIL_COND_V(!(type == Variant::BASIS || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
 		Variant ret;
-		if (type == Variant::VECTOR3) {
-			Vector3 arg = arg0;
+		if (type == Variant::BASIS) {
+			Basis arg = arg0;
 			ret = ptr->operator*(arg);
 		} else if (type == Variant::REAL) {
 			real_t arg = arg0;
@@ -914,8 +914,8 @@ void basis_properties(duk_context *ctx) {
 		Variant::Type type = arg0.get_type();
 		ERR_FAIL_COND_V(!(type == Variant::VECTOR3 || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
 
-		if (type == Variant::VECTOR3) {
-			Vector3 arg = arg0;
+		if (type == Variant::BASIS) {
+			Basis arg = arg0;
 			ptr->operator*=(arg);
 		} else if (type == Variant::REAL) {
 			real_t arg = arg0;
