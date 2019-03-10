@@ -23,6 +23,12 @@ bool ECMAScript::can_instance() const {
 #endif
 }
 
+StringName ECMAScript::get_instance_base_type() const {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL_V(cls, StringName());
+	return cls->native_class->name;
+}
+
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 
 	ECMAClassInfo *cls = get_ecma_class();
@@ -63,6 +69,15 @@ bool ECMAScript::is_placeholder_fallback_enabled() const {
 #else
 	return false;
 #endif
+}
+
+Error ECMAScript::reload(bool p_keep_state) {
+	ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_COND_V(cls == NULL || library.is_null(), ERR_INVALID_DATA);
+
+	library->reload_from_file();
+
+	return OK;
 }
 
 bool ECMAScript::instance_has(const Object *p_this) const {

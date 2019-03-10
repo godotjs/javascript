@@ -35,7 +35,7 @@ public:
 
 	/* TODO */ virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
 
-	/* TODO */ virtual StringName get_instance_base_type() const { return StringName(); } // this may not work in all scripts, will return empty if so
+	virtual StringName get_instance_base_type() const; // this may not work in all scripts, will return empty if so
 	virtual ScriptInstance *instance_create(Object *p_this);
 	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this);
 	virtual bool instance_has(const Object *p_this) const;
@@ -45,7 +45,7 @@ public:
 	/* TODO */ virtual bool has_source_code() const { return false; }
 	/* TODO */ virtual String get_source_code() const { return ""; }
 	/* TODO */ virtual void set_source_code(const String &p_code) {}
-	/* TODO */ virtual Error reload(bool p_keep_state = false) { return ERR_UNAVAILABLE; }
+	virtual Error reload(bool p_keep_state = false);
 
 	virtual bool has_method(const StringName &p_method) const;
 	virtual MethodInfo get_method_info(const StringName &p_method) const;
