@@ -9,6 +9,10 @@
 #include "core/variant.h"
 #include "src/duktape.h"
 
+#ifdef DEBUG_ENABLED
+#include "debugger/duktape_debugger.h"
+#endif
+
 #define DUK_NO_RET_VAL 0
 #define DUK_HAS_RET_VAL 1
 #define TYPE_GODOT_REFERENCE Variant::VARIANT_MAX
@@ -124,6 +128,10 @@ private:
 	DuktapeHeapObject *duk_ptr_godot_object_free;
 	DuktapeHeapObject *duk_ptr_godot_to_string;
 	DuktapeHeapObject *duk_ptr_godot_object_virtual_method;
+
+#ifdef DEBUG_ENABLED
+	DuktapeDebugger debugger;
+#endif
 
 public:
 	_FORCE_INLINE_ duk_context *get_context() { return this->ctx; }

@@ -11,6 +11,7 @@ RES ECMAScriptLibraryResourceLoader::load(const String &p_path, const String &p_
 
 	Ref<ECMAScriptLibrary> file;
 	file.instance();
+	file->set_path(p_path);
 
 	Error err = file->load_text(p_path);
 	if (r_error) {

@@ -47,6 +47,14 @@ sources = [
 
 if env['tools']:
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
+
+if env['target'] != 'release':
+	sources.append('duktape/debugger/duktape_debugger.cpp')
+	if env['platform'] == 'windows':
+		sources.append('duktape/debugger/duk_trans_socket_windows.cpp')
+	else:
+		sources.append('duktape/debugger/duk_trans_socket_unix.cpp')
+
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.Append(CXXFLAGS=["-std=c++11"])
 env_module.add_source_files(env.modules_sources, sources)

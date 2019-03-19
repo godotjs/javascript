@@ -2985,6 +2985,16 @@ typedef struct duk_hthread duk_context;
  */
 
 /* __OVERRIDE_DEFINES__ */
+#ifdef DEBUG_ENABLED
+
+#define DUK_USE_DEBUGGER_SUPPORT
+#define DUK_USE_INTERRUPT_COUNTER
+#define DUK_USE_DEBUGGER_INSPECT
+#define DUK_USE_DEBUGGER_THROW_NOTIFY
+#define DUK_USE_DEBUGGER_PAUSE_UNCAUGHT
+#define DUK_USE_DEBUGGER_DUMPHEAP
+
+#endif
 
 /*
  *  Conditional includes

@@ -6,6 +6,7 @@
 #include "core/global_constants.h"
 #include "core/math/expression.h"
 #include "core/os/os.h"
+#include "core/project_settings.h"
 
 Object *DuktapeBindingHelper::ecma_instance_target = NULL;
 
@@ -179,18 +180,49 @@ bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
 Error DuktapeBindingHelper::eval_string(const String &p_source) {
 	ERR_FAIL_COND_V(Thread::get_caller_id() != Thread::get_main_id(), ERR_UNAVAILABLE);
 	ERR_FAIL_NULL_V(ctx, ERR_SKIP);
+#ifdef DEBUG_ENABLED
+	String filename = "";
+	Ref<ECMAScriptLibrary> lib = ECMAScriptLibraryResourceLoader::get_loading_library();
+	if (!lib.is_null()) {
+		filename = ProjectSettings::get_singleton()->globalize_path(lib->get_path());
+		filename = filename.replace(ProjectSettings::get_singleton()->globalize_path("res://"), "");
+	}
+	duk_push_godot_string(ctx, p_source);
+	duk_push_godot_string(ctx, filename);
+	duk_compile(ctx, DUK_COMPILE_EVAL);
+	duk_call(ctx, 0);
+#else
 	duk_eval_string(ctx, p_source.utf8().ptr());
-	//	duk_peval_string(ctx, p_source.utf8().ptr());
+#endif
 	return OK;
 }
 
 Error DuktapeBindingHelper::safe_eval_text(const String &p_source, String &r_error) {
 	ERR_FAIL_COND_V(Thread::get_caller_id() != Thread::get_main_id(), ERR_UNAVAILABLE);
 	ERR_FAIL_NULL_V(ctx, ERR_SKIP);
+#ifdef DEBUG_ENABLED
+	String filename = "";
+	Ref<ECMAScriptLibrary> lib = ECMAScriptLibraryResourceLoader::get_loading_library();
+	if (!lib.is_null()) {
+		filename = ProjectSettings::get_singleton()->globalize_path(lib->get_path());
+	}
+	duk_push_godot_string(ctx, p_source);
+	duk_push_godot_string(ctx, filename);
+	if (OK != duk_pcompile(ctx, DUK_COMPILE_EVAL)) {
+		r_error = duk_safe_to_string(ctx, -1);
+		return ERR_INVALID_DATA;
+	}
+
+	if (DUK_EXEC_SUCCESS != duk_pcall(ctx, 0)) {
+		r_error = duk_safe_to_string(ctx, -1);
+		return ERR_INVALID_DATA;
+	}
+#else
 	if (OK != duk_peval_string(ctx, p_source.utf8().ptr())) {
 		r_error = duk_safe_to_string(ctx, -1);
 		return ERR_INVALID_DATA;
 	}
+#endif
 	return OK;
 }
 
@@ -914,9 +946,18 @@ void DuktapeBindingHelper::initialize() {
 		duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
 	}
 	duk_def_prop(ctx, -3, DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_ENUMERABLE);
+
+#ifdef DEBUG_ENABLED
+	debugger.initialize(ctx);
+#endif
 }
 
 void DuktapeBindingHelper::uninitialize() {
+
+#ifdef DEBUG_ENABLED
+	debugger.uninitialize();
+#endif
+
 	duk_destroy_heap(ctx);
 	this->ctx = NULL;
 }
