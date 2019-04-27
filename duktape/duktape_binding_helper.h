@@ -49,6 +49,9 @@ private:
 	// handle duktape fatal errors
 	static void fatal_function(void *udata, const char *msg);
 
+	static duk_ret_t duk_resolve_module(duk_context *ctx);
+	static duk_ret_t duk_load_module(duk_context *ctx);
+
 	static duk_ret_t duk_godot_object_constructor(duk_context *ctx);
 	static duk_ret_t duk_godot_object_finalizer(duk_context *ctx);
 	static duk_ret_t godot_object_free(duk_context *ctx);

@@ -7,6 +7,7 @@
 #include "core/math/expression.h"
 #include "core/os/os.h"
 #include "core/project_settings.h"
+#include "extras/duk_module_node.h"
 
 Object *DuktapeBindingHelper::ecma_instance_target = NULL;
 
@@ -751,6 +752,38 @@ ECMAScriptLanguage *DuktapeBindingHelper::get_language() {
 	return ECMAScriptLanguage::get_singleton();
 }
 
+duk_ret_t DuktapeBindingHelper::duk_resolve_module(duk_context *ctx) {
+	/*  Entry stack: [ requested_id parent_id ] */
+	String path = "res://bin/";
+	const char *requested_id = duk_get_string(ctx, 0); /* requested module */
+	const char *parent_id = duk_get_string(ctx, 1);  /* calling module */
+	path += parent_id;
+	path += requested_id;
+	path += ".js";
+	path = ProjectSettings::get_singleton()->globalize_path(path);
+	duk_push_godot_string(ctx, path);
+	return DUK_HAS_RET_VAL;
+}
+
+duk_ret_t DuktapeBindingHelper::duk_load_module(duk_context *ctx) {
+	/* Entry stack: [ resolved_id exports module ] */
+
+//	duk_push_string(ctx, "filename");
+//	duk_dup(ctx, 0);
+//	duk_def_prop(ctx, -3, DUK_DEFPROP_FORCE | DUK_DEFPROP_HAVE_VALUE);
+
+	String path = duk_get_godot_string(ctx, 0);
+	Error err = OK;
+	FileAccessRef f = FileAccess::open(path, FileAccess::READ, &err);
+
+	ERR_FAIL_COND_V(err != OK, DUK_ERR_TYPE_ERROR);
+
+	String text = f->get_as_utf8_string();
+	duk_push_godot_string(ctx, text);
+
+	return DUK_HAS_RET_VAL;
+}
+
 void DuktapeBindingHelper::initialize() {
 
 	this->ctx = duk_create_heap(alloc_function, realloc_function, free_function, this, fatal_function);
@@ -780,6 +813,13 @@ void DuktapeBindingHelper::initialize() {
 		duk_put_prop_literal(ctx, -2, "godot_object_to_string");
 	}
 	duk_pop(ctx);
+
+	duk_push_object(ctx);
+	duk_push_c_function(ctx, duk_resolve_module, DUK_VARARGS);
+	duk_put_prop_string(ctx, -2, "resolve");
+	duk_push_c_function(ctx, duk_load_module, DUK_VARARGS);
+	duk_put_prop_string(ctx, -2, "load");
+	duk_module_node_init(ctx);
 
 	// global scope
 	duk_push_global_object(ctx);

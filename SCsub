@@ -39,6 +39,7 @@ sources = [
 	'duktape/duktape_binding_helper.cpp',
 	'duktape/duktape_builtin_bindings.cpp',
 	'duktape/duktape_builtin_bindings.gen.cpp',
+	'duktape/extras/duk_module_node.cpp',
 	'ecmascript_library.cpp',
 	'ecmascript_language.cpp',
 	'ecmascript_instance.cpp',
