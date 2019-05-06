@@ -182,10 +182,16 @@ void vector2_properties(duk_context *ctx) {
 		Vector2 *ptr = duk_get_builtin_ptr<Vector2>(ctx, -1);
 		ERR_FAIL_NULL_V(ptr, DUK_ERR_TYPE_ERROR);
 		Variant arg0 = duk_get_variant(ctx, 0);
-		ERR_FAIL_COND_V(arg0.get_type() != Variant::REAL, DUK_ERR_TYPE_ERROR);
-
-		ptr->operator/=(arg0);
-
+		Variant::Type type = arg0.get_type();
+		ERR_FAIL_COND_V(!(type == Variant::VECTOR2 || type == Variant::REAL), DUK_ERR_TYPE_ERROR);
+		Variant ret;
+		if (type == Variant::VECTOR2) {
+			Vector2 arg = arg0;
+			ptr->operator/=(arg);
+		} else if (type == Variant::REAL) {
+			real_t arg = arg0;
+			ptr->operator/=(arg);
+		}
 		duk_push_this(ctx);
 		return DUK_HAS_RET_VAL;
 	}, 1);
