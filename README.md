@@ -4,9 +4,9 @@ This module implements the ECMAScript 5.1 script language support for godot game
 
 [Duktape 2.3](https://duktape.org/) is used as the ECMAScript engine. It is possible to replace it with other JIT-supported engine but not in the near plan. 
 
-**This project is still in development so it may contains bugs.**
+**This project is still in development so it may contain bugs.**
 
-The documentation is lack because of my pool English skill. Contributions to documentation is welcomed!
+The documentation is lacking because of my poor English skill. Contributions to documentation are welcomed!
 
 
 ## Documentation
