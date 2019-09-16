@@ -2,7 +2,7 @@
 #define ECMASCRIPT_LANGUAGE_H
 
 #include "core/script_language.h"
-#include "duktape/duktape_binding_helper.h"
+#include "quickjs/quickjs_binding_helper.h"
 #include "ecmascript.h"
 
 /*********************** ECMAScriptLanguage ***********************/

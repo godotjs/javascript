@@ -26,10 +26,10 @@ struct ECMAProperyInfo {
 };
 
 struct ECMAClassInfo {
-	ECMAScriptGCHandler ecma_constructor;
+	bool tool;
 	StringName class_name;
 	String icon_path;
-	bool tool;
+	ECMAScriptGCHandler ecma_constructor;
 	ClassDB::ClassInfo *native_class;
 	HashMap<StringName, ECMAMethodInfo> methods;
 	HashMap<StringName, MethodInfo> signals;

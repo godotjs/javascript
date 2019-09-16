@@ -14,6 +14,21 @@ void ECMAScriptLanguage::init() {
 	ERR_FAIL_NULL(binding);
 
 	binding->initialize();
+
+	binding->eval_string(R"(
+		console.log("Hello from JavaScript");
+		console.log("The time is", new Date());
+		(function(){
+				var c = new godot.Control();
+				console.log(c);
+				console.log(c instanceof godot.Control);
+				console.log(c instanceof godot.Object);
+				console.log(c instanceof godot.Resource);
+				c.get_rect();
+				c.get_class();
+		})();
+	)");
+
 }
 
 void ECMAScriptLanguage::finish() {
@@ -145,7 +160,7 @@ ECMAScriptLanguage::ECMAScriptLanguage() {
 
 	ERR_FAIL_COND(singleton);
 	singleton = this;
-	binding = memnew(DuktapeBindingHelper);
+	binding = memnew(QuickJSBindingHelper);
 }
 
 ECMAScriptLanguage::~ECMAScriptLanguage() {

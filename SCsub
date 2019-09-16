@@ -5,41 +5,20 @@ Import('env')
 Import('env_modules')
 env_module = env_modules.Clone()
 
-if platform.python_version() > '3':
-	import generate_builtin_api
-	generate_builtin_api.generate_api_json()
-	import duktape.builtin_binding_generator
-	duktape.builtin_binding_generator.generate_duktape_builtin_bindings()
-else:
-	doc_path = os.path.abspath(os.path.join(Dir('.').srcnode().abspath, "../../doc/classes"))
-	os.system('python generate_builtin_api.py ' + doc_path)
-	os.system('python duktape/builtin_binding_generator.py')
+def quickjs():
+	version = open('quickjs/quickjs/VERSION', 'r').read().split('\n')[0]
+	env_module.Append(CCDEFINES=["DUMP_LEAKS"])
+	env_module.Append(CPPPATH=["quickjs/quickjs"])
+	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
+	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
 
-with open("tools/godot.builtin.d.ts.gen.cpp", "w") as f:
-	text = '''/* THIS FILE IS GENERATED DO NOT EDIT */
-#include "editor_tools.h"
-String ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT =
-${source};
-''';
-	source = open("misc/godot.builtin.d.ts", 'r').read()
-	lines = source.split('\n')
-	source = ""
-	length = len(lines)
-	for i in range(length):
-		line = lines[i].replace('"', '\\"')
-		line = '\t"' + line + '\\n"';
-		if i < length -1:
-			line += "\n"
-		source += line
-	f.write(text.replace('${source}', source))
-
+jsengine = 'quickjs'
+if jsengine == 'quickjs':
+	quickjs()
+	
+	
 sources = [
 	'register_types.cpp',
-	'duktape/src/duktape.c',
-	'duktape/duktape_binding_helper.cpp',
-	'duktape/duktape_builtin_bindings.cpp',
-	'duktape/duktape_builtin_bindings.gen.cpp',
-	'duktape/extras/duk_module_node.cpp',
 	'ecmascript_library.cpp',
 	'ecmascript_language.cpp',
 	'ecmascript_instance.cpp',
@@ -48,13 +27,6 @@ sources = [
 
 if env['tools']:
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
-
-if env['target'] != 'release':
-	sources.append('duktape/debugger/duktape_debugger.cpp')
-	if env['platform'] == 'windows':
-		sources.append('duktape/debugger/duk_trans_socket_windows.cpp')
-	else:
-		sources.append('duktape/debugger/duk_trans_socket_unix.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.Append(CXXFLAGS=["-std=c++11"])

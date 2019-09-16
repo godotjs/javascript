@@ -29,7 +29,7 @@ public:
 	virtual String get_resource_type(const String &p_path) const;
 
 	static Ref<ECMAScriptLibrary> get_loading_library() { return loading_lib; }
-	static void reload_cached_libs();;
+	static void reload_cached_libs();
 };
 
 class ECMAScriptLibraryResourceSaver : public ResourceFormatSaver {
