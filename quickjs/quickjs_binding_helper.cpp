@@ -1,12 +1,17 @@
 #include "quickjs_binding_helper.h"
+#include "../ecmascript_language.h"
 
 QuickJSBindingHelper* QuickJSBindingHelper::singleton = NULL;
+#define GET_BINDING_DATA(p_object) (p_object ? (ECMAScriptObjectBindingData*)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL);
 
 static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	PoolStringArray args;
 	args.resize(argc);
 	for (int i = 0; i < argc; ++i) {
-		args.write()[i] = JS_ToCString(ctx, *(argv + i));
+		size_t size;
+		const char * utf8 = JS_ToCStringLen(ctx, &size, *(argv + i));
+		args.write()[i].parse_utf8(utf8, size);
+		JS_FreeCString(ctx, utf8);
 	}
 	print_line(args.join(" "));
 	return JS_UNDEFINED;
@@ -21,39 +26,126 @@ void QuickJSBindingHelper::add_global_console() {
 
 JSValue QuickJSBindingHelper::object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id) {
 	const ClassBindData& cls = singleton->class_bindings.get(class_id);
-	Object *gd_obj = cls.gdclass->creation_func();
-	JSValue js_obj = JS_NewObjectClass(ctx, class_id);
-	singleton->object_map.set(JS_VALUE_GET_PTR(js_obj), gd_obj);
-	return js_obj;
+    Object *obj = cls.gdclass->creation_func();
+    ECMAScriptObjectBindingData *data = GET_BINDING_DATA(obj);
+    return JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
 }
 
 JSValue QuickJSBindingHelper::object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int method_id) {
-	if (Object **ptr_obj = singleton->object_map.getptr(JS_VALUE_GET_PTR(this_val))) {
-		Object *obj = *ptr_obj;
-		const MethodBind *mb = singleton->godot_methods[method_id];
-		print_line("call method: " + itos(obj->get_instance_id()) + ":" + mb->get_name());
+    if (ECMAScriptObjectBindingData **ptr = singleton->object_map.getptr(JS_VALUE_GET_PTR(this_val))) {
+        Object *obj = (*ptr)->get_value();
+		MethodBind *mb = singleton->godot_methods[method_id];
+
+		if (!mb->is_vararg()) {
+			argc = MIN(argc, mb->get_argument_count());
+		}
+
+		Variant::CallError err;
+
+		const Variant **args = memnew_arr(const Variant *, argc);
+		Vector<Variant> vargs;
+		vargs.resize(argc);
+		for (int i = 0; i < argc; ++i) {
+			vargs.write[i] = singleton->var_to_variant(*(argv + i));
+			args[i] = (vargs.ptr() + i);
+		}
+
+		Variant ret_val = mb->call(obj, args, argc, err);
+		if (args != NULL) {
+			memdelete_arr(args);
+		}
+
+		if (err.error == Variant::CallError::CALL_OK) {
+			return singleton->variant_to_var(ret_val);
+		} else {
+			return JS_EXCEPTION;
+		}
 	}
 	return JS_UNDEFINED;
 }
 
+JSValue QuickJSBindingHelper::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	String str = singleton->var_to_variant(this_val);
+	return JS_NewString(ctx, str.utf8().ptr());
+}
+
 void QuickJSBindingHelper::object_finalizer(JSRuntime *rt, JSValue val) {
-	if (Object **obj_ptr = singleton->object_map.getptr(JS_VALUE_GET_PTR(val))) {
-		Object *godot_obj = *obj_ptr;
+    if (ECMAScriptObjectBindingData **ptr = singleton->object_map.getptr(JS_VALUE_GET_PTR(val))) {
+        Object *godot_obj = (*ptr)->godot_object;
 		memdelete(godot_obj);
-		singleton->object_map.erase(JS_VALUE_GET_PTR(val));
+        singleton->object_map.erase(JS_VALUE_GET_PTR(val));
 	}
+}
+
+JSValue QuickJSBindingHelper::variant_to_var(const Variant p_var) {
+	switch (p_var.get_type()) {
+		case Variant::BOOL:
+			return JS_NewBool(ctx, (bool)p_var);
+		case Variant::INT:
+			return JS_NewInt32(ctx, int32_t(p_var));
+		case Variant::REAL:
+			return JS_NewFloat64(ctx, (double)(p_var));
+		case Variant::STRING: {
+			String str = p_var;
+			CharString utf8 = str.utf8();
+			return JS_NewString(ctx, utf8.ptr());
+		};
+		case Variant::OBJECT: {
+            Object *p_object = p_var;
+            return get_js_object(p_object);
+		} break;
+		case Variant::NIL:
+			return JS_NULL;
+		default:
+			return JS_UNDEFINED;
+	}
+}
+
+Variant QuickJSBindingHelper::var_to_variant(JSValue p_val) {
+
+	switch (JS_VALUE_GET_TAG(p_val)) {
+		case JS_TAG_INT:
+			return Variant(JS_VALUE_GET_INT(p_val));
+		 case JS_TAG_BOOL:
+			return Variant(bool(JS_VALUE_GET_INT(p_val)));
+		 case JS_TAG_FLOAT64:
+			return Variant(real_t(JS_VALUE_GET_FLOAT64(p_val)));
+		 case JS_TAG_STRING: {
+			String ret;
+			size_t len = 0;
+			const char *utf8 = JS_ToCStringLen(ctx, &len, p_val);
+			ret.parse_utf8(utf8, len);
+			JS_FreeCString(ctx, utf8);
+			return ret;
+		 }
+		 case JS_TAG_OBJECT: {
+            if (ECMAScriptObjectBindingData **ptr = object_map.getptr(JS_VALUE_GET_PTR(p_val))) {
+                ECMAScriptObjectBindingData *data = *ptr;
+                return data->get_value();
+			}
+			return Variant();
+		}
+		default:
+			return Variant();
+	}
+}
+
+JSValue QuickJSBindingHelper::get_js_object(Object *p_object) {
+     if (!p_object) return JS_NULL;
+     ECMAScriptObjectBindingData *data = GET_BINDING_DATA(p_object);
+     return JS_MKVAL(JS_TAG_OBJECT, data->ecma_object);
 }
 
 JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) {
 
-	ClassBindData data;
-	data.id = 0;
-	data.base_class = NULL;
-	data.class_name = String(p_cls->name).utf8();
-	data.jsclass.class_name = data.class_name.ptr();
-	data.jsclass.finalizer = object_finalizer;
-	data.jsclass.exotic = NULL;
-	data.jsclass.gc_mark = NULL;
+    ClassBindData data;
+    data.id = 0;
+    data.base_class = NULL;
+    data.class_name = String(p_cls->name).utf8();
+    data.jsclass.class_name = data.class_name.ptr();
+    data.jsclass.finalizer = object_finalizer;
+    data.jsclass.exotic = NULL;
+    data.jsclass.gc_mark = NULL;
 	data.jsclass.call = NULL;
 	data.gdclass = p_cls;
 
@@ -63,7 +155,7 @@ JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) 
 		godot_methods.resize(internal_godot_method_id + p_cls->method_map.size());
 		const StringName *key = p_cls->method_map.next(NULL);
 		while(key) {
-			const MethodBind *mb = p_cls->method_map.get(*key);
+			MethodBind *mb = p_cls->method_map.get(*key);
 			godot_methods.write[internal_godot_method_id] = mb;
 
 			CharString name = String(*key).utf8();
@@ -72,6 +164,11 @@ JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) 
 
 			++internal_godot_method_id;
 			key = p_cls->method_map.next(key);
+		}
+
+		if (p_cls->name == "Object") {
+			JSValue to_string_func = JS_NewCFunction(ctx, godot_to_string, TO_STRING_LITERAL, 0);
+			JS_DefinePropertyValueStr(ctx, data.prototype, TO_STRING_LITERAL, to_string_func, PROP_DEF_DEFAULT);
 		}
 	}
 
@@ -84,6 +181,7 @@ JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) 
 
 
 	class_bindings.set(data.id, data);
+	classname_bindings.set(p_cls->name, class_bindings.getptr(data.id));
 
 	return data.id;
 }
@@ -159,19 +257,56 @@ void QuickJSBindingHelper::uninitialize() {
 }
 
 void *QuickJSBindingHelper::alloc_object_binding_data(Object *p_object) {
+	if (const ClassBindData **bind_ptr = classname_bindings.getptr(p_object->get_class_name())) {
+		JSValue obj = JS_NewObjectProto(ctx, (*bind_ptr)->prototype);
+
+        ECMAScriptObjectBindingData *data = memnew(ECMAScriptObjectBindingData);
+        data->ecma_object = JS_VALUE_GET_PTR(obj);
+        data->godot_object = p_object;
+        data->flags = ECMAScriptObjectBindingData::FLAG_OBJECT;
+        if (Reference *ref = Object::cast_to<Reference>(p_object)) {
+            data->flags |= ECMAScriptObjectBindingData::FLAG_REFERENCE;
+
+            union {
+                REF *ref;
+                struct {
+                    Reference* ref;
+                } *s;
+            } u;
+            u.ref = memnew(REF);
+            u.s->ref = ref;
+
+           data->godot_reference = u.ref;
+        }
+        object_map.set(data->ecma_object, data);
+        JS_DupValue(ctx, obj);
+        return data;
+	}
 	return NULL;
 }
 
 void QuickJSBindingHelper::free_object_binding_data(void *p_gc_handle) {
+    ECMAScriptObjectBindingData *data = (ECMAScriptObjectBindingData*)p_gc_handle;
 
+    JSValue obj = JS_MKVAL(JS_TAG_OBJECT, data->ecma_object);
+    JS_FreeValue(ctx, obj);
+    object_map.erase(data->ecma_object);
+
+    memdelete(data);
 }
 
 void QuickJSBindingHelper::godot_refcount_incremented(Reference *p_object) {
-
+	JSValue obj = JS_MKVAL(JS_TAG_OBJECT, p_object->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()));
+	JS_DupValue(ctx, obj);
 }
 
 bool QuickJSBindingHelper::godot_refcount_decremented(Reference *p_object) {
-	return false;
+    return false;
+	JSValue obj = JS_MKVAL(JS_TAG_OBJECT, p_object->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()));
+	JSRefCountHeader *ref_counter = (JSRefCountHeader *)JS_VALUE_GET_PTR(obj);
+	int count = ref_counter->ref_count;
+	JS_FreeValue(ctx, obj);
+	return count <= 1;
 }
 
 Error QuickJSBindingHelper::eval_string(const String &p_source) {
@@ -184,14 +319,15 @@ Error QuickJSBindingHelper::safe_eval_text(const String &p_source, String &r_err
 	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.size(), "", JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
 	if(JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
-		r_error = JS_ToCString(ctx, e);
+        const char *message = JS_ToCString(ctx, e);
+        r_error = message;
+        JS_FreeCString(ctx, message);
 	}
 	return OK;
 }
 
 ECMAScriptGCHandler QuickJSBindingHelper::create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) {
-	JSValue obj = JS_NewObject(ctx);
-	return { obj.u.ptr };
+    return {NULL};
 }
 
 Variant QuickJSBindingHelper::call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {

@@ -6,6 +6,7 @@
 
 #define PROTOTYPE_LITERAL "prototype"
 #define PROTO_LITERAL "__proto__"
+#define TO_STRING_LITERAL "toString"
 #define ECMA_CLASS_NAME_LITERAL "class_name"
 
 struct ECMAScriptGCHandler {
@@ -13,9 +14,24 @@ struct ECMAScriptGCHandler {
 	bool is_null() const { return ecma_object == NULL; }
 };
 
-struct ECMAScriptBindingData : public ECMAScriptGCHandler {
-	Object *godot_object;
-	ObjectID instance_id;
+struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
+        enum {
+            FLAG_OBJECT = 1,
+            FLAG_REFERENCE = 1 << 1,
+        };
+        union {
+            Object *godot_object;
+            REF *godot_reference;
+        };
+        uint32_t flags;
+        _FORCE_INLINE_ Variant get_value() const {
+            if (flags & FLAG_REFERENCE) {
+                return *godot_reference;
+            } else if (flags & FLAG_OBJECT) {
+                return godot_object;
+            }
+            return Variant();
+        }
 };
 
 typedef ECMAScriptGCHandler ECMAMethodInfo;

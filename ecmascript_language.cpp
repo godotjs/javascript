@@ -15,20 +15,11 @@ void ECMAScriptLanguage::init() {
 
 	binding->initialize();
 
-	binding->eval_string(R"(
-		console.log("Hello from JavaScript");
-		console.log("The time is", new Date());
-		(function(){
-				var c = new godot.Control();
-				console.log(c);
-				console.log(c instanceof godot.Control);
-				console.log(c instanceof godot.Object);
-				console.log(c instanceof godot.Resource);
-				c.get_rect();
-				c.get_class();
-		})();
-	)");
-
+    Error err;
+    String script = FileAccess::get_file_as_string("test.js", &err);
+    if(err == OK) {
+        binding->eval_string(script);
+    }
 }
 
 void ECMAScriptLanguage::finish() {

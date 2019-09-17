@@ -166,7 +166,7 @@ void DuktapeBindingHelper::godot_refcount_incremented(Reference *p_object) {
 
 bool DuktapeBindingHelper::godot_refcount_decremented(Reference *p_object) {
 	int refcount = p_object->reference_get_count();
-	ECMAScriptBindingData *gc_handler = static_cast<ECMAScriptBindingData *>(p_object->get_script_instance_binding(get_language()->get_language_index()));
+    ECMAScriptObjectBindingData *gc_handler = static_cast<ECMAScriptObjectBindingData *>(p_object->get_script_instance_binding(get_language()->get_language_index()));
 	if (gc_handler) {
 		if (refcount == 0) {
 			// clear taged strong reference in script
@@ -228,9 +228,9 @@ Error DuktapeBindingHelper::safe_eval_text(const String &p_source, String &r_err
 }
 
 void *DuktapeBindingHelper::alloc_object_binding_data(Object *p_object) {
-	ECMAScriptBindingData *handler = NULL;
+    ECMAScriptObjectBindingData *handler = NULL;
 	if (DuktapeHeapObject *heap_ptr = get_strong_ref(p_object)) {
-		handler = memnew(ECMAScriptBindingData);
+        handler = memnew(ECMAScriptObjectBindingData);
 		handler->godot_object = p_object;
 		handler->instance_id = p_object->get_instance_id();
 		handler->ecma_object = heap_ptr;
@@ -239,7 +239,7 @@ void *DuktapeBindingHelper::alloc_object_binding_data(Object *p_object) {
 }
 
 void DuktapeBindingHelper::free_object_binding_data(void *p_gc_handler) {
-	if (ECMAScriptBindingData *handler = static_cast<ECMAScriptBindingData *>(p_gc_handler)) {
+    if (ECMAScriptObjectBindingData *handler = static_cast<ECMAScriptObjectBindingData *>(p_gc_handler)) {
 		if (Object::cast_to<Reference>(handler->godot_object)) {
 			// References don't need do this as they are weak referenced or they
 			return;

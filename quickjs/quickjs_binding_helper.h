@@ -35,8 +35,11 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 		const ClassDB::ClassInfo *gdclass;
 		const ClassBindData *base_class;
 	};
+
 	HashMap<JSClassID, ClassBindData> class_bindings;
-	Vector<const MethodBind*> godot_methods;
+	HashMap<StringName, const ClassBindData*> classname_bindings;
+
+	Vector<MethodBind*> godot_methods;
 	int internal_godot_method_id;
 
 	struct PtrHasher {
@@ -49,15 +52,24 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 			return HashMapHasherDefault::hash(u.i);
 		}
 	};
-	HashMap<void*, Object*, PtrHasher> object_map;
+    HashMap<void*, ECMAScriptObjectBindingData*, PtrHasher> object_map;
 
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_classes();
 	void add_global_console();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
+    static void object_finalizer(JSRuntime *rt, JSValue val);
+
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
-	static void object_finalizer(JSRuntime *rt, JSValue val);
+	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
+
+
+	JSValue variant_to_var(const Variant p_var);
+    Variant var_to_variant(JSValue p_val);
+
+    JSValue get_js_object(Object* p_object);
 
 public:
 	QuickJSBindingHelper();
