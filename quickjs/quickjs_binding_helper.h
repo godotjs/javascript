@@ -2,8 +2,8 @@
 #define QUICKJS_BINDING_HELPER_H
 
 #include "../ecmascript_binding_helper.h"
-#include <quickjs.h>
 #include "core/os/memory.h"
+#include <quickjs.h>
 
 class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 
@@ -11,7 +11,9 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 		PROP_DEF_DEFAULT = 0,
 	};
 
-	static QuickJSBindingHelper* singleton;
+	static JSClassID OBJECT_CLASS_ID;
+
+	static QuickJSBindingHelper *singleton;
 	JSValue global_object;
 	JSValue godot_object;
 
@@ -19,13 +21,15 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 	JSContext *ctx;
 	JSMallocFunctions godot_allocator;
 
-	_FORCE_INLINE_ static void* js_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
-	_FORCE_INLINE_ static void js_free(JSMallocState *s, void *ptr) { if (ptr) memfree(ptr); }
-	_FORCE_INLINE_ static void* js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
+	_FORCE_INLINE_ static void *js_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
+	_FORCE_INLINE_ static void js_free(JSMallocState *s, void *ptr) {
+		if (ptr) memfree(ptr);
+	}
+	_FORCE_INLINE_ static void *js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
 
 	struct ClassBindData {
 
-		JSClassID id;
+		JSClassID class_id;
 		CharString class_name;
 
 		JSValue prototype;
@@ -37,9 +41,9 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 	};
 
 	HashMap<JSClassID, ClassBindData> class_bindings;
-	HashMap<StringName, const ClassBindData*> classname_bindings;
+	HashMap<StringName, const ClassBindData *> classname_bindings;
 
-	Vector<MethodBind*> godot_methods;
+	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
 
 	struct PtrHasher {
@@ -52,33 +56,30 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 			return HashMapHasherDefault::hash(u.i);
 		}
 	};
-    HashMap<void*, ECMAScriptObjectBindingData*, PtrHasher> object_map;
+	HashMap<void *, ECMAScriptObjectBindingData *, PtrHasher> object_map;
 
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_classes();
 	void add_global_console();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
-    static void object_finalizer(JSRuntime *rt, JSValue val);
+	static void object_finalizer(JSRuntime *rt, JSValue val);
 
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-
-
+	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	JSValue variant_to_var(const Variant p_var);
-    Variant var_to_variant(JSValue p_val);
-
-    JSValue get_js_object(Object* p_object);
+	Variant var_to_variant(JSValue p_val);
 
 public:
 	QuickJSBindingHelper();
-	_FORCE_INLINE_ static QuickJSBindingHelper* get_singleton() { return singleton; }
+	_FORCE_INLINE_ static QuickJSBindingHelper *get_singleton() { return singleton; }
 
 	virtual void initialize();
 	virtual void uninitialize();
 
-	virtual void *alloc_object_binding_data(Object *p_object) ;
+	virtual void *alloc_object_binding_data(Object *p_object);
 	virtual void free_object_binding_data(void *p_gc_handle);
 
 	virtual void godot_refcount_incremented(Reference *p_object);

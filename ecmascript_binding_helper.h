@@ -15,23 +15,24 @@ struct ECMAScriptGCHandler {
 };
 
 struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
-        enum {
-            FLAG_OBJECT = 1,
-            FLAG_REFERENCE = 1 << 1,
-        };
-        union {
-            Object *godot_object;
-            REF *godot_reference;
-        };
-        uint32_t flags;
-        _FORCE_INLINE_ Variant get_value() const {
-            if (flags & FLAG_REFERENCE) {
-                return *godot_reference;
-            } else if (flags & FLAG_OBJECT) {
-                return godot_object;
-            }
-            return Variant();
-        }
+	enum {
+		FLAG_OBJECT = 1,
+		FLAG_REFERENCE = 1 << 1,
+	};
+	union {
+		Object *godot_object;
+		REF *godot_reference;
+	};
+
+	uint32_t flags;
+	_FORCE_INLINE_ Variant get_value() const {
+		if (flags & FLAG_REFERENCE) {
+			return *godot_reference;
+		} else if (flags & FLAG_OBJECT) {
+			return godot_object;
+		}
+		return Variant();
+	}
 };
 
 typedef ECMAScriptGCHandler ECMAMethodInfo;
