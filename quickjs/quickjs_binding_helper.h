@@ -56,7 +56,6 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 			return HashMapHasherDefault::hash(u.i);
 		}
 	};
-	HashMap<void *, ECMAScriptObjectBindingData *, PtrHasher> object_map;
 
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_classes();

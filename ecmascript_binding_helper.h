@@ -16,15 +16,18 @@ struct ECMAScriptGCHandler {
 
 struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 	enum {
+		FLAG_NONE = 0,
 		FLAG_OBJECT = 1,
 		FLAG_REFERENCE = 1 << 1,
+		FLAG_FROM_SCRIPT = 1 << 2,
 	};
 	union {
 		Object *godot_object;
 		REF *godot_reference;
 	};
 
-	uint32_t flags;
+	uint16_t flags = FLAG_NONE;
+
 	_FORCE_INLINE_ Variant get_value() const {
 		if (flags & FLAG_REFERENCE) {
 			return *godot_reference;
@@ -32,6 +35,24 @@ struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 			return godot_object;
 		}
 		return Variant();
+	}
+
+	_FORCE_INLINE_ bool is_object() const {
+		return flags & FLAG_OBJECT && !(flags & FLAG_REFERENCE);
+	}
+
+	_FORCE_INLINE_ bool is_reference() const {
+		return flags & FLAG_REFERENCE;
+	}
+
+	_FORCE_INLINE_ bool is_from_script() const {
+		return flags & FLAG_FROM_SCRIPT;
+	}
+
+	_FORCE_INLINE_ void clear() {
+		flags = ECMAScriptObjectBindingData::FLAG_NONE;
+		godot_object = NULL;
+		ecma_object = NULL;
 	}
 };
 
