@@ -20,6 +20,8 @@ struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 		FLAG_OBJECT = 1,
 		FLAG_REFERENCE = 1 << 1,
 		FLAG_FROM_SCRIPT = 1 << 2,
+		FLAG_HOLDING_SCRIPT_REF = 1 << 3,
+		FLAG_SCRIPT_FINALIZED = 1 << 4,
 	};
 	union {
 		Object *godot_object;
@@ -37,6 +39,15 @@ struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 		return Variant();
 	}
 
+	_FORCE_INLINE_ Object *get_godot_object() {
+		if (flags & FLAG_REFERENCE && godot_reference) {
+			return godot_reference->ptr();
+		} else if (flags & FLAG_OBJECT) {
+			return godot_object;
+		}
+		return NULL;
+	}
+
 	_FORCE_INLINE_ bool is_object() const {
 		return flags & FLAG_OBJECT && !(flags & FLAG_REFERENCE);
 	}
@@ -45,12 +56,7 @@ struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 		return flags & FLAG_REFERENCE;
 	}
 
-	_FORCE_INLINE_ bool is_from_script() const {
-		return flags & FLAG_FROM_SCRIPT;
-	}
-
 	_FORCE_INLINE_ void clear() {
-		flags = ECMAScriptObjectBindingData::FLAG_NONE;
 		godot_object = NULL;
 		ecma_object = NULL;
 	}
