@@ -83,11 +83,8 @@ JSValue QuickJSBindingHelper::variant_to_var(const Variant p_var) {
 			return JS_NewInt32(ctx, int32_t(p_var));
 		case Variant::REAL:
 			return JS_NewFloat64(ctx, (double)(p_var));
-		case Variant::STRING: {
-			String str = p_var;
-			CharString utf8 = str.utf8();
-			return JS_NewStringLen(ctx, utf8.ptr(), utf8.size());
-		}
+		case Variant::STRING:
+			return godot_string_to_jsvalue(p_var);
 		case Variant::OBJECT: {
 			Object *obj = p_var;
 			ECMAScriptObjectBindingData *data = BINDING_DATA_FROM_GD(obj);
@@ -132,10 +129,21 @@ Variant QuickJSBindingHelper::var_to_variant(JSValue p_val) {
 	}
 }
 
+JSAtom QuickJSBindingHelper::get_atom(const StringName &p_key) const {
+	String name = p_key;
+	CharString name_str = name.utf8();
+	return JS_NewAtom(ctx, name_str.ptr());
+}
+
+JSValue QuickJSBindingHelper::godot_string_to_jsvalue(const String &text) const {
+	CharString utf8 = text.utf8();
+	return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
+}
+
 JSValue QuickJSBindingHelper::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	String str = singleton->var_to_variant(this_val);
 	CharString utf8 = str.utf8();
-	return JS_NewStringLen(ctx, utf8.ptr(), utf8.size());
+	return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
 }
 
 JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -188,8 +196,7 @@ JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) 
 		const StringName *key = p_cls->property_setget.next(NULL);
 		while (key) {
 			const StringName &prop_name = *key;
-			String name = prop_name;
-			CharString namestr = name.utf8();
+
 			const ClassDB::PropertySetGet &prop = p_cls->property_setget[prop_name];
 			JSValue *setter = NULL;
 			JSValue *getter = NULL;
@@ -202,7 +209,7 @@ JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) 
 				getter = &(E->get());
 				JS_DupValue(ctx, *getter);
 			}
-			JSAtom atom = JS_NewAtom(ctx, namestr.ptr());
+			JSAtom atom = get_atom(prop_name);
 			JS_DefinePropertyGetSet(ctx, data.prototype, atom, getter ? *getter : JS_UNDEFINED, setter ? *setter : JS_UNDEFINED, PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, atom);
 			key = p_cls->property_setget.next(key);
@@ -215,6 +222,56 @@ JSClassID QuickJSBindingHelper::register_class(const ClassDB::ClassInfo *p_cls) 
 
 	data.constructor = JS_NewCFunctionMagic(ctx, object_constructor, data.jsclass.class_name, data.class_name.size(), JS_CFUNC_constructor_magic, (int)data.class_id);
 	JS_SetConstructor(ctx, data.constructor, data.prototype);
+
+	// constants
+	{
+		const StringName *key = p_cls->constant_map.next(NULL);
+		while (key) {
+
+			int value = p_cls->constant_map.get(*key);
+			JSAtom atom = get_atom(*key);
+			JS_DefinePropertyValue(ctx, data.constructor, atom, JS_NewInt32(ctx, value), PROP_DEF_DEFAULT);
+			JS_FreeAtom(ctx, atom);
+
+			key = p_cls->constant_map.next(key);
+		}
+	}
+
+	// enumeration
+	{
+		const StringName *key = p_cls->enum_map.next(NULL);
+		while (key) {
+
+			JSValue enum_obj = JS_NewObject(ctx);
+			JSAtom atom = get_atom(*key);
+
+			const List<StringName> &const_keys = p_cls->enum_map.get(*key);
+			for (const List<StringName>::Element *E = const_keys.front(); E; E = E->next()) {
+				int value = p_cls->constant_map.get(E->get());
+				JSAtom atom_key = get_atom(E->get());
+				JS_DefinePropertyValue(ctx, enum_obj, atom_key, JS_NewInt32(ctx, value), PROP_DEF_DEFAULT);
+				JS_FreeAtom(ctx, atom_key);
+			}
+
+			JS_DefinePropertyValue(ctx, data.constructor, atom, enum_obj, PROP_DEF_DEFAULT);
+			JS_FreeAtom(ctx, atom);
+
+			key = p_cls->enum_map.next(key);
+		}
+	}
+
+	// signals
+	{
+		const StringName *key = p_cls->signal_map.next(NULL);
+		while (key) {
+
+			JSAtom atom = get_atom(*key);
+			JS_DefinePropertyValue(ctx, data.constructor, atom, godot_string_to_jsvalue(*key), PROP_DEF_DEFAULT);
+			JS_FreeAtom(ctx, atom);
+
+			key = p_cls->signal_map.next(key);
+		}
+	}
 
 	if (p_cls->name == "Object") {
 		OBJECT_CLASS_ID = data.class_id;

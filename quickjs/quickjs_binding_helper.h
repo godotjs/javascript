@@ -8,7 +8,7 @@
 class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 
 	enum {
-		PROP_DEF_DEFAULT = 0,
+		PROP_DEF_DEFAULT = JS_PROP_ENUMERABLE,
 	};
 
 	static JSClassID OBJECT_CLASS_ID;
@@ -70,6 +70,9 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 
 	JSValue variant_to_var(const Variant p_var);
 	Variant var_to_variant(JSValue p_val);
+
+	JSAtom get_atom(const StringName &p_key) const;
+	JSValue godot_string_to_jsvalue(const String &text) const;
 
 public:
 	QuickJSBindingHelper();
