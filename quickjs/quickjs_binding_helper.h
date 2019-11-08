@@ -16,6 +16,10 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 	static QuickJSBindingHelper *singleton;
 	JSValue global_object;
 	JSValue godot_object;
+	JSAtom js_key_godot_classid;
+	JSAtom js_key_constructor;
+	JSAtom js_key_prototype;
+	JSAtom js_key_name;
 
 	JSRuntime *runtime;
 	JSContext *ctx;
@@ -59,6 +63,7 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_classes();
+	void add_godot_globals();
 	void add_global_console();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
@@ -73,6 +78,9 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 
 	JSAtom get_atom(const StringName &p_key) const;
 	JSValue godot_string_to_jsvalue(const String &text) const;
+	String js_string_to_godot_string(JSValue p_val) const;
+
+	static JSValue godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 public:
 	QuickJSBindingHelper();

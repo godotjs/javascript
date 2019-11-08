@@ -41,7 +41,7 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 
 	Variant::CallError unchecked_error;
 	ECMAScriptGCHandler ecma_instance = ECMAScriptLanguage::get_singleton()->binding->create_ecma_instance_for_godot_object(class_name, p_this);
-	ERR_FAIL_COND_V(ecma_instance.is_null(), NULL);
+	ERR_FAIL_NULL_V(ecma_instance.ecma_object, NULL);
 
 	ECMAScriptInstance *instance = memnew(ECMAScriptInstance);
 	instance->script = Ref<ECMAScript>(this);

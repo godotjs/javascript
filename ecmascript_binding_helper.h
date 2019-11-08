@@ -10,11 +10,6 @@
 #define ECMA_CLASS_NAME_LITERAL "class_name"
 
 struct ECMAScriptGCHandler {
-	void *ecma_object;
-	bool is_null() const { return ecma_object == NULL; }
-};
-
-struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 	enum {
 		FLAG_NONE = 0,
 		FLAG_OBJECT = 1,
@@ -23,12 +18,12 @@ struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 		FLAG_HOLDING_SCRIPT_REF = 1 << 3,
 		FLAG_SCRIPT_FINALIZED = 1 << 4,
 	};
+	uint16_t flags;
+	void *ecma_object;
 	union {
 		Object *godot_object;
 		REF *godot_reference;
 	};
-
-	uint16_t flags = FLAG_NONE;
 
 	_FORCE_INLINE_ Variant get_value() const {
 		if (flags & FLAG_REFERENCE) {
@@ -60,6 +55,12 @@ struct ECMAScriptObjectBindingData : public ECMAScriptGCHandler {
 		godot_object = NULL;
 		ecma_object = NULL;
 	}
+
+	ECMAScriptGCHandler() {
+		flags = FLAG_NONE;
+		godot_object = NULL;
+		ecma_object = NULL;
+	}
 };
 
 typedef ECMAScriptGCHandler ECMAMethodInfo;
@@ -74,7 +75,7 @@ struct ECMAClassInfo {
 	StringName class_name;
 	String icon_path;
 	ECMAScriptGCHandler ecma_constructor;
-	ClassDB::ClassInfo *native_class;
+	const ClassDB::ClassInfo *native_class;
 	HashMap<StringName, ECMAMethodInfo> methods;
 	HashMap<StringName, MethodInfo> signals;
 	HashMap<StringName, ECMAProperyInfo> properties;
