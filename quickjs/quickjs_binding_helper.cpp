@@ -360,6 +360,16 @@ void QuickJSBindingHelper::initialize() {
 }
 
 void QuickJSBindingHelper::uninitialize() {
+
+	// Free registered js classes
+	const StringName *key = ecma_classes.next(NULL);
+	while (key) {
+		const ECMAClassInfo &ecma_class = ecma_classes.get(*key);
+		JSValue class_func = JS_MKPTR(JS_TAG_OBJECT, ecma_class.ecma_class_function.ecma_object);
+		JS_FreeValue(ctx, class_func);
+		key = ecma_classes.next(key);
+	}
+
 	JS_FreeAtom(ctx, js_key_name);
 	JS_FreeAtom(ctx, js_key_prototype);
 	JS_FreeAtom(ctx, js_key_constructor);
@@ -532,6 +542,10 @@ JSValue QuickJSBindingHelper::godot_register_emca_class(JSContext *ctx, JSValueC
 		ECMAClassInfo ecma_class;
 		ecma_class.native_class = bind->gdclass;
 
+		// Add reference to the class function
+		ecma_class.ecma_class_function.ecma_object = JS_VALUE_GET_PTR(*argv);
+		JS_DupValue(ctx, *argv);
+
 		JSValue constructor = JS_GetProperty(ctx, *argv, singleton->js_key_constructor);
 		ecma_class.ecma_constructor.ecma_object = JS_VALUE_GET_PTR(constructor);
 		JS_FreeValue(ctx, constructor);
@@ -547,7 +561,6 @@ JSValue QuickJSBindingHelper::godot_register_emca_class(JSContext *ctx, JSValueC
 		// TODO
 		ecma_class.icon_path = "";
 		ecma_class.tool = false;
-
 		singleton->ecma_classes.set(class_name, ecma_class);
 	}
 

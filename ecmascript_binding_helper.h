@@ -75,6 +75,7 @@ struct ECMAClassInfo {
 	StringName class_name;
 	String icon_path;
 	ECMAScriptGCHandler ecma_constructor;
+	ECMAScriptGCHandler ecma_class_function;
 	const ClassDB::ClassInfo *native_class;
 	HashMap<StringName, ECMAMethodInfo> methods;
 	HashMap<StringName, MethodInfo> signals;
