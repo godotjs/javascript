@@ -12,6 +12,7 @@ class ECMAScript : public Script {
 private:
 	friend class ECMAScriptInstance;
 	friend class DuktapeBindingHelper;
+	friend class QuickJSBindingHelper;
 
 	Set<Object *> instances;
 

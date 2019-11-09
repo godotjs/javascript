@@ -15,8 +15,9 @@ struct ECMAScriptGCHandler {
 		FLAG_OBJECT = 1,
 		FLAG_REFERENCE = 1 << 1,
 		FLAG_FROM_SCRIPT = 1 << 2,
-		FLAG_HOLDING_SCRIPT_REF = 1 << 3,
-		FLAG_SCRIPT_FINALIZED = 1 << 4,
+		FLAG_FROM_NATIVE = 1 << 3,
+		FLAG_HOLDING_SCRIPT_REF = 1 << 4,
+		FLAG_SCRIPT_FINALIZED = 1 << 5,
 	};
 	uint16_t flags;
 	void *ecma_object;
@@ -74,8 +75,8 @@ struct ECMAClassInfo {
 	bool tool;
 	StringName class_name;
 	String icon_path;
-	ECMAScriptGCHandler ecma_constructor;
 	ECMAScriptGCHandler ecma_class_function;
+	ECMAScriptGCHandler ecma_prototype;
 	const ClassDB::ClassInfo *native_class;
 	HashMap<StringName, ECMAMethodInfo> methods;
 	HashMap<StringName, MethodInfo> signals;
@@ -104,7 +105,7 @@ public:
 	virtual Error safe_eval_text(const String &p_source, String &r_error) = 0;
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) = 0;
-	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const ECMAMethodInfo &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
+	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 };

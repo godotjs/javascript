@@ -1792,9 +1792,9 @@ static inline uint8_t *js_get_stack_pointer(void)
 
 static inline BOOL js_check_stack_overflow(JSContext *ctx, size_t alloca_size)
 {
-    size_t size;
-    size = ctx->stack_top - js_get_stack_pointer();
-    return unlikely((size + alloca_size) > ctx->stack_size);
+	ptrdiff_t size;
+	size = ctx->stack_top - js_get_stack_pointer();
+	return unlikely((size + (ptrdiff_t)alloca_size) > (ptrdiff_t)ctx->stack_size);
 }
 #endif
 

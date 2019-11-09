@@ -13,6 +13,7 @@ class ECMAScriptLanguage : public ScriptLanguage {
 	friend class ECMAScript;
 	friend class ECMAScriptInstance;
 	friend class DuktapeBindingHelper;
+	friend class QuickJSBindingHelper;
 
 private:
 	static ECMAScriptLanguage *singleton;
