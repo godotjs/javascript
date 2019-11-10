@@ -95,11 +95,9 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 #endif
 
 bool ECMAScript::has_method(const StringName &p_method) const {
-
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, false);
-
-	return cls->methods.has(p_method);
+	return ECMAScriptLanguage::get_singleton()->binding->has_method(cls->ecma_prototype, p_method);
 }
 
 MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
@@ -108,7 +106,7 @@ MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, mi);
 
-	if (ECMAScriptGCHandler *method = cls->methods.getptr(p_method)) {
+	if (has_method(p_method)) {
 		mi.name = p_method;
 	}
 
@@ -125,16 +123,7 @@ void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 
 	ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL(cls);
-
-	const StringName *key = cls->methods.next(NULL);
-	while (key) {
-
-		MethodInfo mi;
-		mi.name = String(*key);
-		p_list->push_back(mi);
-
-		key = cls->methods.next(key);
-	}
+	// TODO
 }
 
 void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {

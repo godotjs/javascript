@@ -2,7 +2,7 @@
 #define ECMASCRIPT_INSTANCE_H
 
 #include "ecmascript.h"
-#include "ecmascript_binding_helper.h"
+#include "ecmascript_binder.h"
 #include <core/script_language.h>
 
 class ECMAScriptInstance : public ScriptInstance {

@@ -3,7 +3,7 @@
 
 #include "core/io/resource_loader.h"
 #include "core/script_language.h"
-#include "ecmascript_binding_helper.h"
+#include "ecmascript_binder.h"
 #include "ecmascript_library.h"
 
 class ECMAScript : public Script {
@@ -11,8 +11,7 @@ class ECMAScript : public Script {
 
 private:
 	friend class ECMAScriptInstance;
-	friend class DuktapeBindingHelper;
-	friend class QuickJSBindingHelper;
+	friend class QuickJSBinder;
 
 	Set<Object *> instances;
 

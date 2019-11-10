@@ -12,8 +12,7 @@ void ECMAScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
 }
 
 bool ECMAScriptInstance::has_method(const StringName &p_method) const {
-	ERR_FAIL_COND_V(script.is_null(), false);
-	return script->has_method(p_method);
+	return ECMAScriptLanguage::get_singleton()->binding->has_method(ecma_object, p_method);
 }
 
 bool ECMAScriptInstance::set(const StringName &p_name, const Variant &p_value) {

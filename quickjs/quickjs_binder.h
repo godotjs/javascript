@@ -1,19 +1,28 @@
 #ifndef QUICKJS_BINDING_HELPER_H
 #define QUICKJS_BINDING_HELPER_H
 
-#include "../ecmascript_binding_helper.h"
+#include "../ecmascript_binder.h"
 #include "core/os/memory.h"
+#include "quickjs_builtin_binder.h"
 #include <quickjs.h>
 
-class QuickJSBindingHelper : public ECMAScriptBindingHelper {
+#define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
+#define BINDING_DATA_FROM_GD(p_object) (p_object ? (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL)
+#define BINDING_DATA_FROM_JS(p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id())
+#define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
+
+class QuickJSBinder : public ECMAScriptBinder {
+
+	friend class QuickJSBuiltinBinder;
+	QuickJSBuiltinBinder builtin_binder;
 
 	enum {
 		PROP_DEF_DEFAULT = JS_PROP_ENUMERABLE,
 	};
 
-	static JSClassID OBJECT_CLASS_ID;
+	static QuickJSBinder *singleton;
+	//	static JSClassID godot_head_classid;
 
-	static QuickJSBindingHelper *singleton;
 	JSValue global_object;
 	JSValue godot_object;
 	JSValue empty_function;
@@ -21,6 +30,9 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 	JSAtom js_key_constructor;
 	JSAtom js_key_prototype;
 	JSAtom js_key_name;
+	JSAtom js_key_length;
+
+	Vector<JSValue> godot_singletons;
 
 	JSRuntime *runtime;
 	JSContext *ctx;
@@ -45,6 +57,8 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 		const ClassBindData *base_class;
 	};
 
+	ClassBindData godot_origin_class;
+
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
 
@@ -63,32 +77,39 @@ class QuickJSBindingHelper : public ECMAScriptBindingHelper {
 	};
 
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
+	void add_godot_origin();
 	void add_godot_classes();
 	void add_godot_globals();
 	void add_global_console();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
-	static void object_finalizer(JSRuntime *rt, JSValue val);
+	void object_finalizer(ECMAScriptGCHandler *p_bind);
+	static void origin_finalizer(JSRuntime *rt, JSValue val);
 
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
 	JSValue variant_to_var(const Variant p_var);
 	Variant var_to_variant(JSValue p_val);
 
 	JSAtom get_atom(const StringName &p_key) const;
 	JSValue godot_string_to_jsvalue(const String &text) const;
-	JSAtom stringname_to_atom(const StringName &text) const;
 	String js_string_to_godot_string(JSValue p_val) const;
 
 	static JSValue godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
+	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
+
+	int get_js_array_length(JSValue p_val);
+
+	void get_own_property_names(JSValue p_object, Set<StringName> *r_list);
 
 public:
-	QuickJSBindingHelper();
-	_FORCE_INLINE_ static QuickJSBindingHelper *get_singleton() { return singleton; }
+	QuickJSBinder();
+	_FORCE_INLINE_ static QuickJSBinder *get_singleton() { return singleton; }
+	_FORCE_INLINE_ static JSClassID get_origin_class_id() { return singleton->godot_origin_class.class_id; }
 
 	virtual void initialize();
 	virtual void uninitialize();
@@ -106,6 +127,7 @@ public:
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
+	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
 };
 
 #endif // QUICKJS_BINDING_HELPER_H

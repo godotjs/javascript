@@ -3,6 +3,7 @@
 
 #include "core/object.h"
 #include "core/reference.h"
+#include "core/variant.h"
 
 #define PROTOTYPE_LITERAL "prototype"
 #define PROTO_LITERAL "__proto__"
@@ -18,19 +19,32 @@ struct ECMAScriptGCHandler {
 		FLAG_FROM_NATIVE = 1 << 3,
 		FLAG_HOLDING_SCRIPT_REF = 1 << 4,
 		FLAG_SCRIPT_FINALIZED = 1 << 5,
+		FLAG_BUILTIN_CLASS = 1 << 6,
 	};
 	uint16_t flags;
+	Variant::Type type;
 	void *ecma_object;
 	union {
 		Object *godot_object;
 		REF *godot_reference;
+		void *godot_builtin_object_ptr;
 	};
 
 	_FORCE_INLINE_ Variant get_value() const {
-		if (flags & FLAG_REFERENCE) {
-			return *godot_reference;
-		} else if (flags & FLAG_OBJECT) {
-			return godot_object;
+		switch (type) {
+			case Variant::OBJECT: {
+				if (flags & FLAG_REFERENCE) {
+					return *godot_reference;
+				} else if (flags & FLAG_OBJECT) {
+					return godot_object;
+				}
+			} break;
+			case Variant::VECTOR2:
+				return *(static_cast<Vector2 *>(godot_builtin_object_ptr));
+			case Variant::RECT2:
+				return *(static_cast<Rect2 *>(godot_builtin_object_ptr));
+			default:
+				return Variant();
 		}
 		return Variant();
 	}
@@ -55,12 +69,14 @@ struct ECMAScriptGCHandler {
 	_FORCE_INLINE_ void clear() {
 		godot_object = NULL;
 		ecma_object = NULL;
+		type = Variant::NIL;
 	}
 
 	ECMAScriptGCHandler() {
 		flags = FLAG_NONE;
 		godot_object = NULL;
 		ecma_object = NULL;
+		type = Variant::NIL;
 	}
 };
 
@@ -78,12 +94,11 @@ struct ECMAClassInfo {
 	ECMAScriptGCHandler ecma_class_function;
 	ECMAScriptGCHandler ecma_prototype;
 	const ClassDB::ClassInfo *native_class;
-	HashMap<StringName, ECMAMethodInfo> methods;
 	HashMap<StringName, MethodInfo> signals;
 	HashMap<StringName, ECMAProperyInfo> properties;
 };
 
-class ECMAScriptBindingHelper {
+class ECMAScriptBinder {
 	friend class ECMAScript;
 
 protected:
@@ -108,6 +123,7 @@ public:
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
+	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) = 0;
 };
 
 #endif

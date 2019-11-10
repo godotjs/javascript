@@ -2,29 +2,29 @@
 #define ECMASCRIPT_LANGUAGE_H
 
 #include "core/script_language.h"
-#include "quickjs/quickjs_binding_helper.h"
+#include "quickjs/quickjs_binder.h"
 #include "ecmascript.h"
 
 /*********************** ECMAScriptLanguage ***********************/
-class ECMAScriptBindingHelper;
+class ECMAScriptBinder;
 class ECMAScriptLanguage : public ScriptLanguage {
 
-	friend class ECMAScriptBindingHelper;
+	friend class ECMAScriptBinder;
 	friend class ECMAScript;
 	friend class ECMAScriptInstance;
 	friend class DuktapeBindingHelper;
-	friend class QuickJSBindingHelper;
+	friend class QuickJSBinder;
 
 private:
 	static ECMAScriptLanguage *singleton;
-	ECMAScriptBindingHelper *binding;
+	ECMAScriptBinder *binding;
 	int language_index;
 
 	HashMap<StringName, Ref<ECMAScript> > script_classes;
 
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
-	_FORCE_INLINE_ static ECMAScriptBindingHelper *get_binder() { return singleton->binding; }
+	_FORCE_INLINE_ static ECMAScriptBinder *get_binder() { return singleton->binding; }
 
 	_FORCE_INLINE_ virtual String get_name() const { return "ECMAScript"; }
 

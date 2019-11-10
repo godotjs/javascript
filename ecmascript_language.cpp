@@ -151,7 +151,7 @@ ECMAScriptLanguage::ECMAScriptLanguage() {
 
 	ERR_FAIL_COND(singleton);
 	singleton = this;
-	binding = memnew(QuickJSBindingHelper);
+	binding = memnew(QuickJSBinder);
 }
 
 ECMAScriptLanguage::~ECMAScriptLanguage() {
