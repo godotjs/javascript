@@ -7,7 +7,10 @@ env_module = env_modules.Clone()
 
 def quickjs():
 	version = open('quickjs/quickjs/VERSION', 'r').read().split('\n')[0]
-	env_module.Append(CPPDEFINES=["DUMP_LEAKS"])
+	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
+	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
+	if env_module['target'] == 'debug':
+		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
 	env_module.Append(CPPPATH=["quickjs/quickjs"])
 	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
 	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')

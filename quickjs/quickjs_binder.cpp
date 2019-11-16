@@ -4,8 +4,8 @@
 #include "core/global_constants.h"
 #include "core/math/expression.h"
 
-QuickJSBinder *QuickJSBinder::singleton = NULL;
-//JSClassID QuickJSBinder::godot_head_classid = 0;
+HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
+HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
 
 static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	PoolStringArray args;
@@ -29,12 +29,12 @@ void QuickJSBinder::add_global_console() {
 
 JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int method_id) {
 
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(this_val);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 	ERR_FAIL_NULL_V(bind, JS_ThrowReferenceError(ctx, "Call native method without native binding data"));
 	ERR_FAIL_NULL_V(bind->godot_object, JS_ThrowReferenceError(ctx, "Call native method without native object caller"));
 
 	Object *obj = bind->get_godot_object();
-	MethodBind *mb = singleton->godot_methods[method_id];
+	MethodBind *mb = get_context_binder(ctx)->godot_methods[method_id];
 
 	if (!mb->is_vararg()) {
 		argc = MIN(argc, mb->get_argument_count());
@@ -44,7 +44,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	Vector<Variant> vargs;
 	vargs.resize(argc);
 	for (int i = 0; i < argc; ++i) {
-		vargs.write[i] = singleton->var_to_variant(*(argv + i));
+		vargs.write[i] = var_to_variant(ctx, *(argv + i));
 		args[i] = (vargs.ptr() + i);
 	}
 
@@ -72,10 +72,10 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		}
 	}
 	ERR_FAIL_COND_V((call_err.error != Variant::CallError::CALL_OK), JS_ThrowTypeError(ctx, err_message.ptr()));
-	return singleton->variant_to_var(ret_val);
+	return variant_to_var(ctx, ret_val);
 }
 
-JSValue QuickJSBinder::variant_to_var(const Variant p_var) {
+JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 	switch (p_var.get_type()) {
 		case Variant::BOOL:
 			return ((bool)p_var) ? JS_TRUE : JS_FALSE;
@@ -84,7 +84,7 @@ JSValue QuickJSBinder::variant_to_var(const Variant p_var) {
 		case Variant::REAL:
 			return JS_NewFloat64(ctx, (double)(p_var));
 		case Variant::STRING:
-			return godot_string_to_jsvalue(p_var);
+			return godot_string_to_jsvalue(ctx, p_var);
 		case Variant::OBJECT: {
 			Object *obj = p_var;
 			ECMAScriptGCHandler *data = BINDING_DATA_FROM_GD(obj);
@@ -98,7 +98,7 @@ JSValue QuickJSBinder::variant_to_var(const Variant p_var) {
 			Array arr = p_var;
 			JSValue js_arr = JS_NewArray(ctx);
 			for (uint32_t i = 0; i < arr.size(); i++) {
-				JS_SetPropertyUint32(ctx, js_arr, i, variant_to_var(arr[int(i)]));
+				JS_SetPropertyUint32(ctx, js_arr, i, variant_to_var(ctx, arr[int(i)]));
 			}
 			return js_arr;
 		} break;
@@ -111,11 +111,11 @@ JSValue QuickJSBinder::variant_to_var(const Variant p_var) {
 		case Variant::NIL:
 			return JS_NULL;
 		default:
-			return builtin_binder.new_object_from(p_var);
+			return QuickJSBuiltinBinder::new_object_from(ctx, p_var);
 	}
 }
 
-Variant QuickJSBinder::var_to_variant(JSValue p_val) {
+Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 
 	switch (JS_VALUE_GET_TAG(p_val)) {
 		case JS_TAG_INT:
@@ -125,19 +125,19 @@ Variant QuickJSBinder::var_to_variant(JSValue p_val) {
 		case JS_TAG_FLOAT64:
 			return Variant(real_t(JS_VALUE_GET_FLOAT64(p_val)));
 		case JS_TAG_STRING: {
-			return js_string_to_godot_string(p_val);
+			return js_string_to_godot_string(ctx, p_val);
 		}
 		case JS_TAG_OBJECT: {
-			if (int length = get_js_array_length(p_val) >= 0) { // Array
+			if (int length = get_js_array_length(ctx, p_val) >= 0) { // Array
 				Array arr;
 				arr.resize(length);
 				for (uint32_t i = 0; i < length; i++) {
 					JSValue val = JS_GetPropertyUint32(ctx, p_val, i);
-					arr[int(i)] = var_to_variant(val);
+					arr[int(i)] = var_to_variant(ctx, val);
 					JS_FreeValue(ctx, val);
 				}
 				return arr;
-			} else if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(p_val)) { // Binding object
+			} else if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, p_val)) { // Binding object
 				ERR_FAIL_NULL_V(bind, Variant());
 				ERR_FAIL_NULL_V(bind->godot_object, Variant());
 				return bind->get_value();
@@ -152,19 +152,19 @@ Variant QuickJSBinder::var_to_variant(JSValue p_val) {
 	}
 }
 
-JSAtom QuickJSBinder::get_atom(const StringName &p_key) const {
+JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	String name = p_key;
 	CharString name_str = name.utf8();
 	JSAtom atom = JS_NewAtom(ctx, name_str.ptr());
 	return atom;
 }
 
-JSValue QuickJSBinder::godot_string_to_jsvalue(const String &text) const {
+JSValue QuickJSBinder::godot_string_to_jsvalue(JSContext *ctx, const String &text) {
 	CharString utf8 = text.utf8();
 	return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
 }
 
-String QuickJSBinder::js_string_to_godot_string(JSValue p_val) const {
+String QuickJSBinder::js_string_to_godot_string(JSContext *ctx, JSValue p_val) {
 	String ret;
 	size_t len = 0;
 	const char *utf8 = JS_ToCStringLen(ctx, &len, p_val);
@@ -174,7 +174,7 @@ String QuickJSBinder::js_string_to_godot_string(JSValue p_val) const {
 }
 
 JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
-	String str = singleton->var_to_variant(this_val);
+	String str = var_to_variant(ctx, this_val);
 	CharString utf8 = str.utf8();
 	return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
 }
@@ -240,7 +240,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 				getter = &(E->get());
 				JS_DupValue(ctx, *getter);
 			}
-			JSAtom atom = get_atom(prop_name);
+			JSAtom atom = get_atom(ctx, prop_name);
 			JS_DefinePropertyGetSet(ctx, data.prototype, atom, getter ? *getter : JS_UNDEFINED, setter ? *setter : JS_UNDEFINED, PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, atom);
 			key = p_cls->property_setget.next(key);
@@ -262,7 +262,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 		while (key) {
 
 			int value = p_cls->constant_map.get(*key);
-			JSAtom atom = get_atom(*key);
+			JSAtom atom = get_atom(ctx, *key);
 			JS_DefinePropertyValue(ctx, data.constructor, atom, JS_NewInt32(ctx, value), PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, atom);
 
@@ -276,12 +276,12 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 		while (key) {
 
 			JSValue enum_obj = JS_NewObject(ctx);
-			JSAtom atom = get_atom(*key);
+			JSAtom atom = get_atom(ctx, *key);
 
 			const List<StringName> &const_keys = p_cls->enum_map.get(*key);
 			for (const List<StringName>::Element *E = const_keys.front(); E; E = E->next()) {
 				int value = p_cls->constant_map.get(E->get());
-				JSAtom atom_key = get_atom(E->get());
+				JSAtom atom_key = get_atom(ctx, E->get());
 				JS_DefinePropertyValue(ctx, enum_obj, atom_key, JS_NewInt32(ctx, value), PROP_DEF_DEFAULT);
 				JS_FreeAtom(ctx, atom_key);
 			}
@@ -298,8 +298,8 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 		const StringName *key = p_cls->signal_map.next(NULL);
 		while (key) {
 
-			JSAtom atom = get_atom(*key);
-			JS_DefinePropertyValue(ctx, data.constructor, atom, godot_string_to_jsvalue(*key), PROP_DEF_DEFAULT);
+			JSAtom atom = get_atom(ctx, *key);
+			JS_DefinePropertyValue(ctx, data.constructor, atom, godot_string_to_jsvalue(ctx, *key), PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, atom);
 
 			key = p_cls->signal_map.next(key);
@@ -393,7 +393,7 @@ void QuickJSBinder::add_godot_globals() {
 		data->flags = ECMAScriptGCHandler::FLAG_OBJECT;
 		JS_SetOpaque(obj, data);
 
-		JSAtom singleton_name = get_atom(s.name);
+		JSAtom singleton_name = get_atom(ctx, s.name);
 		JSValue last_obj = JS_GetProperty(ctx, godot_object, singleton_name);
 		if (!JS_IsUndefined(last_obj)) {
 			JSValue prototype = JS_GetPrototype(ctx, last_obj);
@@ -409,8 +409,8 @@ void QuickJSBinder::add_godot_globals() {
 		if (ClassDB::ClassInfo *cls = ClassDB::classes.getptr(s.ptr->get_class_name())) {
 			// constants
 			for (const StringName *const_key = cls->constant_map.next(NULL); const_key; const_key = cls->constant_map.next(const_key)) {
-				JSAtom const_name = get_atom(*const_key);
-				JS_DefinePropertyValue(ctx, obj, const_name, variant_to_var(cls->constant_map.get(*const_key)), QuickJSBinder::PROP_DEF_DEFAULT);
+				JSAtom const_name = get_atom(ctx, *const_key);
+				JS_DefinePropertyValue(ctx, obj, const_name, variant_to_var(ctx, cls->constant_map.get(*const_key)), QuickJSBinder::PROP_DEF_DEFAULT);
 				JS_FreeAtom(ctx, const_name);
 			}
 			// enumrations
@@ -418,11 +418,11 @@ void QuickJSBinder::add_godot_globals() {
 				const List<StringName> &consts = cls->enum_map.get(*enum_key);
 				JSValue enum_obj = JS_NewObject(ctx);
 				for (const List<StringName>::Element *E = consts.front(); E; E = E->next()) {
-					JSAtom const_name = get_atom(E->get());
-					JS_DefinePropertyValue(ctx, enum_obj, const_name, variant_to_var(cls->constant_map.get(E->get())), QuickJSBinder::PROP_DEF_DEFAULT);
+					JSAtom const_name = get_atom(ctx, E->get());
+					JS_DefinePropertyValue(ctx, enum_obj, const_name, variant_to_var(ctx, cls->constant_map.get(E->get())), QuickJSBinder::PROP_DEF_DEFAULT);
 					JS_FreeAtom(ctx, const_name);
 				}
-				JSAtom enum_name = get_atom(*enum_key);
+				JSAtom enum_name = get_atom(ctx, *enum_key);
 				JS_DefinePropertyValue(ctx, obj, enum_name, enum_obj, QuickJSBinder::PROP_DEF_DEFAULT);
 				JS_FreeAtom(ctx, enum_name);
 			}
@@ -454,14 +454,14 @@ void QuickJSBinder::add_godot_globals() {
 	for (const StringName *enum_name = global_constants.next(NULL); enum_name; enum_name = global_constants.next(enum_name)) {
 		if (String(*enum_name).empty()) continue;
 
-		JSAtom atom_enum_name = get_atom(*enum_name);
+		JSAtom atom_enum_name = get_atom(ctx, *enum_name);
 		JSValue enum_object = JS_NewObject(ctx);
 		JS_DefinePropertyValue(ctx, godot_object, atom_enum_name, enum_object, QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, atom_enum_name);
 
 		const HashMap<StringName, int> &enum_ = global_constants.get(*enum_name);
 		for (const StringName *const_name = enum_.next(NULL); const_name; const_name = enum_.next(const_name)) {
-			JSAtom js_const_name = get_atom(*const_name);
+			JSAtom js_const_name = get_atom(ctx, *const_name);
 			const int value = enum_.get(*const_name);
 			JS_DefinePropertyValue(ctx, enum_object, js_const_name, JS_MKVAL(JS_TAG_INT, value), QuickJSBinder::PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, js_const_name);
@@ -473,17 +473,14 @@ void QuickJSBinder::add_godot_globals() {
 		Expression::BuiltinFunc func = (Expression::BuiltinFunc)i;
 		String name = Expression::get_func_name(func);
 		JSValue js_func = JS_NewCFunctionMagic(ctx, godot_builtin_function, name.utf8().ptr(), 0, JS_CFUNC_generic_magic, i);
-		JSAtom atom = get_atom(name);
+		JSAtom atom = get_atom(ctx, name);
 		JS_DefinePropertyValue(ctx, godot_object, atom, js_func, QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, atom);
 	}
 }
 
 QuickJSBinder::QuickJSBinder() {
-
-	singleton = this;
 	internal_godot_method_id = 0;
-
 	godot_allocator.js_malloc = QuickJSBinder::js_malloc;
 	godot_allocator.js_free = QuickJSBinder::js_free;
 	godot_allocator.js_realloc = QuickJSBinder::js_realloc;
@@ -491,8 +488,12 @@ QuickJSBinder::QuickJSBinder() {
 }
 
 void QuickJSBinder::initialize() {
-	runtime = JS_NewRuntime2(&godot_allocator, NULL);
+	// create runtime and context for the binder
+	runtime = JS_NewRuntime2(&godot_allocator, this);
 	ctx = JS_NewContext(runtime);
+	context_binders.set(ctx, this);
+	runtime_context_map.set(runtime, ctx);
+
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
 	// global = globalThis
 	global_object = JS_GetGlobalObject(ctx);
@@ -501,15 +502,11 @@ void QuickJSBinder::initialize() {
 	// global.godot
 	godot_object = JS_NewObject(ctx);
 	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
-	js_key_constructor = JS_NewAtom(ctx, "constructor");
-	js_key_prototype = JS_NewAtom(ctx, "prototype");
-	js_key_name = JS_NewAtom(ctx, "name");
-	js_key_length = JS_NewAtom(ctx, "length");
 	JS_DefinePropertyValueStr(ctx, global_object, "godot", godot_object, PROP_DEF_DEFAULT);
 	// godot.GodotOrigin
 	add_godot_origin();
 	// godot.Vector2 godot.Color ...
-	builtin_binder.initialize(ctx);
+	builtin_binder.initialize(ctx, this);
 	// godot.Object godot.Node godot.Theme ...
 	add_godot_classes();
 	// godot.print godot.sin ...
@@ -522,7 +519,7 @@ void QuickJSBinder::uninitialize() {
 
 	// Free singletons
 	for (int i = 0; i < godot_singletons.size(); i++) {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(godot_singletons[i]);
+		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, godot_singletons[i]);
 		if (bind) {
 			memdelete(bind);
 			JS_SetOpaque(godot_singletons[i], NULL);
@@ -538,15 +535,14 @@ void QuickJSBinder::uninitialize() {
 		JS_FreeValue(ctx, class_func);
 		key = ecma_classes.next(key);
 	}
-	JS_FreeAtom(ctx, js_key_length);
-	JS_FreeAtom(ctx, js_key_name);
-	JS_FreeAtom(ctx, js_key_prototype);
-	JS_FreeAtom(ctx, js_key_constructor);
 	JS_FreeAtom(ctx, js_key_godot_classid);
 	JS_FreeValue(ctx, empty_function);
 	JS_FreeValue(ctx, global_object);
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
+
+	context_binders.erase(ctx);
+	runtime_context_map.erase(runtime);
 	ctx = NULL;
 	runtime = NULL;
 }
@@ -629,8 +625,8 @@ bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 }
 
 JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv, int class_id) {
-	const ClassBindData &cls = singleton->class_bindings.get(class_id);
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(new_target);
+	const ClassBindData &cls = QuickJSBinder::get_context_binder(ctx)->class_bindings.get(class_id);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, new_target);
 	JSValue js_obj;
 	if (bind) {
 		bind->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
@@ -660,20 +656,21 @@ void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
 }
 
 void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(val);
+	JSContext *ctx = runtime_context_map.get(rt);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, val);
 	if (bind) {
 		bind->flags |= ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED;
 		if (bind->type == Variant::OBJECT) {
-			singleton->object_finalizer(bind);
+			object_finalizer(bind);
 		} else {
-			singleton->builtin_binder.builtin_finalizer(bind);
+			QuickJSBuiltinBinder::builtin_finalizer(bind);
 		}
 	}
 }
 
 JSValue QuickJSBinder::object_free(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(this_val);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 	ERR_FAIL_NULL_V(bind, JS_ThrowReferenceError(ctx, "The object already be freed"));
 	ERR_FAIL_NULL_V(bind->godot_object, JS_ThrowReferenceError(ctx, "The object already be freed"));
 	ERR_FAIL_COND_V((bind->is_reference()), JS_ThrowReferenceError(ctx, "Call free to Reference object is not allowed"));
@@ -693,7 +690,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 	Vector<Variant> vargs;
 	vargs.resize(argc);
 	for (int i = 0; i < argc; ++i) {
-		vargs.write[i] = singleton->var_to_variant(argv[0]);
+		vargs.write[i] = var_to_variant(ctx, argv[0]);
 		args[i] = (vargs.ptr() + i);
 	}
 
@@ -708,7 +705,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		return JS_ThrowTypeError(ctx, msg.ptr());
 	}
 
-	return singleton->variant_to_var(ret);
+	return variant_to_var(ctx, ret);
 }
 
 /************************* END Memory Management ******************************/
@@ -716,12 +713,12 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 /********************************* Script --> C++ ****************************/
 JSValue QuickJSBinder::godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	ERR_FAIL_COND_V(!JS_IsFunction(ctx, *argv), JS_ThrowTypeError(ctx, "Class function expected"));
-
-	JSValue prototype = JS_GetProperty(ctx, *argv, singleton->js_key_prototype);
-	JSValue classid = JS_GetProperty(ctx, prototype, singleton->js_key_godot_classid);
+	QuickJSBinder *binder = get_context_binder(ctx);
+	JSValue prototype = JS_GetProperty(ctx, *argv, QuickJSBinder::JS_ATOM_prototype);
+	JSValue classid = JS_GetProperty(ctx, prototype, binder->js_key_godot_classid);
 	JSClassID id = JS_VALUE_GET_INT(classid);
 
-	if (const ClassBindData *bind = singleton->class_bindings.getptr(id)) {
+	if (const ClassBindData *bind = binder->class_bindings.getptr(id)) {
 
 		ECMAClassInfo ecma_class;
 		ecma_class.native_class = bind->gdclass;
@@ -734,10 +731,10 @@ JSValue QuickJSBinder::godot_register_emca_class(JSContext *ctx, JSValueConst th
 
 		StringName class_name;
 		if (argc > 1 && JS_IsString(*(argv + 1))) {
-			class_name = singleton->js_string_to_godot_string(*(argv + 1));
+			class_name = js_string_to_godot_string(ctx, *(argv + 1));
 		} else {
-			JSValue name = JS_GetProperty(ctx, *argv, singleton->js_key_name);
-			class_name = singleton->js_string_to_godot_string(name);
+			JSValue name = JS_GetProperty(ctx, *argv, JS_ATOM_name);
+			class_name = js_string_to_godot_string(ctx, name);
 			JS_FreeValue(ctx, name);
 		}
 		ecma_class.class_name = class_name;
@@ -745,7 +742,7 @@ JSValue QuickJSBinder::godot_register_emca_class(JSContext *ctx, JSValueConst th
 		// TODO
 		ecma_class.icon_path = "";
 		ecma_class.tool = false;
-		singleton->ecma_classes.set(class_name, ecma_class);
+		binder->ecma_classes.set(class_name, ecma_class);
 
 		Ref<ECMAScript> script;
 		script.instance();
@@ -760,22 +757,22 @@ JSValue QuickJSBinder::godot_register_emca_class(JSContext *ctx, JSValueConst th
 	return JS_UNDEFINED;
 }
 
-int QuickJSBinder::get_js_array_length(JSValue p_val) {
+int QuickJSBinder::get_js_array_length(JSContext *ctx, JSValue p_val) {
 	if (!JS_IsArray(ctx, p_val)) return -1;
-	JSValue ret = JS_GetProperty(ctx, p_val, js_key_length);
+	JSValue ret = JS_GetProperty(ctx, p_val, JS_ATOM_length);
 	int32_t length = -1;
 	if (JS_ToInt32(ctx, &length, ret)) return -1;
 	return length;
 }
 
-void QuickJSBinder::get_own_property_names(JSValue p_object, Set<StringName> *r_list) {
+void QuickJSBinder::get_own_property_names(JSContext *ctx, JSValue p_object, Set<StringName> *r_list) {
 	ERR_FAIL_COND(!JS_IsObject(p_object));
 	JSPropertyEnum *props = NULL;
 	uint32_t tab_atom_count;
 	JS_GetOwnPropertyNames(ctx, &props, &tab_atom_count, p_object, JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK);
 	for (uint32_t i = 0; i < tab_atom_count; i++) {
 		JSValue key = JS_AtomToValue(ctx, props[i].atom);
-		String name = singleton->js_string_to_godot_string(key);
+		String name = js_string_to_godot_string(ctx, key);
 		r_list->insert(name);
 		JS_FreeAtom(ctx, props[i].atom);
 	}
@@ -804,11 +801,11 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 	Vector<JSValue> argv;
 	argv.resize(p_argcount);
 	for (int i = 0; i < p_argcount; ++i) {
-		argv.write[i] = variant_to_var(*p_args[i]);
+		argv.write[i] = variant_to_var(ctx, *p_args[i]);
 	}
 
 	JSValue object = GET_JSVALUE(p_object);
-	JSAtom atom = get_atom(p_method);
+	JSAtom atom = get_atom(ctx, p_method);
 	JSValue method = JS_GetProperty(ctx, object, atom);
 	JS_FreeAtom(ctx, atom);
 
@@ -824,11 +821,11 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
 		JSValue exception = JS_GetException(ctx);
 		JSValue message = JS_GetPropertyStr(ctx, exception, "message");
-		print_error("Failed to call " + p_method + ": " + js_string_to_godot_string(message));
+		print_error("Failed to call " + p_method + ": " + js_string_to_godot_string(ctx, message));
 		JS_FreeValue(ctx, message);
 		JS_FreeValue(ctx, exception);
 	}
-	Variant ret = var_to_variant(return_val);
+	Variant ret = var_to_variant(ctx, return_val);
 	JS_FreeValue(ctx, return_val);
 	JS_FreeValue(ctx, method);
 
@@ -838,10 +835,10 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 bool QuickJSBinder::get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) {
 	bool success = false;
 	JSValue obj = GET_JSVALUE(p_object);
-	JSAtom atom = get_atom(p_name);
+	JSAtom atom = get_atom(ctx, p_name);
 	JSValue ret = JS_GetProperty(ctx, obj, atom);
 	JS_FreeAtom(ctx, atom);
-	r_ret = var_to_variant(ret);
+	r_ret = var_to_variant(ctx, ret);
 	success = !JS_IsUndefined(ret);
 	JS_FreeValue(ctx, ret);
 	return success;
@@ -849,8 +846,8 @@ bool QuickJSBinder::get_instance_property(const ECMAScriptGCHandler &p_object, c
 
 bool QuickJSBinder::set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) {
 	JSValue obj = GET_JSVALUE(p_object);
-	JSAtom atom = get_atom(p_name);
-	bool success = JS_SetProperty(ctx, obj, atom, variant_to_var(p_value));
+	JSAtom atom = get_atom(ctx, p_name);
+	bool success = JS_SetProperty(ctx, obj, atom, variant_to_var(ctx, p_value));
 	JS_FreeAtom(ctx, atom);
 	return success;
 }
@@ -858,7 +855,7 @@ bool QuickJSBinder::set_instance_property(const ECMAScriptGCHandler &p_object, c
 bool QuickJSBinder::has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) {
 	JSValue obj = GET_JSVALUE(p_object);
 	ERR_FAIL_COND_V(!JS_IsObject(obj), false);
-	JSAtom atom = get_atom(p_name);
+	JSAtom atom = get_atom(ctx, p_name);
 	JSValue value = JS_GetProperty(ctx, GET_JSVALUE(p_object), atom);
 	bool success = JS_IsFunction(ctx, value);
 	JS_FreeAtom(ctx, atom);

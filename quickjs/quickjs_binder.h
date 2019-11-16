@@ -5,10 +5,9 @@
 #include "core/os/memory.h"
 #include "quickjs_builtin_binder.h"
 #include <quickjs.h>
-
 #define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
 #define BINDING_DATA_FROM_GD(p_object) (p_object ? (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL)
-#define BINDING_DATA_FROM_JS(p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id())
+#define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
 #define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
 
 class QuickJSBinder : public ECMAScriptBinder {
@@ -16,21 +15,41 @@ class QuickJSBinder : public ECMAScriptBinder {
 	friend class QuickJSBuiltinBinder;
 	QuickJSBuiltinBinder builtin_binder;
 
+public:
+	struct PtrHasher {
+		static _FORCE_INLINE_ uint32_t hash(const void *p_ptr) {
+			union {
+				const void *p;
+				uint64_t i;
+			} u;
+			u.p = p_ptr;
+			return HashMapHasherDefault::hash(u.i);
+		}
+	};
+
 	enum {
 		PROP_DEF_DEFAULT = JS_PROP_ENUMERABLE,
 	};
 
-	static QuickJSBinder *singleton;
-	//	static JSClassID godot_head_classid;
+	enum {
+		JS_ATOM_NULL,
+#if !defined(EMSCRIPTEN)
+#define CONFIG_ATOMICS
+#endif
+#define DEF(name, str) JS_ATOM_##name,
+#include "quickjs-atom.h"
+#undef DEF
+#ifdef CONFIG_ATOMICS
+#undef CONFIG_ATOMICS
+#endif
+		JS_ATOM_END,
+	};
 
+private:
 	JSValue global_object;
 	JSValue godot_object;
 	JSValue empty_function;
 	JSAtom js_key_godot_classid;
-	JSAtom js_key_constructor;
-	JSAtom js_key_prototype;
-	JSAtom js_key_name;
-	JSAtom js_key_length;
 
 	Vector<JSValue> godot_singletons;
 
@@ -65,17 +84,6 @@ class QuickJSBinder : public ECMAScriptBinder {
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
 
-	struct PtrHasher {
-		static _FORCE_INLINE_ uint32_t hash(const void *p_ptr) {
-			union {
-				const void *p;
-				uint64_t i;
-			} u;
-			u.p = p_ptr;
-			return HashMapHasherDefault::hash(u.i);
-		}
-	};
-
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_origin();
 	void add_godot_classes();
@@ -83,7 +91,7 @@ class QuickJSBinder : public ECMAScriptBinder {
 	void add_global_console();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
-	void object_finalizer(ECMAScriptGCHandler *p_bind);
+	static void object_finalizer(ECMAScriptGCHandler *p_bind);
 	static void origin_finalizer(JSRuntime *rt, JSValue val);
 
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
@@ -91,25 +99,31 @@ class QuickJSBinder : public ECMAScriptBinder {
 	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
-	JSValue variant_to_var(const Variant p_var);
-	Variant var_to_variant(JSValue p_val);
-
-	JSAtom get_atom(const StringName &p_key) const;
-	JSValue godot_string_to_jsvalue(const String &text) const;
-	String js_string_to_godot_string(JSValue p_val) const;
-
 	static JSValue godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
 
-	int get_js_array_length(JSValue p_val);
+	static int get_js_array_length(JSContext *ctx, JSValue p_val);
+	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<StringName> *r_list);
 
-	void get_own_property_names(JSValue p_object, Set<StringName> *r_list);
+	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
+	static JSValue godot_string_to_jsvalue(JSContext *ctx, const String &text);
+	static String js_string_to_godot_string(JSContext *ctx, JSValue p_val);
+
+	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
+	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
+
+	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
+	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
 
 public:
 	QuickJSBinder();
-	_FORCE_INLINE_ static QuickJSBinder *get_singleton() { return singleton; }
-	_FORCE_INLINE_ static JSClassID get_origin_class_id() { return singleton->godot_origin_class.class_id; }
+
+	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSContext *ctx) { return context_binders.get(ctx); }
+	_FORCE_INLINE_ QuickJSBuiltinBinder &get_builtin_binder() { return builtin_binder; }
+
+	_FORCE_INLINE_ JSClassID get_origin_class_id() { return godot_origin_class.class_id; }
+	_FORCE_INLINE_ static JSClassID get_origin_class_id(JSContext *ctx) { return get_context_binder(ctx)->godot_origin_class.class_id; }
 
 	virtual void initialize();
 	virtual void uninitialize();
