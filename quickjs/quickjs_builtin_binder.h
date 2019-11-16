@@ -31,7 +31,9 @@ public:
 
 	void register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc);
 	void register_property(Variant::Type p_type, const char *p_name, JSCFunctionMagic *p_getter, JSCFunctionMagic *p_setter, int magic);
-	void register_operator(Variant::Type p_type, JSAtom p_operator, JSCFunctionMagic *p_func, int p_length);
+	void register_operator(Variant::Type p_type, JSAtom p_operator, JSCFunction *p_func, int p_length);
+	void register_method(Variant::Type p_type, const char *p_name, JSCFunction *p_func, int p_length);
+	void register_constant(Variant::Type p_type, const char *p_name, const Variant &p_value);
 
 public:
 	QuickJSBuiltinBinder();
@@ -39,6 +41,9 @@ public:
 
 	void initialize(JSContext *p_context, QuickJSBinder *p_binder);
 	void uninitialize();
+
+	void bind_builtin_classes_gen();
+	void bind_builtin_propties_manually();
 
 	_FORCE_INLINE_ void set_classid(Variant::Type p_type, JSClassID p_id) { builtin_class_map[p_type].id = p_id; }
 	_FORCE_INLINE_ JSClassID get_classid(Variant::Type p_type) { return builtin_class_map[p_type].id; }

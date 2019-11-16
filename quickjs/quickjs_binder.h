@@ -110,11 +110,12 @@ private:
 	static JSValue godot_string_to_jsvalue(JSContext *ctx, const String &text);
 	static String js_string_to_godot_string(JSContext *ctx, JSValue p_val);
 
-	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
-	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
-
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
+
+public:
+	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
+	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
 
 public:
 	QuickJSBinder();

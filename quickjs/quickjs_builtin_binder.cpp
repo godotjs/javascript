@@ -77,30 +77,35 @@ void QuickJSBuiltinBinder::register_property(Variant::Type p_type, const char *p
 	JS_FreeAtom(ctx, atom);
 }
 
-void QuickJSBuiltinBinder::register_operator(Variant::Type p_type, JSAtom p_operator, JSCFunctionMagic *p_func, int p_length) {
+void QuickJSBuiltinBinder::register_operator(Variant::Type p_type, JSAtom p_operator, JSCFunction *p_func, int p_length) {
 	const BuiltinClass &cls = get_class(p_type);
-	JSValue func = JS_NewCFunctionMagic(ctx, p_func, "", p_length, JS_CFUNC_generic_magic, int(p_operator));
+	JSValue func = JS_NewCFunction(ctx, p_func, "", p_length);
 	JS_DefinePropertyValue(ctx, cls.class_function, p_operator, func, 0);
 }
 
-static JSValue vector2_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);
-static void bind_vector2_properties(JSContext *ctx);
+void QuickJSBuiltinBinder::register_method(Variant::Type p_type, const char *p_name, JSCFunction *p_func, int p_length) {
+	const BuiltinClass &cls = get_class(p_type);
+	JSValue func = JS_NewCFunction(ctx, p_func, p_name, p_length);
+	JSAtom atom = JS_NewAtom(ctx, p_name);
+	JS_DefinePropertyValue(ctx, cls.class_prototype, atom, func, QuickJSBinder::PROP_DEF_DEFAULT);
+	JS_FreeAtom(ctx, atom);
+}
 
-static JSValue rect2_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);
-static void bind_rect2_properties(JSContext *ctx);
+void QuickJSBuiltinBinder::register_constant(Variant::Type p_type, const char *p_name, const Variant &p_value) {
+	const BuiltinClass &cls = get_class(p_type);
+	JSValue val = QuickJSBinder::variant_to_var(ctx, p_value);
+	JSAtom atom = JS_NewAtom(ctx, p_name);
+	JS_DefinePropertyValue(ctx, cls.class_function, atom, val, QuickJSBinder::PROP_DEF_DEFAULT);
+	JS_FreeAtom(ctx, atom);
+}
 
 void QuickJSBuiltinBinder::initialize(JSContext *p_context, QuickJSBinder *p_binder) {
 	ctx = p_context;
 	binder = p_binder;
-
 	js_key_to_string = JS_NewAtom(ctx, TO_STRING_LITERAL);
 	to_string_function = JS_NewCFunction(ctx, QuickJSBinder::godot_to_string, TO_STRING_LITERAL, 0);
-
-	register_builtin_class(Variant::VECTOR2, "Vector2", vector2_constructor, 2);
-	bind_vector2_properties(ctx);
-
-	register_builtin_class(Variant::RECT2, "Rect2", rect2_constructor, 4);
-	bind_rect2_properties(ctx);
+	bind_builtin_classes_gen();
+	bind_builtin_propties_manually();
 }
 
 void QuickJSBuiltinBinder::uninitialize() {
@@ -111,6 +116,10 @@ void QuickJSBuiltinBinder::uninitialize() {
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Variant &p_val) {
 	void *ptr = NULL;
 	switch (p_val.get_type()) {
+		case Variant::COLOR: {
+			Color *v = memnew(Color(p_val));
+			ptr = v;
+		} break;
 		case Variant::VECTOR2: {
 			Vector2 *v = memnew(Vector2(p_val));
 			ptr = v;
@@ -119,141 +128,73 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Variant &p_v
 			Rect2 *v = memnew(Rect2(p_val));
 			ptr = v;
 		} break;
+		case Variant::TRANSFORM2D: {
+			Transform2D *v = memnew(Transform2D(p_val));
+			ptr = v;
+		} break;
+		case Variant::VECTOR3: {
+			Vector3 *v = memnew(Vector3(p_val));
+			ptr = v;
+		} break;
+		case Variant::QUAT: {
+			Quat *v = memnew(Quat());
+			*v = p_val;
+			ptr = v;
+		} break;
+		case Variant::AABB: {
+			AABB *v = memnew(AABB(p_val));
+			ptr = v;
+		} break;
+		case Variant::PLANE: {
+			Plane *v = memnew(Plane(p_val));
+			ptr = v;
+		} break;
+		case Variant::BASIS: {
+			Basis *v = memnew(Basis());
+			*v = p_val;
+			ptr = v;
+		} break;
+		case Variant::TRANSFORM: {
+			Transform *v = memnew(Transform());
+			*v = p_val;
+			ptr = v;
+		} break;
+		case Variant::_RID: {
+			RID *v = memnew(RID(p_val));
+			ptr = v;
+		} break;
+
+		case Variant::POOL_INT_ARRAY: {
+			PoolIntArray *v = memnew(PoolIntArray(p_val));
+			ptr = v;
+		} break;
+		case Variant::POOL_BYTE_ARRAY: {
+			PoolByteArray *v = memnew(PoolByteArray(p_val));
+			ptr = v;
+		} break;
+		case Variant::POOL_REAL_ARRAY: {
+			PoolRealArray *v = memnew(PoolRealArray(p_val));
+			ptr = v;
+		} break;
+		case Variant::POOL_COLOR_ARRAY: {
+			PoolColorArray *v = memnew(PoolColorArray(p_val));
+			ptr = v;
+		} break;
+		case Variant::POOL_STRING_ARRAY: {
+			PoolStringArray *v = memnew(PoolStringArray(p_val));
+			ptr = v;
+		} break;
+		case Variant::POOL_VECTOR2_ARRAY: {
+			PoolVector2Array *v = memnew(PoolVector2Array(p_val));
+			ptr = v;
+		} break;
+		case Variant::POOL_VECTOR3_ARRAY: {
+			PoolVector3Array *v = memnew(PoolVector3Array(p_val));
+			ptr = v;
+		} break;
 	}
 	return bind_builtin_object(ctx, p_val.get_type(), ptr);
 }
 
-static JSValue vector2_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-
-	Vector2 *ptr = memnew(Vector2);
-	if (argc >= 2) {
-		double x, y;
-		JS_ToFloat64(ctx, &x, argv[0]);
-		JS_ToFloat64(ctx, &y, argv[1]);
-		ptr->x = x;
-		ptr->y = y;
-	}
-
-	return QuickJSBuiltinBinder::bind_builtin_object(ctx, Variant::VECTOR2, ptr);
-}
-
-static void bind_vector2_properties(JSContext *ctx) {
-
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-
-	JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-		const Vector2 *ptr = static_cast<Vector2 *>(bind->godot_builtin_object_ptr);
-		switch (magic) {
-			case 0:
-				return JS_NewFloat64(ctx, ptr->x);
-			case 1:
-				return JS_NewFloat64(ctx, ptr->y);
-		}
-		return JS_UNDEFINED;
-	};
-	JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-		Vector2 *ptr = static_cast<Vector2 *>(bind->godot_builtin_object_ptr);
-		double param = 0;
-		if (JS_ToFloat64(ctx, &param, argv[0])) return JS_EXCEPTION;
-		switch (magic) {
-			case 0:
-				ptr->x = param;
-				break;
-			case 1:
-				ptr->y = param;
-				break;
-		}
-		return argv[0];
-	};
-
-	JSCFunctionMagic *operators = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *bind1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		Vector2 *ptr0 = static_cast<Vector2 *>(bind0->godot_builtin_object_ptr);
-		Vector2 *ptr1 = static_cast<Vector2 *>(bind1->godot_builtin_object_ptr);
-		switch (magic) {
-			case QuickJSBinder::JS_ATOM_Symbol_operatorAdd:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr0->operator+(*ptr1));
-			case QuickJSBinder::JS_ATOM_Symbol_operatorSub:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr0->operator-(*ptr1));
-			case QuickJSBinder::JS_ATOM_Symbol_operatorMul:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr0->operator*(*ptr1));
-			case QuickJSBinder::JS_ATOM_Symbol_operatorDiv:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr0->operator/(*ptr1));
-		}
-		return JS_UNDEFINED;
-	};
-
-	binder->get_builtin_binder().register_property(Variant::VECTOR2, "x", getter, setter, 0);
-	binder->get_builtin_binder().register_property(Variant::VECTOR2, "y", getter, setter, 1);
-
-	binder->get_builtin_binder().register_operator(Variant::VECTOR2, QuickJSBinder::JS_ATOM_Symbol_operatorAdd, operators, 2);
-	binder->get_builtin_binder().register_operator(Variant::VECTOR2, QuickJSBinder::JS_ATOM_Symbol_operatorSub, operators, 2);
-	binder->get_builtin_binder().register_operator(Variant::VECTOR2, QuickJSBinder::JS_ATOM_Symbol_operatorMul, operators, 2);
-	binder->get_builtin_binder().register_operator(Variant::VECTOR2, QuickJSBinder::JS_ATOM_Symbol_operatorDiv, operators, 2);
-}
-
-static JSValue rect2_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-	Rect2 *ptr = memnew(Rect2);
-	if (argc >= 4) {
-		double x, y, w, h;
-		JS_ToFloat64(ctx, &x, argv[0]);
-		JS_ToFloat64(ctx, &y, argv[1]);
-		JS_ToFloat64(ctx, &w, argv[2]);
-		JS_ToFloat64(ctx, &h, argv[3]);
-		ptr->position.x = x;
-		ptr->position.y = y;
-		ptr->size.x = w;
-		ptr->size.y = h;
-	} else if (argc >= 2) {
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		if (!param0 || !param1) return JS_EXCEPTION;
-		if (param0->type != Variant::VECTOR2 || param1->type != Variant::VECTOR2) return JS_EXCEPTION;
-		ptr->position = *(static_cast<Vector2 *>(param0->godot_builtin_object_ptr));
-		ptr->size = *(static_cast<Vector2 *>(param1->godot_builtin_object_ptr));
-	}
-	return QuickJSBuiltinBinder::bind_builtin_object(ctx, Variant::RECT2, ptr);
-}
-
-static void bind_rect2_properties(JSContext *ctx) {
-	JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-		const Rect2 *ptr = static_cast<Rect2 *>(bind->godot_builtin_object_ptr);
-		switch (magic) {
-			case 0:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr->position);
-			case 1:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr->size);
-			case 2:
-				return QuickJSBuiltinBinder::new_object_from(ctx, ptr->position + ptr->size);
-		}
-		return JS_UNDEFINED;
-	};
-
-	JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-		Rect2 *ptr = static_cast<Rect2 *>(bind->godot_builtin_object_ptr);
-		ECMAScriptGCHandler *param_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		if (!param_bind || param_bind->type != Variant::VECTOR2) return JS_EXCEPTION;
-		switch (magic) {
-			case 0:
-				ptr->position = *(static_cast<Vector2 *>(param_bind->godot_builtin_object_ptr));
-				break;
-			case 1:
-				ptr->size = *(static_cast<Vector2 *>(param_bind->godot_builtin_object_ptr));
-				break;
-			case 2:
-				// TODO
-				return JS_EXCEPTION;
-				break;
-		}
-		return argv[0];
-	};
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-	binder->get_builtin_binder().register_property(Variant::RECT2, "position", getter, setter, 0);
-	binder->get_builtin_binder().register_property(Variant::RECT2, "size", getter, setter, 1);
-	binder->get_builtin_binder().register_property(Variant::RECT2, "end", getter, setter, 2);
+void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 }

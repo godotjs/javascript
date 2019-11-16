@@ -43,6 +43,38 @@ struct ECMAScriptGCHandler {
 				return *(static_cast<Vector2 *>(godot_builtin_object_ptr));
 			case Variant::RECT2:
 				return *(static_cast<Rect2 *>(godot_builtin_object_ptr));
+			case Variant::QUAT:
+				return *(static_cast<Quat *>(godot_builtin_object_ptr));
+			case Variant::COLOR:
+				return *(static_cast<Color *>(godot_builtin_object_ptr));
+			case Variant::_RID:
+				return *(static_cast<RID *>(godot_builtin_object_ptr));
+			case Variant::TRANSFORM:
+				return *(static_cast<Transform *>(godot_builtin_object_ptr));
+			case Variant::TRANSFORM2D:
+				return *(static_cast<Transform2D *>(godot_builtin_object_ptr));
+			case Variant::BASIS:
+				return *(static_cast<Basis *>(godot_builtin_object_ptr));
+			case Variant::VECTOR3:
+				return *(static_cast<Vector3 *>(godot_builtin_object_ptr));
+			case Variant::PLANE:
+				return *(static_cast<Plane *>(godot_builtin_object_ptr));
+			case Variant::AABB:
+				return *(static_cast<AABB *>(godot_builtin_object_ptr));
+			case Variant::POOL_INT_ARRAY:
+				return *(static_cast<PoolIntArray *>(godot_builtin_object_ptr));
+			case Variant::POOL_BYTE_ARRAY:
+				return *(static_cast<PoolByteArray *>(godot_builtin_object_ptr));
+			case Variant::POOL_REAL_ARRAY:
+				return *(static_cast<PoolRealArray *>(godot_builtin_object_ptr));
+			case Variant::POOL_COLOR_ARRAY:
+				return *(static_cast<PoolColorArray *>(godot_builtin_object_ptr));
+			case Variant::POOL_STRING_ARRAY:
+				return *(static_cast<PoolStringArray *>(godot_builtin_object_ptr));
+			case Variant::POOL_VECTOR2_ARRAY:
+				return *(static_cast<PoolVector2Array *>(godot_builtin_object_ptr));
+			case Variant::POOL_VECTOR3_ARRAY:
+				return *(static_cast<PoolVector3Array *>(godot_builtin_object_ptr));
 			default:
 				return Variant();
 		}

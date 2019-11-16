@@ -3,7 +3,8 @@ import json, os, sys
 import xml.etree.ElementTree as ET
 
 
-MODULE_DIR = os.path.abspath( os.path.dirname(__file__) )
+# MODULE_DIR = os.path.abspath( os.path.dirname(__file__) )
+MODULE_DIR = '/home/geequlim/Documents/Workspace/Develop/Godot/godot/modules/ECMAScript'
 DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
 if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
 	DOCS_DIR = sys.argv[-1]
@@ -29,6 +30,27 @@ BUILTIN_CLASSES = [
 	"PoolVector3Array",
 	"PoolColorArray",
 ]
+
+MAX_CONSTRUCTOR_ARGC = {
+	'Vector2': 2,
+	'Rect2': 4,
+	'Color': 4,
+	'Vector3': 3,
+	'Basis': 0,
+	'Quat': 0,
+	'RID': 0,
+	'Transform2D': 0,
+	'Plane': 0,
+	'AABB': 0,
+	"Transform": 0,
+	"PoolByteArray": 0,
+	"PoolIntArray": 0,
+	"PoolRealArray": 0,
+	"PoolStringArray": 0,
+	"PoolVector2Array": 0,
+	"PoolVector3Array": 0,
+	"PoolColorArray": 0,
+}
 
 TYPE_MAP = {
 	'int': 'number',
@@ -171,10 +193,10 @@ IGNORED_PROPS = {
 	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
 	"AABB": ['end'],
 	"Transform": ['xform', 'xform_inv', 'IDENTITY', 'FLIP_X', 'FLIP_Y', 'FLIP_Z'],
-	"PoolByteArray": ['compress', 'decompress', 'get_string_from_ascii', 'get_string_from_utf8', 'sha256_string'],
+	"PoolByteArray": ['compress', 'decompress', 'get_string_from_ascii', 'get_string_from_utf8', 'sha256_string', 'hex_encode'],
 }
 
-EXTRAL_METHODS = {
+OPERATOR_METHODS = {
 	"Vector2": [
 		METHOD_OP_NEG,
 		METHOD_OP_EQUALS,
@@ -254,10 +276,13 @@ def parse_class(cls):
 	ret = {'name': class_name}
 	members = []
 	methods = []
+	operators = []
 	constants = []
 	ret['properties'] = members
 	ret['methods'] = methods
+	ret['operators'] = operators
 	ret['constants'] = constants
+	ret['constructor_argc'] = MAX_CONSTRUCTOR_ARGC[class_name]
 	
 	for m in (cls.find("members") if cls.find("members") is not None else []):
 		m_dict = dict(m.attrib)
@@ -299,10 +324,11 @@ def parse_class(cls):
 			'return': return_type,
 			'arguments': arguments,
 		})
-	# add extral methods
-	if class_name in EXTRAL_METHODS:
-		for em in EXTRAL_METHODS[class_name]:
-			methods.append(em)
+	# add operator methods
+	if class_name in OPERATOR_METHODS:
+		for em in OPERATOR_METHODS[class_name]:
+			operators.append(em)
+	
 	for c in (cls.find("constants") if cls.find("constants") is not None else []):
 		const_name = c.get("name")
 		if class_name in IGNORED_PROPS and const_name in IGNORED_PROPS[class_name]:

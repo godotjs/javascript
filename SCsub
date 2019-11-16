@@ -6,6 +6,16 @@ Import('env_modules')
 env_module = env_modules.Clone()
 
 def quickjs():
+	if platform.python_version() > '3':
+		import generate_builtin_api
+		generate_builtin_api.generate_api_json()
+		import quickjs.builtin_binding_generator
+		quickjs.builtin_binding_generator.generate_builtin_bindings()
+	else:
+		doc_path = os.path.abspath(os.path.join(Dir('.').srcnode().abspath, "../../doc/classes"))
+		os.system('python generate_builtin_api.py ' + doc_path)
+		os.system('python quickjs/builtin_binding_generator.py')
+	
 	version = open('quickjs/quickjs/VERSION', 'r').read().split('\n')[0]
 	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
 	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
