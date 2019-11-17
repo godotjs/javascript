@@ -44,7 +44,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	Vector<Variant> vargs;
 	vargs.resize(argc);
 	for (int i = 0; i < argc; ++i) {
-		vargs.write[i] = var_to_variant(ctx, *(argv + i));
+		vargs.write[i] = var_to_variant(ctx, argv[i]);
 		args[i] = (vargs.ptr() + i);
 	}
 
@@ -102,13 +102,19 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 				JS_SetPropertyUint32(ctx, js_arr, i, variant_to_var(ctx, arr[int(i)]));
 			}
 			return js_arr;
-		} break;
+		}
 		case Variant::DICTIONARY: {
 			Dictionary dict = p_var;
 			JSValue obj = JS_NewObject(ctx);
-			// TODO
+			Array keys = dict.keys();
+			for (int i = 0; i < keys.size(); i++) {
+				const Variant &key = keys[i];
+				const Variant &value = dict[key];
+				String key_str = keys[i];
+				JS_SetPropertyStr(ctx, obj, key_str.utf8().ptr(), variant_to_var(ctx, value));
+			}
 			return obj;
-		} break;
+		}
 		case Variant::NIL:
 			return JS_NULL;
 		default:
@@ -142,14 +148,42 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 				ERR_FAIL_NULL_V(bind, Variant());
 				ERR_FAIL_NULL_V(bind->godot_object, Variant());
 				return bind->get_value();
-			} else { // Plain Object
+			} else { // Plain Object as Dictionary
 				Dictionary dict;
-				// TODO
+				Set<String> keys;
+				get_own_property_names(ctx, p_val, &keys);
+				for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
+					JSValue v = JS_GetPropertyStr(ctx, p_val, E->get().utf8().ptr());
+					dict[E->get()] = var_to_variant(ctx, v);
+					JS_FreeValue(ctx, v);
+				}
 				return dict;
 			}
 		}
 		default:
 			return Variant();
+	}
+}
+
+bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValue p_val) {
+	switch (p_type) {
+		case Variant::NIL:
+			return JS_IsNull(p_val) || JS_IsUndefined(p_val);
+		case Variant::BOOL:
+			return JS_IsBool(p_val) || JS_IsNumber(p_val) || JS_IsInteger(p_val) || JS_IsNull(p_val) || JS_IsUndefined(p_val);
+		case Variant::INT:
+		case Variant::REAL:
+			return JS_IsNumber(p_val) || JS_IsInteger(p_val);
+		case Variant::STRING:
+			return JS_IsString(p_val);
+		case Variant::DICTIONARY:
+			return JS_IsObject(p_val);
+		case Variant::ARRAY:
+			return JS_IsArray(ctx, p_val);
+		default: {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, p_val);
+			return bind != NULL && bind->type == bind->type;
+		}
 	}
 }
 
@@ -766,7 +800,7 @@ int QuickJSBinder::get_js_array_length(JSContext *ctx, JSValue p_val) {
 	return length;
 }
 
-void QuickJSBinder::get_own_property_names(JSContext *ctx, JSValue p_object, Set<StringName> *r_list) {
+void QuickJSBinder::get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list) {
 	ERR_FAIL_COND(!JS_IsObject(p_object));
 	JSPropertyEnum *props = NULL;
 	uint32_t tab_atom_count;
@@ -776,6 +810,7 @@ void QuickJSBinder::get_own_property_names(JSContext *ctx, JSValue p_object, Set
 		String name = js_string_to_godot_string(ctx, key);
 		r_list->insert(name);
 		JS_FreeAtom(ctx, props[i].atom);
+		JS_FreeValue(ctx, key);
 	}
 	js_free_rt(JS_GetRuntime(ctx), props);
 }

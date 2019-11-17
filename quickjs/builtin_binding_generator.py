@@ -122,6 +122,9 @@ ${bindings}
 				return QuickJSBinder::variant_to_var(ctx, ptr->${name});'''
 		TemplateSetterItem = '''
 			case ${index}:
+#ifdef DEBUG_METHODS_ENABLED
+				ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[0]), (JS_ThrowTypeError(ctx, "${type_name} expected for ${class}.${name}")));
+#endif
 				ptr->${name} = QuickJSBinder::var_to_variant(ctx, argv[0]);
 				break;'''
 		TemplateItemBinding = '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
@@ -132,7 +135,13 @@ ${bindings}
 			p = cls['properties'][i]
 			name = p['name']
 			getters += apply_parttern(TemplateGetterItem, {'index': str(i), 'name': name})
-			setters += apply_parttern(TemplateSetterItem, {'index': str(i), 'name': name})
+			setters += apply_parttern(TemplateSetterItem, {
+				'index': str(i),
+				'name': name,
+				'type': VariantTypes[p['type']],
+				'type_name': p['type'],
+				'class': class_name,
+			})
 			bindings += apply_parttern(TemplateItemBinding, {'index': str(i), 'name': name, 'type': VariantTypes[class_name]})
 		return apply_parttern(Template, {
 			'class': class_name,
@@ -155,13 +164,25 @@ ${arg_declars}
 			return ${return};
 		},
 		${argc});'''
-		TemplateArgDeclear = '\n\t\t\tVariant arg${index} = QuickJSBinder::var_to_variant(ctx, argv[${index}]);'
+		TemplateArgDeclear = '''
+#ifdef DEBUG_METHODS_ENABLED
+			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[${index}]), (JS_ThrowTypeError(ctx, "${type_name} expected for argument ${index} of ${class}.${name}")));
+#endif
+			Variant arg${index} = QuickJSBinder::var_to_variant(ctx, argv[${index}]);
+'''
 		bindings = ''
 		for m in cls['methods']:
 			args = ''
 			arg_declars = ''
 			for i in range(len(m['arguments'])):
-				arg_declars += apply_parttern(TemplateArgDeclear, {'index': str(i)})
+				arg = m['arguments'][i]
+				arg_declars += apply_parttern(TemplateArgDeclear, {
+					'index': str(i),
+					'type': VariantTypes[arg['type']],
+					'type_name': arg['type'],
+					'class': class_name,
+					'name': m['name']
+				})
 				if i > 0: args += ', '
 				args += 'arg' + str(i)
 			CallTemplate = ('' if m['return'] == 'void' else 'Variant ret = ') + 'ptr->${native_method}(${args});'

@@ -104,7 +104,7 @@ private:
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
 
 	static int get_js_array_length(JSContext *ctx, JSValue p_val);
-	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<StringName> *r_list);
+	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
 	static JSValue godot_string_to_jsvalue(JSContext *ctx, const String &text);
@@ -116,6 +116,7 @@ private:
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
 	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
+	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValue p_val);
 
 public:
 	QuickJSBinder();
