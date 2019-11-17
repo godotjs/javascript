@@ -41,18 +41,18 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		argc = MIN(argc, mb->get_argument_count());
 	}
 
-	const Variant **args = memnew_arr(const Variant *, argc);
-	Vector<Variant> vargs;
-	vargs.resize(argc);
+	Variant *args = memnew_arr(Variant, argc);
+	const Variant **argsptr = memnew_arr(const Variant *, argc);
 	for (int i = 0; i < argc; ++i) {
-		vargs.write[i] = var_to_variant(ctx, argv[i]);
-		args[i] = (vargs.ptr() + i);
+		args[i] = var_to_variant(ctx, argv[i]);
+		argsptr[i] = &(args[i]);
 	}
 
 	Variant::CallError call_err;
-	Variant ret_val = mb->call(obj, args, argc, call_err);
+	Variant ret_val = mb->call(obj, argsptr, argc, call_err);
 	if (args != NULL) {
 		memdelete_arr(args);
+		memdelete_arr(argsptr);
 	}
 
 	CharString err_message;

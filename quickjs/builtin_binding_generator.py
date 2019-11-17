@@ -137,7 +137,7 @@ def generate_property_bindings(cls):
 		Template = '''
 	JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
 		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-		const ${class} *ptr = static_cast<${class} *>(bind->godot_builtin_object_ptr);
+		const ${class} *ptr = bind->get${class}();
 		switch (magic) {\
 ${getters}
 		}
@@ -146,7 +146,7 @@ ${getters}
 	
 	JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
 		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-		${class} *ptr = static_cast<${class} *>(bind->godot_builtin_object_ptr);\
+		${class} *ptr = bind->get${class}();\
 ${validation}
 		switch (magic) {\
 ${setters}
@@ -201,7 +201,7 @@ ${bindings}
 		"${name}",
 		[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-			${class} *ptr = static_cast<${class} *>(bind->godot_builtin_object_ptr);\
+			${class} *ptr = bind->get${class}();\
 ${arg_declars}
 			${call}
 			return ${return};
@@ -261,7 +261,7 @@ ${arg_declars}
 		}
 		TargetDeclearTemplate = '''
 			ECMAScriptGCHandler *bind1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-			${target_class} *target = static_cast<${target_class} *>(bind1->godot_builtin_object_ptr);\
+			${target_class} *target = bind1->get${target_class}();\
 '''
 		OperatorTemplate = '''
 	binder->get_builtin_binder().register_operator(
@@ -269,7 +269,7 @@ ${arg_declars}
 		${js_op},
 		[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
-			${class} *ptr = static_cast<${class} *>(bind->godot_builtin_object_ptr);\
+			${class} *ptr = bind->get${class}();\
 ${target_declear}
 			${call}
 			return ${return};
