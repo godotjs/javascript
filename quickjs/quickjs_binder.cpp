@@ -3,6 +3,7 @@
 #include "core/engine.h"
 #include "core/global_constants.h"
 #include "core/math/expression.h"
+#include "quickjs_binder.h"
 
 HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
@@ -85,7 +86,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			return JS_NewFloat64(ctx, (double)(p_var));
 		case Variant::NODE_PATH:
 		case Variant::STRING:
-			return godot_string_to_jsvalue(ctx, p_var);
+			return to_js_string(ctx, p_var);
 		case Variant::OBJECT: {
 			Object *obj = p_var;
 			ECMAScriptGCHandler *data = BINDING_DATA_FROM_GD(obj);
@@ -132,7 +133,7 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 		case JS_TAG_FLOAT64:
 			return Variant(real_t(JS_VALUE_GET_FLOAT64(p_val)));
 		case JS_TAG_STRING: {
-			return js_string_to_godot_string(ctx, p_val);
+			return js_to_string(ctx, p_val);
 		}
 		case JS_TAG_OBJECT: {
 			if (int length = get_js_array_length(ctx, p_val) >= 0) { // Array
@@ -165,15 +166,14 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 	}
 }
 
-bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValue p_val) {
+bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val) {
 	switch (p_type) {
 		case Variant::NIL:
 			return JS_IsNull(p_val) || JS_IsUndefined(p_val);
 		case Variant::BOOL:
-			return JS_IsBool(p_val) || JS_IsNumber(p_val) || JS_IsInteger(p_val) || JS_IsNull(p_val) || JS_IsUndefined(p_val);
 		case Variant::INT:
 		case Variant::REAL:
-			return JS_IsNumber(p_val) || JS_IsInteger(p_val);
+			return JS_IsNumber(p_val) || JS_IsInteger(p_val) || JS_IsBool(p_val) || JS_IsNull(p_val) || JS_IsUndefined(p_val);
 		case Variant::STRING:
 			return JS_IsString(p_val);
 		case Variant::DICTIONARY:
@@ -192,20 +192,6 @@ JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	CharString name_str = name.utf8();
 	JSAtom atom = JS_NewAtom(ctx, name_str.ptr());
 	return atom;
-}
-
-JSValue QuickJSBinder::godot_string_to_jsvalue(JSContext *ctx, const String &text) {
-	CharString utf8 = text.utf8();
-	return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
-}
-
-String QuickJSBinder::js_string_to_godot_string(JSContext *ctx, JSValue p_val) {
-	String ret;
-	size_t len = 0;
-	const char *utf8 = JS_ToCStringLen(ctx, &len, p_val);
-	ret.parse_utf8(utf8, len);
-	JS_FreeCString(ctx, utf8);
-	return ret;
 }
 
 JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
@@ -334,7 +320,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 		while (key) {
 
 			JSAtom atom = get_atom(ctx, *key);
-			JS_DefinePropertyValue(ctx, data.constructor, atom, godot_string_to_jsvalue(ctx, *key), PROP_DEF_DEFAULT);
+			JS_DefinePropertyValue(ctx, data.constructor, atom, to_js_string(ctx, *key), PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, atom);
 
 			key = p_cls->signal_map.next(key);
@@ -766,10 +752,10 @@ JSValue QuickJSBinder::godot_register_emca_class(JSContext *ctx, JSValueConst th
 
 		StringName class_name;
 		if (argc > 1 && JS_IsString(*(argv + 1))) {
-			class_name = js_string_to_godot_string(ctx, *(argv + 1));
+			class_name = js_to_string(ctx, *(argv + 1));
 		} else {
 			JSValue name = JS_GetProperty(ctx, *argv, JS_ATOM_name);
-			class_name = js_string_to_godot_string(ctx, name);
+			class_name = js_to_string(ctx, name);
 			JS_FreeValue(ctx, name);
 		}
 		ecma_class.class_name = class_name;
@@ -807,7 +793,7 @@ void QuickJSBinder::get_own_property_names(JSContext *ctx, JSValue p_object, Set
 	JS_GetOwnPropertyNames(ctx, &props, &tab_atom_count, p_object, JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK);
 	for (uint32_t i = 0; i < tab_atom_count; i++) {
 		JSValue key = JS_AtomToValue(ctx, props[i].atom);
-		String name = js_string_to_godot_string(ctx, key);
+		String name = js_to_string(ctx, key);
 		r_list->insert(name);
 		JS_FreeAtom(ctx, props[i].atom);
 		JS_FreeValue(ctx, key);
@@ -857,7 +843,7 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
 		JSValue exception = JS_GetException(ctx);
 		JSValue message = JS_GetPropertyStr(ctx, exception, "message");
-		print_error("Failed to call " + p_method + ": " + js_string_to_godot_string(ctx, message));
+		print_error("Failed to call " + p_method + ": " + js_to_string(ctx, message));
 		JS_FreeValue(ctx, message);
 		JS_FreeValue(ctx, exception);
 	}

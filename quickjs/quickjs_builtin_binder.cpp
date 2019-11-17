@@ -57,6 +57,7 @@ void QuickJSBuiltinBinder::register_builtin_class(Variant::Type p_type, const ch
 
 	cls.class_prototype = JS_NewObject(ctx);
 	JS_SetClassProto(ctx, cls.id, cls.class_prototype);
+	JS_SetPrototype(ctx, cls.class_prototype, QuickJSBinder::get_context_binder(ctx)->get_origin_class().prototype);
 
 	cls.class_function = JS_NewCFunction2(ctx, p_constructor, p_name, argc, JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, cls.class_function, cls.class_prototype);

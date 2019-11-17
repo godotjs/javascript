@@ -29,6 +29,54 @@ VariantTypes = {
 	"PoolColorArray": "Variant::POOL_COLOR_ARRAY",
 }
 
+JSToGodotTemplates = {
+	"number": 'QuickJSBinder::js_to_number(ctx, ${arg})',
+	"string": 'QuickJSBinder::js_to_string(ctx, ${arg})',
+	"boolean": 'QuickJSBinder::js_to_bool(ctx, ${arg})',
+	"Vector2": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getVector2()',
+	"Rect2": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getRect2()',
+	"Color": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getColor()',
+	"RID": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getRID()',
+	"AABB": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getAABB()',
+	"Plane": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPlane()',
+	"Quat": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getQuat()',
+	"Transform2D": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getTransform2D()',
+	"Vector3": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getVector3()',
+	"Basis": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getBasis()',
+	"Transform": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getTransform()',
+	"PoolByteArray": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolByteArray()',
+	"PoolIntArray": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolIntArray()',
+	"PoolRealArray": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolRealArray()',
+	"PoolStringArray": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolStringArray()',
+	"PoolVector2Array": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolVector2Array()',
+	"PoolVector3Array": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolVector3Array()',
+	"PoolColorArray": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolColorArray()',
+}
+
+GodotToJSTemplates = {
+	"number": 'QuickJSBinder::to_js_number(ctx, ${arg})',
+	"string": 'QuickJSBinder::to_js_string(ctx, ${arg})',
+	"boolean": 'QuickJSBinder::to_js_bool(ctx, ${arg})',
+	"Vector2": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Rect2": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Color": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"RID": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"AABB": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Plane": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Quat": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Transform2D": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Vector3": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Basis": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Transform": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolByteArray": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolIntArray": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolRealArray": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolStringArray": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolVector2Array": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolVector3Array": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"PoolColorArray": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+}
+
 def apply_parttern(template, values):
 	for key in values:
 		template = template.replace( '${' + key + '}', values[key])
@@ -48,31 +96,21 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 	ConstructorInitializers = {
 	"Vector2": '''
 	if (argc >= 2) {
-		double x, y;
-		JS_ToFloat64(ctx, &x, argv[0]);
-		JS_ToFloat64(ctx, &y, argv[1]);
-		ptr->x = x;
-		ptr->y = y;
+		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
 	}
 	''',
 	"Rect2": '''
 	if (argc >= 4) {
-		double x, y, w, h;
-		JS_ToFloat64(ctx, &x, argv[0]);
-		JS_ToFloat64(ctx, &y, argv[1]);
-		JS_ToFloat64(ctx, &w, argv[2]);
-		JS_ToFloat64(ctx, &h, argv[3]);
-		ptr->position.x = x;
-		ptr->position.y = y;
-		ptr->size.x = w;
-		ptr->size.y = h;
+		ptr->position.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		ptr->position.y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		ptr->size.x = QuickJSBinder::js_to_number(ctx, argv[2]);
+		ptr->size.y = QuickJSBinder::js_to_number(ctx, argv[3]);
 	} else if (argc >= 2) {
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		if (!param0 || !param1) return JS_EXCEPTION;
-		if (param0->type != Variant::VECTOR2 || param1->type != Variant::VECTOR2) return JS_EXCEPTION;
-		ptr->position = *(static_cast<Vector2 *>(param0->godot_builtin_object_ptr));
-		ptr->size = *(static_cast<Vector2 *>(param1->godot_builtin_object_ptr));
+		ptr->position = *param0->getVector2();
+		ptr->size = *param1->getVector2();
 	}
 	'''
 }
@@ -119,13 +157,13 @@ ${bindings}
 		'''
 		TemplateGetterItem = '''
 			case ${index}:
-				return QuickJSBinder::variant_to_var(ctx, ptr->${name});'''
+				return ${value};'''
 		TemplateSetterItem = '''
 			case ${index}:
 #ifdef DEBUG_METHODS_ENABLED
 				ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[0]), (JS_ThrowTypeError(ctx, "${type_name} expected for ${class}.${name}")));
 #endif
-				ptr->${name} = QuickJSBinder::var_to_variant(ctx, argv[0]);
+				ptr->${name} = ${value};
 				break;'''
 		TemplateItemBinding = '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
 		getters = ''
@@ -133,14 +171,19 @@ ${bindings}
 		bindings = ''
 		for i in range(len(cls['properties'])):
 			p = cls['properties'][i]
+			type = p['type']
 			name = p['name']
-			getters += apply_parttern(TemplateGetterItem, {'index': str(i), 'name': name})
+			getters += apply_parttern(TemplateGetterItem, {
+				'index': str(i),
+				'value': apply_parttern(GodotToJSTemplates[type], { 'arg': apply_parttern('ptr->${name}', {'name': name}) })
+			})
 			setters += apply_parttern(TemplateSetterItem, {
 				'index': str(i),
 				'name': name,
-				'type': VariantTypes[p['type']],
-				'type_name': p['type'],
+				'type': VariantTypes[type],
+				'type_name': type,
 				'class': class_name,
+				'value': apply_parttern(JSToGodotTemplates[type], {'arg': 'argv[0]'})
 			})
 			bindings += apply_parttern(TemplateItemBinding, {'index': str(i), 'name': name, 'type': VariantTypes[class_name]})
 		return apply_parttern(Template, {

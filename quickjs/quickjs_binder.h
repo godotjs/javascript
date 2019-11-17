@@ -107,8 +107,6 @@ private:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
-	static JSValue godot_string_to_jsvalue(JSContext *ctx, const String &text);
-	static String js_string_to_godot_string(JSContext *ctx, JSValue p_val);
 
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
@@ -116,7 +114,39 @@ private:
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
 	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
-	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValue p_val);
+	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
+
+	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
+		double_t v = 0;
+		JS_ToFloat64(ctx, &v, p_val);
+		return real_t(v);
+	}
+	_FORCE_INLINE_ static String js_to_string(JSContext *ctx, const JSValueConst &p_val) {
+		String ret;
+		size_t len = 0;
+		const char *utf8 = JS_ToCStringLen(ctx, &len, p_val);
+		ret.parse_utf8(utf8, len);
+		JS_FreeCString(ctx, utf8);
+		return ret;
+	}
+	_FORCE_INLINE_ static bool js_to_bool(JSContext *ctx, const JSValueConst &p_val) {
+		return JS_ToBool(ctx, p_val);
+	}
+	_FORCE_INLINE_ static int32_t js_to_int(JSContext *ctx, const JSValueConst &p_val) {
+		int32_t i;
+		JS_ToInt32(ctx, &i, p_val);
+		return i;
+	}
+	_FORCE_INLINE_ static JSValue to_js_number(JSContext *ctx, real_t p_val) {
+		return JS_NewFloat64(ctx, double(p_val));
+	}
+	_FORCE_INLINE_ static JSValue to_js_string(JSContext *ctx, const String &text) {
+		CharString utf8 = text.utf8();
+		return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
+	}
+	_FORCE_INLINE_ static JSValue to_js_bool(JSContext *ctx, bool p_val) {
+		return JS_NewBool(ctx, p_val);
+	}
 
 public:
 	QuickJSBinder();
@@ -125,6 +155,7 @@ public:
 	_FORCE_INLINE_ QuickJSBuiltinBinder &get_builtin_binder() { return builtin_binder; }
 
 	_FORCE_INLINE_ JSClassID get_origin_class_id() { return godot_origin_class.class_id; }
+	_FORCE_INLINE_ const ClassBindData get_origin_class() const { return godot_origin_class; }
 	_FORCE_INLINE_ static JSClassID get_origin_class_id(JSContext *ctx) { return get_context_binder(ctx)->godot_origin_class.class_id; }
 
 	virtual void initialize();
