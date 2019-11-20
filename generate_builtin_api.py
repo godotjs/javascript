@@ -225,10 +225,10 @@ METHOD_POOL_ARRAY_GET = {
 }
 
 IGNORED_PROPS = {
-	"Rect2": ['end'],
+	"Rect2": ['end', 'grow_margin'],
 	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8'],
 	"Transform2D": ['x', 'y', 'origin', 'xform', 'xform_inv'],
-	"Basis": ['x', 'y', 'z'],
+	"Basis": ['x', 'y', 'z', 'is_equal_approx'],
 	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
 	"AABB": ['end'],
 	"Transform": ['xform', 'xform_inv', 'IDENTITY', 'FLIP_X', 'FLIP_Y', 'FLIP_Z'],

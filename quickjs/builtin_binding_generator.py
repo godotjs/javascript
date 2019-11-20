@@ -51,6 +51,32 @@ JSToGodotTemplates = {
 	"PoolVector2Array": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolVector2Array()',
 	"PoolVector3Array": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolVector3Array()',
 	"PoolColorArray": '*(BINDING_DATA_FROM_JS(ctx, ${arg}))->getPoolColorArray()',
+	"Variant": '(BINDING_DATA_FROM_JS(ctx, ${arg}))->get_value()',
+}
+
+GodotTypeNames = {
+	"number": "real_t",
+	"string": "String",
+	"boolean": "bool",
+	"Vector2": "Vector2",
+	"Rect2": "Rect2",
+	"Color": "Color",
+	"RID": "RID",
+	"AABB": "AABB",
+	"Plane": "Plane",
+	"Quat": "Quat",
+	"Transform2D": "Transform2D",
+	"Vector3": "Vector3",
+	"Basis": "Basis",
+	"Transform": "Transform",
+	"PoolByteArray": "PoolByteArray",
+	"PoolIntArray": "PoolIntArray",
+	"PoolRealArray": "PoolRealArray",
+	"PoolStringArray": "PoolStringArray",
+	"PoolVector2Array": "PoolVector2Array",
+	"PoolVector3Array": "PoolVector3Array",
+	"PoolColorArray": "PoolColorArray",
+	"Variant": "Variant",
 }
 
 GodotToJSTemplates = {
@@ -75,6 +101,7 @@ GodotToJSTemplates = {
 	"PoolVector2Array": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
 	"PoolVector3Array": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
 	"PoolColorArray": 'QuickJSBuiltinBinder::new_object_from(ctx, ${arg})',
+	"Variant": 'QuickJSBinder::variant_to_var(ctx, ${arg})',
 }
 
 def apply_parttern(template, values):
@@ -445,24 +472,28 @@ ${arg_declars}
 #ifdef DEBUG_METHODS_ENABLED
 			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[${index}]), (JS_ThrowTypeError(ctx, "${type_name} expected for argument ${index} of ${class}.${name}")));
 #endif
-			Variant arg${index} = QuickJSBinder::var_to_variant(ctx, argv[${index}]);
+			const ${godot_type} &arg${index} = ${arg};
 '''
+		TemplateReturnValue = '${godot_type} ret = '
 		bindings = ''
 		for m in cls['methods']:
 			args = ''
 			arg_declars = ''
 			for i in range(len(m['arguments'])):
 				arg = m['arguments'][i]
+				arg_type = arg['type']
 				arg_declars += apply_parttern(TemplateArgDeclear, {
 					'index': str(i),
-					'type': VariantTypes[arg['type']],
-					'type_name': arg['type'],
+					'type': VariantTypes[arg_type],
+					'type_name': arg_type,
 					'class': class_name,
-					'name': m['name']
+					'name': m['name'],
+					'arg': apply_parttern(JSToGodotTemplates[arg_type], {'arg': 'argv[' + str(i) +']'}),
+					'godot_type': GodotTypeNames[arg_type],
 				})
 				if i > 0: args += ', '
 				args += 'arg' + str(i)
-			CallTemplate = ('' if m['return'] == 'void' else 'Variant ret = ') + 'ptr->${native_method}(${args});'
+			CallTemplate = ('' if m['return'] == 'void' else (apply_parttern(TemplateReturnValue, {"godot_type": GodotTypeNames[m['return']]}))) + 'ptr->${native_method}(${args});'
 			call = apply_parttern(CallTemplate, {'native_method': m['native_method'], 'args': args})
 			bindings += apply_parttern(TemplateMethod, {
 				"class": class_name,
@@ -471,7 +502,7 @@ ${arg_declars}
 				"call": call,
 				"arg_declars": arg_declars,
 				"argc": str(len(m['arguments'])),
-				"return": 'JS_UNDEFINED' if m['return'] == 'void' else 'QuickJSBinder::variant_to_var(ctx, ret)'
+				"return": 'JS_UNDEFINED' if m['return'] == 'void' else apply_parttern(GodotToJSTemplates[m['return']], {'arg': 'ret'}),
 			})
 		return bindings
 		
@@ -516,6 +547,7 @@ ${target_declear}
 		},
 		${argc});
 '''
+		TemplateReturnValue = '${godot_type} ret = '
 		bindings = ''
 		for o in cls['operators']:
 			op = o['native_method']
@@ -537,7 +569,7 @@ ${target_declear}
 						'operator': o['native_method'],
 					})
 					args = '*target'
-				CallTemplate = ('' if o['return'] == 'void' else 'Variant ret = ') + 'ptr->${op}(${args});'
+				CallTemplate = ('' if o['return'] == 'void' else apply_parttern(TemplateReturnValue, {'godot_type': GodotTypeNames[o['return']] })) + 'ptr->${op}(${args});'
 				call = apply_parttern(CallTemplate, {'op': op, 'args': args})
 				bindings += apply_parttern(OperatorTemplate, {
 					'type': VariantTypes[class_name],
@@ -545,7 +577,7 @@ ${target_declear}
 					'js_op': js_op,
 					'call': call,
 					'target_declear': target_declear,
-					"return": 'JS_UNDEFINED' if o['return'] == 'void' else 'QuickJSBinder::variant_to_var(ctx, ret)',
+					"return": 'JS_UNDEFINED' if o['return'] == 'void' else apply_parttern(GodotToJSTemplates[o['return']], {'arg': 'ret'}),
 					'argc': str(argc)
 				})
 		return bindings
