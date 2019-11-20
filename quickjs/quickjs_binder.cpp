@@ -136,7 +136,8 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 			return js_to_string(ctx, p_val);
 		}
 		case JS_TAG_OBJECT: {
-			if (int length = get_js_array_length(ctx, p_val) >= 0) { // Array
+			int length = get_js_array_length(ctx, p_val);
+			if (length != -1) { // Array
 				Array arr;
 				arr.resize(length);
 				for (uint32_t i = 0; i < length; i++) {

@@ -38,6 +38,54 @@ void QuickJSBuiltinBinder::builtin_finalizer(ECMAScriptGCHandler *p_bind) {
 		case Variant::RECT2:
 			memdelete(static_cast<Rect2 *>(p_bind->godot_builtin_object_ptr));
 			break;
+		case Variant::COLOR:
+			memdelete(static_cast<Color *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::VECTOR3:
+			memdelete(static_cast<Vector3 *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::BASIS:
+			memdelete(static_cast<Basis *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::QUAT:
+			memdelete(static_cast<Quat *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::PLANE:
+			memdelete(static_cast<Plane *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::TRANSFORM2D:
+			memdelete(static_cast<Transform2D *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::_RID:
+			memdelete(static_cast<RID *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::TRANSFORM:
+			memdelete(static_cast<Transform *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::AABB:
+			memdelete(static_cast<AABB *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_INT_ARRAY:
+			memdelete(static_cast<PoolIntArray *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_BYTE_ARRAY:
+			memdelete(static_cast<PoolByteArray *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_REAL_ARRAY:
+			memdelete(static_cast<PoolRealArray *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_COLOR_ARRAY:
+			memdelete(static_cast<PoolColorArray *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_STRING_ARRAY:
+			memdelete(static_cast<PoolStringArray *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_VECTOR2_ARRAY:
+			memdelete(static_cast<PoolVector2Array *>(p_bind->godot_builtin_object_ptr));
+			break;
+		case Variant::POOL_VECTOR3_ARRAY:
+			memdelete(static_cast<PoolVector3Array *>(p_bind->godot_builtin_object_ptr));
+			break;
 	}
 	memdelete(p_bind);
 }

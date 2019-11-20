@@ -137,6 +137,11 @@ public:
 		JS_ToInt32(ctx, &i, p_val);
 		return i;
 	}
+	_FORCE_INLINE_ static uint32_t js_to_uint(JSContext *ctx, const JSValueConst &p_val) {
+		uint32_t u;
+		JS_ToUint32(ctx, &u, p_val);
+		return u;
+	}
 	_FORCE_INLINE_ static JSValue to_js_number(JSContext *ctx, real_t p_val) {
 		return JS_NewFloat64(ctx, double(p_val));
 	}

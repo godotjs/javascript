@@ -151,6 +151,32 @@ METHOD_OP_MUL_ASSIGN = {
 	"return": "this"
 }
 
+METHOD_OP_DIV = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "multiply",
+	"native_method": "operator/",
+	"return": "${class_name}"
+}
+
+METHOD_OP_DIV_ASSIGN = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "${class_name}"
+		}
+	],
+	"name": "multiply_assign",
+	"native_method": "operator/=",
+	"return": "this"
+}
+
 METHOD_OP_NEG = {
 	"arguments": [],
 	"name": "negate",
@@ -185,6 +211,19 @@ METHOD_OP_LESS_EQAUL = {
 	"return": "boolean"
 }
 
+METHOD_POOL_ARRAY_GET = {
+	"arguments": [
+		{
+			"default_value": None,
+			"has_default_value": False,
+			"type": "number"
+		}
+	],
+	"name": "get",
+	"native_method": "operator[]",
+	"return": "Variant"
+}
+
 IGNORED_PROPS = {
 	"Rect2": ['end'],
 	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8'],
@@ -206,6 +245,10 @@ OPERATOR_METHODS = {
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
+		METHOD_OP_MUL,
+		METHOD_OP_MUL_ASSIGN,
+		METHOD_OP_DIV,
+		METHOD_OP_DIV_ASSIGN,
 	],
 	"Vector3": [
 		METHOD_OP_NEG,
@@ -216,6 +259,10 @@ OPERATOR_METHODS = {
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
+		METHOD_OP_MUL,
+		METHOD_OP_MUL_ASSIGN,
+		METHOD_OP_DIV,
+		METHOD_OP_DIV_ASSIGN,
 	],
 	"Basis": [
 		METHOD_OP_EQUALS,
@@ -223,6 +270,8 @@ OPERATOR_METHODS = {
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
+		METHOD_OP_MUL,
+		METHOD_OP_MUL_ASSIGN,
 	],
 	"Quat": [
 		METHOD_OP_NEG,
@@ -232,7 +281,9 @@ OPERATOR_METHODS = {
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
 	],
-	"Rect2": [METHOD_OP_EQUALS],
+	"Rect2": [
+		METHOD_OP_EQUALS
+	],
 	"Transform2D": [
 		METHOD_OP_EQUALS,
 		METHOD_OP_MUL,
@@ -246,6 +297,10 @@ OPERATOR_METHODS = {
 		METHOD_OP_ADD_ASSIGN,
 		METHOD_OP_SUB,
 		METHOD_OP_SUB_ASSIGN,
+		METHOD_OP_MUL,
+		METHOD_OP_MUL_ASSIGN,
+		METHOD_OP_DIV,
+		METHOD_OP_DIV_ASSIGN,
 	],
 	"RID": [
 		METHOD_OP_EQUALS,
@@ -253,8 +308,8 @@ OPERATOR_METHODS = {
 		METHOD_OP_LESS_EQAUL,
 	],
 	"Plane": [
-		METHOD_OP_EQUALS,
 		METHOD_OP_NEG,
+		METHOD_OP_EQUALS,
 	],
 	"AABB": [
 		METHOD_OP_EQUALS,
@@ -324,6 +379,8 @@ def parse_class(cls):
 			'return': return_type,
 			'arguments': arguments,
 		})
+	if class_name.startswith("Pool") and class_name.endswith("Array"):
+		methods.append(METHOD_POOL_ARRAY_GET)
 	# add operator methods
 	if class_name in OPERATOR_METHODS:
 		for em in OPERATOR_METHODS[class_name]:

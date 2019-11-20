@@ -93,27 +93,261 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 	return QuickJSBuiltinBinder::bind_builtin_object(ctx, ${type}, ptr);
 }
 '''
+	TemplatePoolArrays = '''
+	if (argc == 1) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!JS_IsArray(ctx, argv[0]), (JS_ThrowTypeError(ctx, "Array expected for argument 0 of Pool*Array(from)")));
+#endif
+		Variant arr = QuickJSBinder::var_to_variant(ctx, argv[0]);
+		ptr->operator=(arr);
+	}
+	'''
 	ConstructorInitializers = {
-	"Vector2": '''
-	if (argc >= 2) {
+		"Vector2": '''
+	if (argc == 2) {
 		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
 		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::VECTOR2) {
+				ptr->operator=(*bind->getVector2());
+			}
+		} else {
+			ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
+			ptr->y = ptr->x;
+		}
 	}
-	''',
-	"Rect2": '''
-	if (argc >= 4) {
+''',
+		"Vector3": '''
+	if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::VECTOR3)
+				ptr->operator=(*bind->getVector3());
+		} else {
+			ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
+			ptr->z = ptr->y = ptr->x;
+		}
+	} else if (argc == 3) {
+		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		ptr->z = QuickJSBinder::js_to_number(ctx, argv[2]);
+	}
+''',
+		"Color": '''
+	if (argc >= 3) {
+		ptr->r = QuickJSBinder::js_to_number(ctx, argv[0]);
+		ptr->g = QuickJSBinder::js_to_number(ctx, argv[1]);
+		ptr->b = QuickJSBinder::js_to_number(ctx, argv[2]);
+		ptr->a = (argc >= 4) ? QuickJSBinder::js_to_number(ctx, argv[3]) : 1.0f;
+	} else if (argc == 1) {
+		if (JS_IsInteger(argv[0])) {
+			ptr->operator=(Color::hex(QuickJSBinder::js_to_uint(ctx, argv[0])));
+		} else if (JS_IsString(argv[0])) {
+			ptr->operator=(Color::html(QuickJSBinder::js_to_string(ctx, argv[0])));
+		} else if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::COLOR) {
+				ptr->operator=(*bind->getColor());
+			}
+		}
+	}
+''',
+		"Rect2": '''
+	if (argc == 4) {
 		ptr->position.x = QuickJSBinder::js_to_number(ctx, argv[0]);
 		ptr->position.y = QuickJSBinder::js_to_number(ctx, argv[1]);
 		ptr->size.x = QuickJSBinder::js_to_number(ctx, argv[2]);
 		ptr->size.y = QuickJSBinder::js_to_number(ctx, argv[3]);
-	} else if (argc >= 2) {
+	} else if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 0 of Rect2(position, size)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Rect2(position, size)")));
+#endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		ptr->position = *param0->getVector2();
 		ptr->size = *param1->getVector2();
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::RECT2)
+				ptr->operator=(*bind->getRect2());
+		}
 	}
-	'''
-}
+''',
+		"AABB": '''
+	if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of AABB(position, size)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of AABB(position, size)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ptr->position = *param0->getVector3();
+		ptr->size = *param1->getVector3();
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::AABB)
+				ptr->operator=(*bind->getAABB());
+		}
+	}
+''',
+		"Plane": '''
+	if (argc == 4) {
+		ptr->normal.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		ptr->normal.y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		ptr->normal.z = QuickJSBinder::js_to_number(ctx, argv[2]);
+		ptr->d = QuickJSBinder::js_to_number(ctx, argv[3]);
+	} else if (argc == 3) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Plane(v1, v2, v3)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Plane(v1, v2, v3)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[2]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 2 of Plane(v1, v2, v3)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		ptr->operator=(Plane(*param0->getVector3(), *param1->getVector3(), *param2->getVector3()));
+	} else if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Plane(normal, d)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ptr->operator=(Plane(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1])));
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::PLANE)
+				ptr->operator=(*bind->getPlane());
+		}
+	}
+''',
+		"Quat": '''
+	if (argc == 4) {
+		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		ptr->z = QuickJSBinder::js_to_number(ctx, argv[2]);
+		ptr->w = QuickJSBinder::js_to_number(ctx, argv[3]);
+	} else if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Quat(axis, angle)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ptr->operator=(Quat(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1])));
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::QUAT) {
+				ptr->operator=(*bind->getQuat());
+			} else if (bind->type == Variant::BASIS) {
+				ptr->operator=(*bind->getBasis());
+			} else if (bind->type == Variant::VECTOR3) {
+				ptr->set_euler(*bind->getVector3());
+			}
+		}
+	}
+''',
+		"Transform2D": '''
+	if (argc == 3) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 0 of Transform2D(x_axis, y_axis, origin)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Transform2D(x_axis, y_axis, origin)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[2]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 2 of Transform2D(x_axis, y_axis, origin)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		ptr->elements[0].operator=(*param0->getVector2());
+		ptr->elements[1].operator=(*param1->getVector2());
+		ptr->elements[2].operator=(*param2->getVector2());
+	} else if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Transform2D(rotation, position)")));
+#endif
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ptr->set_origin(*param1->getVector2());
+		ptr->set_rotation(QuickJSBinder::js_to_number(ctx, argv[0]));
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::TRANSFORM2D)
+				ptr->operator=(*bind->getTransform2D());
+			else if (Variant::can_convert(bind->type, Variant::TRANSFORM2D)) {
+				ptr->operator=(bind->get_value());
+			}
+		}
+	}
+''',
+		"Basis": '''
+	if (argc == 3) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Basis(x_axis, y_axis, z_axis)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Basis(x_axis, y_axis, z_axis)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[2]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 2 of Basis(x_axis, y_axis, z_axis)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		ptr->elements[0].operator=(*param0->getVector3());
+		ptr->elements[1].operator=(*param1->getVector3());
+		ptr->elements[2].operator=(*param2->getVector3());
+	} else if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Basis(axis, phi)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ptr->set_axis_angle(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::VECTOR3) {
+				ptr->set_euler(*bind->getVector3());
+			} else if (bind->type == Variant::QUAT) {
+				ptr->set_quat(*bind->getQuat());
+			} else if (bind->type == Variant::BASIS) {
+				ptr->operator=(*bind->getBasis());
+			}
+		}
+	}
+''',
+		"Transform": '''
+	if (argc == 4) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Transform(x_axis, y_axis, z_axis, origin)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Transform(x_axis, y_axis, z_axis, origin)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[2]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 2 of Transform(x_axis, y_axis, z_axis, origin)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[3]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 3 of Transform(x_axis, y_axis, z_axis, origin)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		ECMAScriptGCHandler *param3 = BINDING_DATA_FROM_JS(ctx, argv[3]);
+
+		ptr->basis.elements[0].operator=(*param0->getVector3());
+		ptr->basis.elements[1].operator=(*param1->getVector3());
+		ptr->basis.elements[2].operator=(*param2->getVector3());
+		ptr->origin.operator=(*param3->getVector3());
+	} else if (argc == 2) {
+#ifdef DEBUG_METHODS_ENABLED
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::BASIS, argv[0]), (JS_ThrowTypeError(ctx, "Basis expected for argument 0 of Transform(basis, origin)")));
+		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Transform(basis, origin)")));
+#endif
+		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		ptr->basis.operator=(*param0->getBasis());
+		ptr->origin.operator=(*param1->getVector3());
+	} else if (argc == 1) {
+		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+			if (bind->type == Variant::TRANSFORM) {
+				ptr->operator=(*bind->getTransform());
+			} else if (Variant::can_convert(bind->type, Variant::TRANSFORM)) {
+				ptr->operator=(bind->get_value());
+			}
+		}
+	}
+''',
+		"PoolByteArray": TemplatePoolArrays,
+		"PoolIntArray": TemplatePoolArrays,
+		"PoolRealArray": TemplatePoolArrays,
+		"PoolStringArray": TemplatePoolArrays,
+		"PoolVector2Array": TemplatePoolArrays,
+		"PoolVector3Array": TemplatePoolArrays,
+		"PoolColorArray": TemplatePoolArrays,
+	}
 	class_name = cls['name']
 	constructor_name = apply_parttern(TemplateConstructorName, {"class": class_name})
 	constructor_declare = apply_parttern(TemplateConstructorDeclare, {"class": class_name})
@@ -258,8 +492,14 @@ ${arg_declars}
 			'operator-': 'QuickJSBinder::JS_ATOM_Symbol_operatorSub',
 			'operator*': 'QuickJSBinder::JS_ATOM_Symbol_operatorMul',
 			'operator/': 'QuickJSBinder::JS_ATOM_Symbol_operatorDiv',
+			'operator==': 'QuickJSBinder::JS_ATOM_Symbol_operatorCmpEQ',
+			'operator<': 'QuickJSBinder::JS_ATOM_Symbol_operatorCmpLT',
+			'operator<=': 'QuickJSBinder::JS_ATOM_Symbol_operatorCmpLE',
 		}
 		TargetDeclearTemplate = '''
+#ifdef DEBUG_METHODS_ENABLED
+			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[1]), (JS_ThrowTypeError(ctx, "${target_class} expected for ${class}.${operator}")));
+#endif
 			ECMAScriptGCHandler *bind1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 			${target_class} *target = bind1->get${target_class}();\
 '''
@@ -289,7 +529,13 @@ ${target_declear}
 				args = ''
 				target_declear = ''
 				if argc > 1:
-					target_declear = apply_parttern(TargetDeclearTemplate, {'target_class': o['arguments'][0]['type']})
+					arg_class = o['arguments'][0]['type']
+					target_declear = apply_parttern(TargetDeclearTemplate, {
+						'target_class': arg_class,
+						'type': VariantTypes[arg_class],
+						'class': class_name,
+						'operator': o['native_method'],
+					})
 					args = '*target'
 				CallTemplate = ('' if o['return'] == 'void' else 'Variant ret = ') + 'ptr->${op}(${args});'
 				call = apply_parttern(CallTemplate, {'op': op, 'args': args})
@@ -307,10 +553,10 @@ ${target_declear}
 	TemplateBindDefine = '''
 static void bind_${class}_properties(JSContext *ctx) {
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-${constants}
 ${members}
-${methods}
 ${operators}
+${constants}
+${methods}
 }
 '''
 	class_name = cls['name']
