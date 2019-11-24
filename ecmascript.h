@@ -2,9 +2,9 @@
 #define ECMASCRIPT_H
 
 #include "core/io/resource_loader.h"
+#include "core/io/resource_saver.h"
 #include "core/script_language.h"
 #include "ecmascript_binder.h"
-#include "ecmascript_library.h"
 
 class ECMAScript : public Script {
 	GDCLASS(ECMAScript, Script);
@@ -14,9 +14,10 @@ private:
 	friend class QuickJSBinder;
 
 	Set<Object *> instances;
-
+	const ECMAClassInfo *ecma_class;
 	StringName class_name;
-	Ref<ECMAScriptLibrary> library;
+	String code;
+	String script_path;
 
 #ifdef TOOLS_ENABLED
 	Set<PlaceHolderScriptInstance *> placeholders;
@@ -24,27 +25,24 @@ private:
 #endif
 
 protected:
-	/* TODO */ virtual bool editor_can_reload_from_file() {
-		return false;
-	} // this is handled by editor better
-	/* TODO */ void _notification(int p_what) {}
-	/* TODO */ static void _bind_methods();
+	void _notification(int p_what) {}
+	static void _bind_methods();
 
 public:
 	virtual bool can_instance() const;
 
-	/* TODO */ virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
+	virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
+	virtual StringName get_instance_base_type() const;
 
-	virtual StringName get_instance_base_type() const; // this may not work in all scripts, will return empty if so
 	virtual ScriptInstance *instance_create(Object *p_this);
-	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this);
 	virtual bool instance_has(const Object *p_this) const;
 
+	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this);
 	virtual bool is_placeholder_fallback_enabled() const;
 
-	/* TODO */ virtual bool has_source_code() const { return false; }
-	/* TODO */ virtual String get_source_code() const { return ""; }
-	/* TODO */ virtual void set_source_code(const String &p_code) {}
+	virtual bool has_source_code() const { return true; }
+	virtual String get_source_code() const { return code; }
+	virtual void set_source_code(const String &p_code) { code = p_code; }
 	virtual Error reload(bool p_keep_state = false);
 
 	virtual bool has_method(const StringName &p_method) const;
@@ -53,32 +51,28 @@ public:
 	virtual bool is_tool() const;
 	virtual bool is_valid() const;
 
-	virtual ScriptLanguage *get_language() const;
+	virtual void get_script_method_list(List<MethodInfo> *p_list) const;
+	virtual void get_script_property_list(List<PropertyInfo> *p_list) const;
+	virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const;
 
 	virtual bool has_script_signal(const StringName &p_signal) const;
 	virtual void get_script_signal_list(List<MethodInfo> *r_signals) const;
 
-	virtual bool get_property_default_value(const StringName &p_property, Variant &r_value) const;
-
 	virtual void update_exports(); //editor tool
-	virtual void get_script_method_list(List<MethodInfo> *p_list) const;
-	virtual void get_script_property_list(List<PropertyInfo> *p_list) const;
 
 	/* TODO */ virtual int get_member_line(const StringName &p_member) const { return -1; }
-
 	/* TODO */ virtual void get_constants(Map<StringName, Variant> *p_constants) {}
 	/* TODO */ virtual void get_members(Set<StringName> *p_constants) {}
 
-	_FORCE_INLINE_ void set_class_name(const StringName &p_class_name) { class_name = p_class_name; }
-	_FORCE_INLINE_ StringName get_class_name() const { return class_name; }
+	virtual ScriptLanguage *get_language() const;
 
-	_FORCE_INLINE_ void set_library(const Ref<ECMAScriptLibrary> &p_library) { library = p_library; }
-	_FORCE_INLINE_ Ref<ECMAScriptLibrary> get_library() const { return library; }
+	_FORCE_INLINE_ const ECMAClassInfo *get_ecma_class() const { return this->ecma_class; }
 
-	ECMAClassInfo *get_ecma_class() const;
+	_FORCE_INLINE_ String get_script_path() const { return script_path; }
+	_FORCE_INLINE_ void set_script_path(const String &p_path) { script_path = p_path; }
 
 	ECMAScript();
-	~ECMAScript();
+	virtual ~ECMAScript();
 };
 
 class ResourceFormatLoaderECMAScript : public ResourceFormatLoader {

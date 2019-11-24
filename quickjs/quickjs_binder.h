@@ -62,6 +62,8 @@ private:
 		if (ptr) memfree(ptr);
 	}
 	_FORCE_INLINE_ static void *js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
+	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
+	static JSModuleDef *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename);
 
 	struct ClassBindData {
 
@@ -77,6 +79,7 @@ private:
 	};
 
 	ClassBindData godot_origin_class;
+	const ClassBindData *godot_object_class;
 
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
@@ -84,6 +87,7 @@ private:
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
 
+	String parsing_script_file;
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_origin();
 	void add_godot_classes();
@@ -100,6 +104,8 @@ private:
 	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
 	static JSValue godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	void free_ecmas_class(const ECMAClassInfo &p_class);
+
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
 
@@ -107,9 +113,12 @@ private:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
+	static String get_exception_message(JSContext *ctx, const JSValueConst &p_val);
 
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
+
+	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
 
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
@@ -172,14 +181,15 @@ public:
 	virtual void godot_refcount_incremented(Reference *p_object);
 	virtual bool godot_refcount_decremented(Reference *p_object);
 
-	virtual Error eval_string(const String &p_source);
-	virtual Error safe_eval_text(const String &p_source, String &r_error);
+	virtual Error eval_string(const String &p_source, const String &p_path);
+	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error);
 
-	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object);
+	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object);
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
+	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, Error &r_error);
 };
 
 #endif // QUICKJS_BINDING_HELPER_H

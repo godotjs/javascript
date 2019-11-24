@@ -17,8 +17,8 @@ bool ECMAScriptInstance::has_method(const StringName &p_method) const {
 
 bool ECMAScriptInstance::set(const StringName &p_name, const Variant &p_value) {
 	if (!script.is_null()) {
-		if (ECMAClassInfo *cls = script->get_ecma_class()) {
-			if (ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
+		if (const ECMAClassInfo *cls = script->get_ecma_class()) {
+			if (const ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
 				return ECMAScriptLanguage::get_singleton()->binding->set_instance_property(this->ecma_object, p_name, p_value);
 			}
 		}
@@ -28,8 +28,8 @@ bool ECMAScriptInstance::set(const StringName &p_name, const Variant &p_value) {
 
 bool ECMAScriptInstance::get(const StringName &p_name, Variant &r_ret) const {
 	if (!script.is_null()) {
-		if (ECMAClassInfo *cls = script->get_ecma_class()) {
-			if (ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
+		if (const ECMAClassInfo *cls = script->get_ecma_class()) {
+			if (const ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
 				return ECMAScriptLanguage::get_singleton()->binding->get_instance_property(this->ecma_object, p_name, r_ret);
 			}
 		}
@@ -45,8 +45,8 @@ void ECMAScriptInstance::get_property_list(List<PropertyInfo> *p_properties) con
 Variant::Type ECMAScriptInstance::get_property_type(const StringName &p_name, bool *r_is_valid) const {
 	*r_is_valid = false;
 	if (!script.is_null()) {
-		if (ECMAClassInfo *cls = script->get_ecma_class()) {
-			if (ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
+		if (const ECMAClassInfo *cls = script->get_ecma_class()) {
+			if (const ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
 				*r_is_valid = true;
 				return pi->type;
 			}

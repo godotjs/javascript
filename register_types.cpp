@@ -31,7 +31,6 @@
 #include "register_types.h"
 #include "ecmascript.h"
 #include "ecmascript_language.h"
-#include "ecmascript_library.h"
 
 #ifdef TOOLS_ENABLED
 #include "editor/editor_node.h"
@@ -39,8 +38,6 @@
 void editor_init_callback();
 #endif
 
-Ref<ECMAScriptLibraryResourceLoader> resource_loader_ecmalib;
-Ref<ECMAScriptLibraryResourceSaver> resource_saver_ecmalib;
 Ref<ResourceFormatLoaderECMAScript> resource_loader_ecmascript;
 Ref<ResourceFormatSaverECMAScript> resource_saver_ecmascript;
 
@@ -48,13 +45,7 @@ static ECMAScriptLanguage *script_language_es = NULL;
 
 void register_ECMAScript_types() {
 
-	ClassDB::register_class<ECMAScriptLibrary>();
 	ClassDB::register_class<ECMAScript>();
-
-	resource_loader_ecmalib.instance();
-	resource_saver_ecmalib.instance();
-	ResourceLoader::add_resource_format_loader(resource_loader_ecmalib, true);
-	ResourceSaver::add_resource_format_saver(resource_saver_ecmalib, true);
 
 	resource_loader_ecmascript.instance();
 	resource_saver_ecmascript.instance();
@@ -73,11 +64,6 @@ void register_ECMAScript_types() {
 void unregister_ECMAScript_types() {
 	ScriptServer::unregister_language(script_language_es);
 	memdelete(script_language_es);
-
-	ResourceLoader::remove_resource_format_loader(resource_loader_ecmalib);
-	ResourceSaver::remove_resource_format_saver(resource_saver_ecmalib);
-	resource_loader_ecmalib.unref();
-	resource_saver_ecmalib.unref();
 
 	ResourceLoader::remove_resource_format_loader(resource_loader_ecmascript);
 	ResourceSaver::remove_resource_format_saver(resource_saver_ecmascript);

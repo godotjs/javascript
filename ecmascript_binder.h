@@ -22,10 +22,9 @@ struct ECMAClassInfo {
 };
 
 class ECMAScriptBinder {
-	friend class ECMAScript;
-
 protected:
-	HashMap<StringName, ECMAClassInfo> ecma_classes;
+	// Path ==> ECMA Class
+	HashMap<String, ECMAClassInfo> ecma_classes;
 
 public:
 	virtual void clear_classes() { ecma_classes.clear(); }
@@ -39,14 +38,15 @@ public:
 	virtual void godot_refcount_incremented(Reference *p_object) = 0;
 	virtual bool godot_refcount_decremented(Reference *p_object) = 0;
 
-	virtual Error eval_string(const String &p_source) = 0;
-	virtual Error safe_eval_text(const String &p_source, String &r_error) = 0;
+	virtual Error eval_string(const String &p_source, const String &p_path) = 0;
+	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error) = 0;
 
-	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const StringName &ecma_class_name, Object *p_object) = 0;
+	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object) = 0;
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) = 0;
+	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, Error &r_error) = 0;
 };
 
 #endif

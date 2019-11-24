@@ -2,8 +2,8 @@
 #define ECMASCRIPT_LANGUAGE_H
 
 #include "core/script_language.h"
-#include "quickjs/quickjs_binder.h"
 #include "ecmascript.h"
+#include "quickjs/quickjs_binder.h"
 
 /*********************** ECMAScriptLanguage ***********************/
 class ECMAScriptBinder;
@@ -20,19 +20,11 @@ private:
 	ECMAScriptBinder *binding;
 	int language_index;
 
-	HashMap<StringName, Ref<ECMAScript> > script_classes;
-
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
 	_FORCE_INLINE_ static ECMAScriptBinder *get_binder() { return singleton->binding; }
 
 	_FORCE_INLINE_ virtual String get_name() const { return "ECMAScript"; }
-
-	Ref<ECMAScript> get_class_script(const StringName &p_class_name) const { return script_classes.get(p_class_name); }
-	const Ref<ECMAScript> *get_class_script_ptr(const StringName &p_class_name) const { return script_classes.getptr(p_class_name); }
-	Ref<ECMAScript> *get_class_script_ptr(const StringName &p_class_name) { return script_classes.getptr(p_class_name); }
-	void get_registered_classes(List<Ref<ECMAScript> > &r_list) const;
-
 	_FORCE_INLINE_ int get_language_index() const { return language_index; }
 	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
 
@@ -48,11 +40,8 @@ public:
 
 	virtual void init();
 	virtual void finish();
-	void clear_script_classes() { script_classes.clear(); }
 
 	virtual Error execute_file(const String &p_path);
-	Error eval_text(const String &p_source);
-	Error safe_eval_text(const String &p_source, String &r_err);
 
 	virtual void get_reserved_words(List<String> *p_words) const;
 	virtual void get_comment_delimiters(List<String> *p_delimiters) const;

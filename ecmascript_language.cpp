@@ -4,22 +4,10 @@
 
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
-void ECMAScriptLanguage::get_registered_classes(List<Ref<ECMAScript> > &r_list) const {
-	for (const StringName *name = script_classes.next(NULL); name; name = script_classes.next(name)) {
-		r_list.push_back(script_classes.get(*name));
-	}
-}
-
 void ECMAScriptLanguage::init() {
 	ERR_FAIL_NULL(binding);
 
 	binding->initialize();
-
-    Error err;
-    String script = FileAccess::get_file_as_string("test.js", &err);
-    if(err == OK) {
-        binding->eval_string(script);
-    }
 }
 
 void ECMAScriptLanguage::finish() {
@@ -28,29 +16,12 @@ void ECMAScriptLanguage::finish() {
 
 Error ECMAScriptLanguage::execute_file(const String &p_path) {
 	ERR_FAIL_NULL_V(binding, ERR_BUG);
-
-	FileAccessRef f = FileAccess::open(p_path, FileAccess::READ);
-	ERR_FAIL_COND_V(!f, ERR_INVALID_PARAMETER);
-
-	Vector<uint8_t> buff;
-	buff.resize(f->get_len() + 1);
-	f->get_buffer(buff.ptrw(), f->get_len());
-	buff.ptrw()[buff.size() - 1] = 0;
-
-	String source;
-	source.parse_utf8((const char *)buff.ptr(), buff.size());
-
-	return binding->eval_string(source);
-}
-
-Error ECMAScriptLanguage::eval_text(const String &p_source) {
-	ERR_FAIL_NULL_V(binding, ERR_BUG);
-	return binding->eval_string(p_source);
-}
-
-Error ECMAScriptLanguage::safe_eval_text(const String &p_source, String &err) {
-	ERR_FAIL_NULL_V(binding, ERR_BUG);
-	return binding->safe_eval_text(p_source, err);
+	Error err;
+	String code = FileAccess::get_file_as_string(p_path, &err);
+	if (err == OK) {
+		err = binding->eval_string(code, p_path);
+	}
+	return err;
 }
 
 void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {

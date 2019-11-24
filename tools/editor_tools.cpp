@@ -1,8 +1,7 @@
 #include "editor_tools.h"
 #include "../ecmascript_language.h"
-#include "../ecmascript_library.h"
-#include "editor/filesystem_dock.h"
 #include "core/math/expression.h"
+#include "editor/filesystem_dock.h"
 
 struct ECMAScriptAlphCompare {
 	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
@@ -45,7 +44,7 @@ Variant ECMAClassBrower::get_drag_data_fw(const Point2 &p_point, Control *p_from
 			Vector<String> paths;
 			String class_dir = GLOBAL_DEF("ecmascript/class_path", "res://bin");
 			class_dir.simplify_path();
-			String path = class_dir  + "/" + script->get_class_name() + ".es";
+			String path = class_dir + "/" + script->get_class_name() + ".es";
 			if (!res_dir->dir_exists(class_dir)) {
 				res_dir->make_dir_recursive(class_dir);
 			}
@@ -65,9 +64,6 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	ecma_class_browser = memnew(ECMAClassBrower);
 	bottom_button = p_node->add_bottom_panel_item("ECMAScript", ecma_class_browser);
 	bottom_button->connect("toggled", this, "_on_bottom_panel_toggled");
-
-	eslib_inspector_plugin.instance();
-	EditorInspector::add_inspector_plugin(eslib_inspector_plugin);
 
 	PopupMenu *menu = memnew(PopupMenu);
 	add_tool_submenu_item(TTR("ECMAScript"), menu);
@@ -96,53 +92,52 @@ void ECMAClassBrower::_bind_methods() {
 
 void ECMAClassBrower::update_tree() {
 
-	String filter = filter_input->get_text();
-	class_tree->clear();
+	//	String filter = filter_input->get_text();
+	//	class_tree->clear();
 
-	List<Ref<ECMAScript> > classes;
-	ECMAScriptLanguage::get_singleton()->get_registered_classes(classes);
-	classes.sort_custom<ECMAScriptAlphCompare>();
+	//	List<Ref<ECMAScript> > classes;
+	//	ECMAScriptLanguage::get_singleton()->get_registered_classes(classes);
+	//	classes.sort_custom<ECMAScriptAlphCompare>();
 
-	Ref<Texture> script_icon = get_icon("Script", "EditorIcons");
+	//	Ref<Texture> script_icon = get_icon("Script", "EditorIcons");
 
-	TreeItem *root = class_tree->create_item();
-	for (List<Ref<ECMAScript> >::Element *E = classes.front(); E; E = E->next()) {
+	//	TreeItem *root = class_tree->create_item();
+	//	for (List<Ref<ECMAScript> >::Element *E = classes.front(); E; E = E->next()) {
 
-		const Ref<ECMAScript> &script = E->get();
-		if (!script->is_valid()) {
-			continue;
-		}
+	//		const Ref<ECMAScript> &script = E->get();
+	//		if (!script->is_valid()) {
+	//			continue;
+	//		}
 
-		String lib_path;
-		const Ref<ECMAScriptLibrary> &lib = script->get_library();
-		if (lib.is_valid()) {
-			lib_path = lib->get_path();
-		}
+	//		String lib_path;
+	//		const Ref<ECMAScriptLibrary> &lib = script->get_library();
+	//		if (lib.is_valid()) {
+	//			lib_path = lib->get_path();
+	//		}
 
-		String name = script->get_class_name();
-		String native_class_name = script->get_ecma_class()->native_class->name;
-		if (filter.empty() || filter.is_subsequence_ofi(name) || filter.is_subsequence_ofi(native_class_name)) {
-			TreeItem *item = class_tree->create_item(root);
-			item->set_metadata(0, script);
-			item->set_metadata(1, script);
-			item->set_metadata(2, script);
-			item->set_text(0, name);
-			item->set_text(1, native_class_name);
+	//		String name = script->get_class_name();
+	//		String native_class_name = script->get_ecma_class()->native_class->name;
+	//		if (filter.empty() || filter.is_subsequence_ofi(name) || filter.is_subsequence_ofi(native_class_name)) {
+	//			TreeItem *item = class_tree->create_item(root);
+	//			item->set_metadata(0, script);
+	//			item->set_metadata(1, script);
+	//			item->set_metadata(2, script);
+	//			item->set_text(0, name);
+	//			item->set_text(1, native_class_name);
 
-			if (script->get_library().is_valid()) {
-				lib_path = script->get_library()->get_path();
-			}
-			item->set_text(2, lib_path);
-			item->set_icon(0, script_icon);
-			item->set_text_align(0, TreeItem::ALIGN_LEFT);
-			item->set_text_align(1, TreeItem::ALIGN_CENTER);
-			item->set_text_align(2, TreeItem::ALIGN_CENTER);
-		}
-	}
+	//			if (script->get_library().is_valid()) {
+	//				lib_path = script->get_library()->get_path();
+	//			}
+	//			item->set_text(2, lib_path);
+	//			item->set_icon(0, script_icon);
+	//			item->set_text_align(0, TreeItem::ALIGN_LEFT);
+	//			item->set_text_align(1, TreeItem::ALIGN_CENTER);
+	//			item->set_text_align(2, TreeItem::ALIGN_CENTER);
+	//		}
+	//	}
 }
 
 void ECMAClassBrower::reload_cached_libs() {
-	ECMAScriptLibraryResourceLoader::reload_cached_libs();
 	update_tree();
 }
 
@@ -187,37 +182,9 @@ ECMAClassBrower::ECMAClassBrower() :
 	add_child(hbox);
 }
 
-void EditorInspectorPluginECMALib::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("on_reload_editing_lib"), &EditorInspectorPluginECMALib::on_reload_editing_lib);
-}
-
-void EditorInspectorPluginECMALib::on_reload_editing_lib() {
-	ERR_FAIL_NULL(editing_lib);
-	editing_lib->reload_from_file();
-}
-
-bool EditorInspectorPluginECMALib::can_handle(Object *p_object) {
-	return Object::cast_to<ECMAScriptLibrary>(p_object) != NULL;
-}
-
-void EditorInspectorPluginECMALib::parse_begin(Object *p_object) {
-	editing_lib = Object::cast_to<ECMAScriptLibrary>(p_object);
-	ERR_FAIL_COND(!editing_lib);
-
-	Button *button = memnew(Button);
-	button->set_text("Reload");
-	button->connect("pressed", this, "on_reload_editing_lib");
-	add_custom_control(button);
-}
-
-EditorInspectorPluginECMALib::EditorInspectorPluginECMALib() {
-	editing_lib = NULL;
-}
-
-
-static String applay_partern(const String & p_partern, const Dictionary &p_values) {
+static String applay_partern(const String &p_partern, const Dictionary &p_values) {
 	String ret = p_partern;
-	for (const Variant* key = p_values.next(); key; key = p_values.next(key)) {
+	for (const Variant *key = p_values.next(); key; key = p_values.next(key)) {
 		String p = String("${") + String(*key) + "}";
 		String v = p_values.get(*key, p);
 		ret = ret.replace(p, v);
@@ -225,13 +192,12 @@ static String applay_partern(const String & p_partern, const Dictionary &p_value
 	return ret;
 }
 
-static String format_doc_text(const String &p_source, const String & p_indent = "\t") {
+static String format_doc_text(const String &p_source, const String &p_indent = "\t") {
 	Dictionary dict;
 	dict["[code]"] = "`";
 	dict["[/code]"] = "`";
 	dict["[codeblock]"] = "```gdscript";
 	dict["[/codeblock]"] = "```";
-
 
 	Vector<String> lines = p_source.split("\n");
 	Vector<String> text_lines;
@@ -243,16 +209,16 @@ static String format_doc_text(const String &p_source, const String & p_indent = 
 
 	String ret = "";
 	for (int i = 0; i < text_lines.size(); i++) {
-		if (i>0) {
+		if (i > 0) {
 			ret += p_indent;
 		}
 		ret += text_lines[i];
-		if((i < text_lines.size() - 1)) {
+		if ((i < text_lines.size() - 1)) {
 			ret += "  \n";
 		}
 	}
 
-	for (const Variant* key = dict.next(); key; key = dict.next(key)) {
+	for (const Variant *key = dict.next(); key; key = dict.next(key)) {
 		String p = *key;
 		String v = dict.get(*key, p);
 		ret = ret.replace(p, v);
@@ -300,13 +266,19 @@ static String get_type_name(const String &p_type) {
 
 String _export_method(const DocData::MethodDoc &p_method, bool is_function = false) {
 
-	String method_template = """\n"
-							 "		/** ${description} */""\n"
-							 "		${name}(${params}) : ${return_type};""\n";
+	String method_template = ""
+							 "\n"
+							 "		/** ${description} */"
+							 "\n"
+							 "		${name}(${params}) : ${return_type};"
+							 "\n";
 	if (is_function) {
-		method_template = """\n"
-						  "	/** ${description} */""\n"
-						  "	function ${name}(${params}) : ${return_type};""\n";
+		method_template = ""
+						  "\n"
+						  "	/** ${description} */"
+						  "\n"
+						  "	function ${name}(${params}) : ${return_type};"
+						  "\n";
 	}
 
 	Dictionary dict;
@@ -315,13 +287,13 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	dict["return_type"] = get_type_name(p_method.return_type);
 	String params = "";
 	bool arg_default_value_started = false;
-	for (int i=0; i<p_method.arguments.size(); i++) {
-		const DocData::ArgumentDoc& arg = p_method.arguments[i];
+	for (int i = 0; i < p_method.arguments.size(); i++) {
+		const DocData::ArgumentDoc &arg = p_method.arguments[i];
 		if (!arg_default_value_started && !arg.default_value.empty()) {
 			arg_default_value_started = true;
 		}
 		String arg_str = format_identifier(arg.name) + (arg_default_value_started ? "?: " : ": ") + get_type_name(arg.type);
-		if (i<p_method.arguments.size() -1) {
+		if (i < p_method.arguments.size() - 1) {
 			arg_str += ", ";
 		}
 		params += arg_str;
@@ -330,30 +302,49 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 		params += params.empty() ? "...args" : ", ...args";
 	}
 	dict["params"] = params;
-	return applay_partern(method_template, dict);;
+	return applay_partern(method_template, dict);
+	;
 }
 
 String _export_class(const DocData::ClassDoc &class_doc) {
 
-	const String class_template = """\n"
-								  """\n"
-								  "	namespace ${name} {""\n"
-								  "		interface Signal${extends}${base_signal} {""\n"
+	const String class_template = ""
+								  "\n"
+								  ""
+								  "\n"
+								  "	namespace ${name} {"
+								  "\n"
+								  "		interface Signal${extends}${base_signal} {"
+								  "\n"
 								  "${signals}"
-								  "		}""\n"
-								  "	}""\n"
-								  """\n"
-								  "	/** ${brief_description}""\n"
-								  """\n"
-								  "	 ${description} */""\n"
-								  "	class ${name}${extends}${inherits} {""\n"
-								  """\n"
-								  "		static readonly Signal: ${name}.Signal;""\n"
-								  "		readonly Signal: ${name}.Signal;""\n"
-								  "${constants}""\n"
-								  "${properties}""\n"
-								  "${methods}""\n"
-								  "	}""\n";
+								  "		}"
+								  "\n"
+								  "	}"
+								  "\n"
+								  ""
+								  "\n"
+								  "	/** ${brief_description}"
+								  "\n"
+								  ""
+								  "\n"
+								  "	 ${description} */"
+								  "\n"
+								  "	class ${name}${extends}${inherits} {"
+								  "\n"
+								  ""
+								  "\n"
+								  "		static readonly Signal: ${name}.Signal;"
+								  "\n"
+								  "		readonly Signal: ${name}.Signal;"
+								  "\n"
+								  "${constants}"
+								  "\n"
+								  "${properties}"
+								  "\n"
+								  "${methods}"
+								  "\n"
+								  "	}"
+								  "\n";
 	Dictionary dict;
 	dict["name"] = class_doc.name;
 	dict["inherits"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits);
@@ -369,8 +360,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	}
 
 	String constants = "";
-	for (int i=0; i<class_doc.constants.size(); i++) {
-		const DocData::ConstantDoc & const_doc = class_doc.constants[i];
+	for (int i = 0; i < class_doc.constants.size(); i++) {
+		const DocData::ConstantDoc &const_doc = class_doc.constants[i];
 		Dictionary dict;
 		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
 		dict["name"] = format_property_name(const_doc.name);
@@ -382,33 +373,44 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		dict["type"] = type;
 
 		if (class_doc.name.begins_with("_")) {
-			String signleton_const_str = """\n"
-										 "		/** ${description}""\n"
-										 "		 * @value `${value}`""\n"
-										 "		 */""\n"
-										 "		readonly ${name}: ${type};""\n";
+			String signleton_const_str = ""
+										 "\n"
+										 "		/** ${description}"
+										 "\n"
+										 "		 * @value `${value}`"
+										 "\n"
+										 "		 */"
+										 "\n"
+										 "		readonly ${name}: ${type};"
+										 "\n";
 			constants += applay_partern(signleton_const_str, dict);
 		} else {
-			String const_str = """\n"
-							   "		/** ${description}""\n"
-							   "		 * @value `${value}`""\n"
-							   "		 */""\n"
-							   "		static readonly ${name}: ${type};""\n";
+			String const_str = ""
+							   "\n"
+							   "		/** ${description}"
+							   "\n"
+							   "		 * @value `${value}`"
+							   "\n"
+							   "		 */"
+							   "\n"
+							   "		static readonly ${name}: ${type};"
+							   "\n";
 			constants += applay_partern(const_str, dict);
 		}
-
 	}
 	dict["constants"] = constants;
 
 	Vector<DocData::MethodDoc> method_list = class_doc.methods;
 	String properties = "";
-	for (int i=0; i<class_doc.properties.size(); i++) {
-		const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
+	for (int i = 0; i < class_doc.properties.size(); i++) {
+		const DocData::PropertyDoc &prop_doc = class_doc.properties[i];
 
-
-		String prop_str = """\n"
-						  "		/** ${description} */""\n"
-						  "		${name}: ${type};""\n";
+		String prop_str = ""
+						  "\n"
+						  "		/** ${description} */"
+						  "\n"
+						  "		${name}: ${type};"
+						  "\n";
 		Dictionary dict;
 		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
 		dict["name"] = format_property_name(prop_doc.name);
@@ -439,10 +441,13 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 
 	String signals = "";
 	for (int i = 0; i < class_doc.signals.size(); ++i) {
-		const DocData::MethodDoc & signal = class_doc.signals[i];
-		String signal_str = """\n"
-							"			/** ${description} */""\n"
-							"			${name}: '${name}',""\n";
+		const DocData::MethodDoc &signal = class_doc.signals[i];
+		String signal_str = ""
+							"\n"
+							"			/** ${description} */"
+							"\n"
+							"			${name}: '${name}',"
+							"\n";
 		Dictionary dict;
 		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
 		dict["name"] = signal.name;
@@ -453,8 +458,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	// TODO: Theme properties
 
 	String methods = "";
-	for (int i=0; i<method_list.size(); i++) {
-		const DocData::MethodDoc & method_doc = method_list[i];
+	for (int i = 0; i < method_list.size(); i++) {
+		const DocData::MethodDoc &method_doc = method_list[i];
 		if (method_doc.name == class_doc.name) {
 			continue;
 		}
@@ -465,21 +470,30 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	return applay_partern(class_template, dict);
 }
 
-
 void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	DocData *doc = EditorHelp::get_doc_data();
 	Dictionary dict;
 
-	const String godot_module = "// This file is generated by godot editor""\n"
-								"${buitins}""\n"
-								"""\n"
-								"declare module godot {""\n"
-								"${singletons}""\n"
-								"${constants}""\n"
-								"${functions}""\n"
-								"${classes}""\n"
-								"}""\n"
-								"""\n";
+	const String godot_module = "// This file is generated by godot editor"
+								"\n"
+								"${buitins}"
+								"\n"
+								""
+								"\n"
+								"declare module godot {"
+								"\n"
+								"${singletons}"
+								"\n"
+								"${constants}"
+								"\n"
+								"${functions}"
+								"\n"
+								"${classes}"
+								"\n"
+								"}"
+								"\n"
+								""
+								"\n";
 
 	String classes = "";
 	Set<String> ignored_classes;
@@ -511,52 +525,61 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("PoolVector3Array");
 	ignored_classes.insert("PoolColorArray");
 
-
 	String constants = "";
 
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
 		DocData::ClassDoc class_doc = E->get();
-		if(ignored_classes.has(class_doc.name)) {
+		if (ignored_classes.has(class_doc.name)) {
 			continue;
 		}
 		class_doc.name = get_type_name(class_doc.name);
 		if (class_doc.name.begins_with("@")) {
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
-				for (int i=0; i<class_doc.constants.size(); i++) {
-					const DocData::ConstantDoc & const_doc = class_doc.constants[i];
-					String const_str = """\n"
-									   "	/** ${description}""\n"
-									   "	 * @value `${value}`""\n"
-									   "	 */""\n"
-									   "	const ${name}: number;""\n";
+				for (int i = 0; i < class_doc.constants.size(); i++) {
+					const DocData::ConstantDoc &const_doc = class_doc.constants[i];
+					String const_str = ""
+									   "\n"
+									   "	/** ${description}"
+									   "\n"
+									   "	 * @value `${value}`"
+									   "\n"
+									   "	 */"
+									   "\n"
+									   "	const ${name}: number;"
+									   "\n";
 					Dictionary dict;
 					dict["description"] = format_doc_text(const_doc.description, "\t ");
 					dict["name"] = format_property_name(const_doc.name);
 					dict["value"] = const_doc.value;
-					constants += applay_partern(const_str, dict);;
+					constants += applay_partern(const_str, dict);
+					;
 				}
 			}
 
 			if (class_doc.name == "@GlobalScope") {
 				String singletons = "";
-				for (int i=0; i<class_doc.properties.size(); i++) {
-					const DocData::PropertyDoc & prop_doc = class_doc.properties[i];
+				for (int i = 0; i < class_doc.properties.size(); i++) {
+					const DocData::PropertyDoc &prop_doc = class_doc.properties[i];
 
-					String prop_str = """\n"
-									  "	/** ${description} */""\n"
-									  "	const ${name}: ${type};""\n";
+					String prop_str = ""
+									  "\n"
+									  "	/** ${description} */"
+									  "\n"
+									  "	const ${name}: ${type};"
+									  "\n";
 					Dictionary dict;
 					dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
 					dict["name"] = format_property_name(prop_doc.name);
 					dict["type"] = get_type_name(prop_doc.type);
-					singletons += applay_partern(prop_str, dict);;
+					singletons += applay_partern(prop_str, dict);
+					;
 				}
 				dict["singletons"] = singletons;
 				dict["constants"] = constants;
-			} else if (class_doc.name == "@GDScript"){
+			} else if (class_doc.name == "@GDScript") {
 				String methods = "";
-				for (int i=0; i<class_doc.methods.size(); i++) {
-					const DocData::MethodDoc & method_doc = class_doc.methods[i];
+				for (int i = 0; i < class_doc.methods.size(); i++) {
+					const DocData::MethodDoc &method_doc = class_doc.methods[i];
 					if (Expression::find_function(method_doc.name) == Expression::FUNC_MAX) {
 						continue;
 					}
@@ -582,4 +605,3 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		f->close();
 	}
 }
-

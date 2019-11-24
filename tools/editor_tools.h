@@ -3,8 +3,6 @@
 #include "editor/editor_file_dialog.h"
 #include "editor/editor_node.h"
 
-class ECMAScriptLibrary;
-
 class ECMAClassBrower : public VBoxContainer {
 	GDCLASS(ECMAClassBrower, VBoxContainer);
 	Tree *class_tree;
@@ -23,20 +21,6 @@ public:
 	ECMAClassBrower();
 };
 
-class EditorInspectorPluginECMALib : public EditorInspectorPlugin {
-	GDCLASS(EditorInspectorPluginECMALib, EditorInspectorPlugin);
-
-protected:
-	static void _bind_methods();
-	ECMAScriptLibrary *editing_lib;
-	void on_reload_editing_lib();
-
-public:
-	virtual bool can_handle(Object *p_object);
-	virtual void parse_begin(Object *p_object);
-	EditorInspectorPluginECMALib();
-};
-
 class ECMAScriptPlugin : public EditorPlugin {
 
 	GDCLASS(ECMAScriptPlugin, EditorPlugin);
@@ -49,7 +33,6 @@ class ECMAScriptPlugin : public EditorPlugin {
 	ToolButton *bottom_button;
 	ECMAClassBrower *ecma_class_browser;
 	EditorFileDialog *declaration_file_dialog;
-	Ref<EditorInspectorPluginECMALib> eslib_inspector_plugin;
 
 protected:
 	static String BUILTIN_DECLEARATION_TEXT;
