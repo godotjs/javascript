@@ -14,8 +14,8 @@ struct ECMAClassInfo {
 	bool tool;
 	StringName class_name;
 	String icon_path;
-	ECMAScriptGCHandler ecma_class_function;
-	ECMAScriptGCHandler ecma_prototype;
+	ECMAScriptGCHandler constructor;
+	ECMAScriptGCHandler prototype;
 	const ClassDB::ClassInfo *native_class;
 	HashMap<StringName, MethodInfo> signals;
 	HashMap<StringName, ECMAProperyInfo> properties;
@@ -47,6 +47,7 @@ public:
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) = 0;
 	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, Error &r_error) = 0;
+	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal) = 0;
 };
 
 #endif

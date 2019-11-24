@@ -233,7 +233,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename) {
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
-	JSValue func = JS_Eval(ctx, code.ptr(), code.size(), filename.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), filename.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (JS_IsException(func)) {
 		JS_Throw(ctx, func);
 		return NULL;
@@ -433,8 +433,14 @@ void QuickJSBinder::add_godot_classes() {
 }
 
 void QuickJSBinder::add_godot_globals() {
-	JSValue js_func_register_class = JS_NewCFunction(ctx, godot_register_emca_class, "register_class", 4);
+	JSValue js_func_register_class = JS_NewCFunction(ctx, godot_register_class, "register_class", 4);
 	JS_DefinePropertyValueStr(ctx, godot_object, "register_class", js_func_register_class, PROP_DEF_DEFAULT);
+
+	JSValue js_func_register_signal = JS_NewCFunction(ctx, godot_register_signal, "register_signal", 2);
+	JS_DefinePropertyValueStr(ctx, godot_object, "register_signal", js_func_register_signal, PROP_DEF_DEFAULT);
+
+	JSValue js_func_register_property = JS_NewCFunction(ctx, godot_register_property, "register_property", 3);
+	JS_DefinePropertyValueStr(ctx, godot_object, "register_property", js_func_register_property, PROP_DEF_DEFAULT);
 
 	// Singletons
 	List<Engine::Singleton> singletons;
@@ -568,6 +574,8 @@ void QuickJSBinder::initialize() {
 	// global.godot
 	godot_object = JS_NewObject(ctx);
 	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
+	js_key_godot_exports = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("exports"));
+	js_key_godot_signals = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("signals"));
 	JS_DefinePropertyValueStr(ctx, global_object, "godot", godot_object, PROP_DEF_DEFAULT);
 	// godot.GodotOrigin
 	add_godot_origin();
@@ -603,6 +611,8 @@ void QuickJSBinder::uninitialize() {
 	ecma_classes.clear();
 
 	JS_FreeAtom(ctx, js_key_godot_classid);
+	JS_FreeAtom(ctx, js_key_godot_exports);
+	JS_FreeAtom(ctx, js_key_godot_signals);
 	JS_FreeValue(ctx, empty_function);
 	JS_FreeValue(ctx, global_object);
 	JS_FreeContext(ctx);
@@ -785,7 +795,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 /************************* END Memory Management ******************************/
 
 /********************************* Script --> C++ ****************************/
-JSValue QuickJSBinder::godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+JSValue QuickJSBinder::godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 	ERR_FAIL_COND_V(argc < 1 || !JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "ECMAClass class function expected"));
 	QuickJSBinder *binder = get_context_binder(ctx);
 	String class_name = binder->parsing_script_file;
@@ -835,8 +845,45 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 		ecma_class.tool = false;
 		ecma_class.native_class = bind->gdclass;
 		ecma_class.class_name = class_name;
-		ecma_class.ecma_prototype.ecma_object = JS_VALUE_GET_PTR(prototype);
-		ecma_class.ecma_class_function.ecma_object = JS_VALUE_GET_PTR(p_constructor);
+		ecma_class.prototype.ecma_object = JS_VALUE_GET_PTR(prototype);
+		ecma_class.constructor.ecma_object = JS_VALUE_GET_PTR(p_constructor);
+
+		// signals
+		JSValue signals = JS_GetProperty(ctx, prototype, js_key_godot_signals);
+		if (JS_IsObject(signals)) {
+			Set<String> keys;
+			get_own_property_names(ctx, signals, &keys);
+			for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
+				MethodInfo mi;
+				mi.name = E->get();
+				ecma_class.signals.set(mi.name, mi);
+			}
+		}
+		JS_FreeValue(ctx, signals);
+
+		// properties
+		JSValue props = JS_GetProperty(ctx, prototype, js_key_godot_exports);
+		if (JS_IsObject(props)) {
+			Set<String> keys;
+			get_own_property_names(ctx, props, &keys);
+			for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
+
+				JSAtom pname = get_atom(ctx, E->get());
+				JSValue val = JS_GetProperty(ctx, props, pname);
+
+				JS_DupValue(ctx, val);
+				JS_SetProperty(ctx, prototype, pname, val);
+
+				ECMAProperyInfo ei;
+				ei.default_value = QuickJSBinder::var_to_variant(ctx, val);
+				ei.type = ei.default_value.get_type();
+				ecma_class.properties.set(E->get(), ei);
+
+				JS_FreeValue(ctx, val);
+				JS_FreeAtom(ctx, pname);
+			}
+		}
+		JS_FreeValue(ctx, props);
 
 		// cache the class
 		if (const ECMAClassInfo *ptr = binder->ecma_classes.getptr(p_path)) {
@@ -851,8 +898,64 @@ fail:
 }
 
 void QuickJSBinder::free_ecmas_class(const ECMAClassInfo &p_class) {
-	JSValue class_func = JS_MKPTR(JS_TAG_OBJECT, p_class.ecma_class_function.ecma_object);
+	JSValue class_func = JS_MKPTR(JS_TAG_OBJECT, p_class.constructor.ecma_object);
 	JS_FreeValue(ctx, class_func);
+}
+
+JSValue QuickJSBinder::godot_register_signal(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"));
+	ERR_FAIL_COND_V(!JS_IsObject(argv[0]), JS_ThrowTypeError(ctx, "protorype of ECMAClass function expected for agurment 0"));
+	ERR_FAIL_COND_V(!JS_IsString(argv[1]), JS_ThrowTypeError(ctx, "string expected for agurment 1"));
+	QuickJSBinder *binder = get_context_binder(ctx);
+
+	JSValue prototype = JS_UNDEFINED;
+	if (JS_IsFunction(ctx, argv[0])) {
+		prototype = JS_GetProperty(ctx, argv[0], QuickJSBinder::JS_ATOM_prototype);
+	} else {
+		prototype = JS_DupValue(ctx, argv[0]);
+	}
+
+	JSValue object = JS_GetProperty(ctx, prototype, binder->js_key_godot_signals);
+	if (!JS_IsObject(object)) {
+		object = JS_NewObject(ctx);
+	}
+	const char *signal = JS_ToCString(ctx, argv[1]);
+	JS_DupValue(ctx, argv[1]);
+	JS_SetPropertyStr(ctx, object, signal, argv[1]);
+	JS_FreeCString(ctx, signal);
+
+	JS_SetProperty(ctx, prototype, binder->js_key_godot_signals, object);
+	JS_FreeValue(ctx, prototype);
+	return JS_UNDEFINED;
+}
+
+JSValue QuickJSBinder::godot_register_property(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 3, JS_ThrowTypeError(ctx, "Three or more arguments expected"));
+	ERR_FAIL_COND_V(!JS_IsObject(argv[0]), JS_ThrowTypeError(ctx, "protorype of ECMAClass function expected for agurment 0"));
+	ERR_FAIL_COND_V(!JS_IsString(argv[1]), JS_ThrowTypeError(ctx, "string expected for agurment 1"));
+	ERR_FAIL_COND_V(JS_IsUndefined(argv[2]) || JS_IsNull(argv[2]), JS_ThrowTypeError(ctx, "Truthy value expected for agurment 2"));
+
+	QuickJSBinder *binder = get_context_binder(ctx);
+	JSValue prototype = JS_UNDEFINED;
+	if (JS_IsFunction(ctx, argv[0])) {
+		prototype = JS_GetProperty(ctx, argv[0], QuickJSBinder::JS_ATOM_prototype);
+	} else {
+		prototype = JS_DupValue(ctx, argv[0]);
+	}
+
+	JSValue object = JS_GetProperty(ctx, prototype, binder->js_key_godot_exports);
+	if (!JS_IsObject(object)) {
+		object = JS_NewObject(ctx);
+	}
+	const char *name = JS_ToCString(ctx, argv[1]);
+	JS_DupValue(ctx, argv[2]);
+	JS_SetPropertyStr(ctx, object, name, argv[2]);
+	JS_FreeCString(ctx, name);
+
+	JS_SetProperty(ctx, prototype, binder->js_key_godot_exports, object);
+	JS_FreeValue(ctx, prototype);
+
+	return JS_UNDEFINED;
 }
 
 int QuickJSBinder::get_js_array_length(JSContext *ctx, JSValue p_val) {
@@ -886,9 +989,9 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
 	ERR_FAIL_NULL_V(bind, ECMAScriptGCHandler());
 
-	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->ecma_class_function.ecma_object);
+	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->constructor.ecma_object);
 	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-	JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->ecma_prototype.ecma_object));
+	JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object));
 	JS_CallConstructor2(ctx, constructor, object, 0, NULL);
 
 	return *bind;
@@ -1012,6 +1115,23 @@ fail:
 	JS_FreeValue(ctx, ret);
 #endif
 	return ecma_class;
+}
+
+bool QuickJSBinder::has_signal(const ECMAClassInfo *p_class, const StringName &p_signal) {
+	ERR_FAIL_NULL_V(p_class, false);
+	bool found = false;
+	JSValue object = JS_GetProperty(ctx, GET_JSVALUE(p_class->prototype), js_key_godot_signals);
+	if (!JS_IsObject(object)) {
+		JS_FreeValue(ctx, object);
+		return false;
+	}
+	JSAtom atom = get_atom(ctx, p_signal);
+	JSValue signal = JS_GetProperty(ctx, object, atom);
+	found = !JS_IsUndefined(signal);
+	JS_FreeAtom(ctx, atom);
+	JS_FreeValue(ctx, signal);
+	JS_FreeValue(ctx, object);
+	return found;
 }
 
 /**************************** END Script --> C++ ******************************/

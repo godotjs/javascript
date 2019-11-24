@@ -91,7 +91,7 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 bool ECMAScript::has_method(const StringName &p_method) const {
 	const ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, false);
-	return ECMAScriptLanguage::get_singleton()->binding->has_method(cls->ecma_prototype, p_method);
+	return ECMAScriptLanguage::get_singleton()->binding->has_method(cls->prototype, p_method);
 }
 
 MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
@@ -170,7 +170,13 @@ void ECMAScript::update_exports() {
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 	const ECMAClassInfo *cls = get_ecma_class();
 	ERR_FAIL_NULL_V(cls, false);
-	return cls->signals.has(p_signal);
+	bool found = false;
+	if (cls->signals.has(p_signal)) {
+		found = true;
+	} else if (ECMAScriptLanguage::get_singleton()->binding->has_signal(cls, p_signal)) {
+		found = true;
+	}
+	return found;
 }
 
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {

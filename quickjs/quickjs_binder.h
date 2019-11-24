@@ -50,6 +50,8 @@ private:
 	JSValue godot_object;
 	JSValue empty_function;
 	JSAtom js_key_godot_classid;
+	JSAtom js_key_godot_exports;
+	JSAtom js_key_godot_signals;
 
 	Vector<JSValue> godot_singletons;
 
@@ -103,8 +105,11 @@ private:
 	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
-	static JSValue godot_register_emca_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	void free_ecmas_class(const ECMAClassInfo &p_class);
+
+	static JSValue godot_register_signal(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_register_property(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
@@ -190,6 +195,7 @@ public:
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
 	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, Error &r_error);
+	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal);
 };
 
 #endif // QUICKJS_BINDING_HELPER_H
