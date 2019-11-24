@@ -2,6 +2,7 @@
 #include "../ecmascript_language.h"
 #include "core/engine.h"
 #include "core/global_constants.h"
+#include "core/io/json.h"
 #include "core/math/expression.h"
 #include "core/os/file_access.h"
 #include "quickjs_binder.h"
@@ -189,6 +190,11 @@ bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValueC
 	}
 }
 
+String QuickJSBinder::dump_exception(JSContext *ctx, const JSValue &p_exception) {
+	Dictionary err = var_to_variant(ctx, p_exception);
+	return JSON::print(err, "\t");
+}
+
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	String name = p_key;
 	CharString name_str = name.ascii();
@@ -235,7 +241,9 @@ JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_co
 	CharString filename = p_filename.utf8();
 	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), filename.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (JS_IsException(func)) {
-		JS_Throw(ctx, func);
+		JSValue e = JS_GetException(ctx);
+		ERR_PRINTS("Script error:\n" + dump_exception(ctx, e));
+		JS_Throw(ctx, e);
 		return NULL;
 	}
 	return static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
@@ -637,13 +645,11 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 
 	CharString utf8_str = p_source.utf8();
 	CharString utf8_path = p_path.utf8();
-	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.size(), utf8_path.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
+	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.length(), utf8_path.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
-		const char *message = JS_ToCString(ctx, e);
-		r_error = message;
-		JS_FreeCString(ctx, message);
-		JS_FreeValue(ctx, e);
+		ERR_PRINTS("Script error:\n" + dump_exception(ctx, e));
+		JS_Throw(ctx, e);
 		return ERR_PARSE_ERROR;
 	}
 	return OK;
@@ -1075,9 +1081,15 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 #else // export default = ClassFunction to register class
 	JSValue default_entry = JS_UNDEFINED;
 	JSValue ret = JS_UNDEFINED;
-	JSModuleDef *m = js_compile_module(ctx, p_code, p_path);
-	JSValue module = JS_MKPTR(JS_TAG_MODULE, m);
+	JSValue module = JS_UNDEFINED;
 
+	JSModuleDef *m = js_compile_module(ctx, p_code, p_path);
+	if (m == NULL) {
+		JS_ThrowTypeError(ctx, "Compile error %s", p_path.utf8().ptr());
+		goto fail;
+	}
+
+	module = JS_MKPTR(JS_TAG_MODULE, m);
 	if (JS_IsException(module)) {
 		ERR_PRINTS("Compile error " + p_path + "\n\t" + get_exception_message(ctx, module));
 		JS_Throw(ctx, module);

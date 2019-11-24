@@ -129,6 +129,7 @@ public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
 	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
+	static String dump_exception(JSContext *ctx, const JSValueConst &p_exception);
 
 	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
 		double_t v = 0;

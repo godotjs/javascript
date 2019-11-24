@@ -26,8 +26,12 @@ bool ECMAScript::can_instance() const {
 
 StringName ECMAScript::get_instance_base_type() const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(cls, StringName());
-	return cls->native_class->name;
+	if (cls) {
+		return cls->native_class->name;
+	} else {
+		static StringName empty;
+		return empty;
+	}
 }
 
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
@@ -90,7 +94,7 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 
 bool ECMAScript::has_method(const StringName &p_method) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(cls, false);
+	if (!cls) return false;
 	return ECMAScriptLanguage::get_singleton()->binding->has_method(cls->prototype, p_method);
 }
 
@@ -109,20 +113,18 @@ MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 
 bool ECMAScript::is_tool() const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(cls, false);
+	if (!cls) return false;
 	return cls->tool;
 }
 
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
-
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL(cls);
 	// TODO
 }
 
 void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL(cls);
+	if (!cls) return;
 	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
 		const ECMAProperyInfo &prop = cls->properties.get(*name);
 		PropertyInfo pi;
@@ -134,7 +136,8 @@ void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
 
 bool ECMAScript::get_property_default_value(const StringName &p_property, Variant &r_value) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(cls, false);
+	if (!cls)
+		return false;
 
 	if (const ECMAProperyInfo *pi = cls->properties.getptr(p_property)) {
 		r_value = pi->default_value;
@@ -148,7 +151,7 @@ void ECMAScript::update_exports() {
 
 #ifdef TOOLS_ENABLED
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL(cls);
+	if (!cls) return;
 
 	List<PropertyInfo> props;
 	Map<StringName, Variant> values;
@@ -169,7 +172,7 @@ void ECMAScript::update_exports() {
 
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(cls, false);
+	if (!cls) return false;
 	bool found = false;
 	if (cls->signals.has(p_signal)) {
 		found = true;
@@ -181,7 +184,7 @@ bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL(cls);
+	if (!cls) return;
 	for (const StringName *name = cls->signals.next(NULL); name; name = cls->signals.next(name)) {
 		r_signals->push_back(cls->signals.get(*name));
 	}
@@ -208,8 +211,9 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load source code from file '" + p_path + "'.");
 		script->set_source_code(code);
 		script->set_script_path(p_path);
-		err = script->reload();
-		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot parse source code from file '" + p_path + "'.");
+		if (OK != script->reload()) {
+			ERR_PRINTS("Cannot parse source code from file '" + p_path + "'.");
+		}
 		if (r_error)
 			*r_error = err;
 	}
