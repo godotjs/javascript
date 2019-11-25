@@ -9,6 +9,7 @@
 #define BINDING_DATA_FROM_GD(p_object) (p_object ? (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL)
 #define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
 #define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
+#define NO_MODULE_EXPORT_SUPPORT 0
 
 class QuickJSBinder : public ECMAScriptBinder {
 
@@ -52,7 +53,6 @@ private:
 	JSAtom js_key_godot_classid;
 	JSAtom js_key_godot_exports;
 	JSAtom js_key_godot_signals;
-
 	Vector<JSValue> godot_singletons;
 
 	JSRuntime *runtime;
@@ -68,28 +68,26 @@ private:
 	static JSModuleDef *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename);
 
 	struct ClassBindData {
-
 		JSClassID class_id;
 		CharString class_name;
-
 		JSValue prototype;
 		JSValue constructor;
 		JSClassDef jsclass;
-
 		const ClassDB::ClassInfo *gdclass;
 		const ClassBindData *base_class;
 	};
-
 	ClassBindData godot_origin_class;
 	const ClassBindData *godot_object_class;
-
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
 
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
 
+#if NO_MODULE_EXPORT_SUPPORT
 	String parsing_script_file;
+#endif
+
 	JSClassID register_class(const ClassDB::ClassInfo *p_cls);
 	void add_godot_origin();
 	void add_godot_classes();
@@ -100,19 +98,19 @@ private:
 	static void object_finalizer(ECMAScriptGCHandler *p_bind);
 	static void origin_finalizer(JSRuntime *rt, JSValue val);
 
+	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
-	static JSValue godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
 	void free_ecmas_class(const ECMAClassInfo &p_class);
-
+	static JSValue godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_signal(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_property(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
+	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
 	static int get_js_array_length(JSContext *ctx, JSValue p_val);
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
@@ -122,8 +120,6 @@ private:
 
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
-
-	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
 
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
