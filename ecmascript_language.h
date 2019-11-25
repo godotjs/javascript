@@ -31,7 +31,7 @@ public:
 	/* LANGUAGE FUNCTIONS */
 
 	_FORCE_INLINE_ virtual String get_type() const { return "ECMAScript"; }
-	_FORCE_INLINE_ virtual String get_extension() const { return "es"; }
+	_FORCE_INLINE_ virtual String get_extension() const { return "js"; }
 	_FORCE_INLINE_ virtual bool has_named_classes() const { return true; }
 	_FORCE_INLINE_ virtual bool supports_builtin_mode() const { return false; }
 	_FORCE_INLINE_ virtual bool can_inherit_from_file() { return false; }
@@ -47,8 +47,9 @@ public:
 	virtual void get_comment_delimiters(List<String> *p_delimiters) const;
 	virtual void get_string_delimiters(List<String> *p_delimiters) const;
 
-	/* TODO */ virtual Ref<Script> get_template(const String &p_class_name, const String &p_base_class_name) const { return NULL; }
-	/* TODO */ virtual void make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script) {}
+	virtual Ref<Script> get_template(const String &p_class_name, const String &p_base_class_name) const;
+	virtual void make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script);
+
 	/* TODO */ virtual bool validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path = "", List<String> *r_functions = NULL, List<Warning> *r_warnings = NULL, Set<int> *r_safe_lines = NULL) const { return true; }
 	/* TODO */ virtual String validate_path(const String &p_path) const { return ""; }
 	/* TODO */ virtual Script *create_script() const { return NULL; }

@@ -268,7 +268,9 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename) {
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
-	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), filename.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+	const char *cfilename = filename.ptr();
+	if (!cfilename) cfilename = ""; // avoid crash with empty file name here
+	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (JS_IsException(func)) {
 		JSValue e = JS_GetException(ctx);
 		ERR_PRINTS("Script error:\n" + dump_exception(ctx, e));
@@ -457,7 +459,13 @@ void QuickJSBinder::add_godot_classes() {
 	while (id) {
 
 		const ClassBindData &data = class_bindings.get(*id);
-		JS_DefinePropertyValueStr(ctx, godot_object, data.jsclass.class_name, data.constructor, PROP_DEF_DEFAULT);
+
+		int flags = PROP_DEF_DEFAULT;
+		// Allows redefine as to global object
+		if (Engine::get_singleton()->has_singleton(data.gdclass->name)) {
+			flags |= JS_PROP_CONFIGURABLE;
+		}
+		JS_DefinePropertyValueStr(ctx, godot_object, data.jsclass.class_name, data.constructor, flags);
 		if (data.base_class) {
 			JS_SetPrototype(ctx, data.prototype, data.base_class->prototype);
 		} else {
@@ -502,8 +510,7 @@ void QuickJSBinder::add_godot_globals() {
 		JSAtom singleton_name = get_atom(ctx, s.name);
 		JSValue last_obj = JS_GetProperty(ctx, godot_object, singleton_name);
 		if (!JS_IsUndefined(last_obj)) {
-			JSValue prototype = JS_GetPrototype(ctx, last_obj);
-			JS_SetPrototype(ctx, obj, prototype);
+			JS_SetPrototype(ctx, obj, cls->prototype);
 			JS_FreeValue(ctx, last_obj);
 		}
 
@@ -613,7 +620,7 @@ void QuickJSBinder::initialize() {
 	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
 	js_key_godot_exports = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("exports"));
 	js_key_godot_signals = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("signals"));
-	JS_DefinePropertyValueStr(ctx, global_object, "godot", godot_object, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, global_object, GODOT_OBJECT_NAME, godot_object, PROP_DEF_DEFAULT);
 	// godot.GodotOrigin
 	add_godot_origin();
 	// godot.Vector2 godot.Color ...

@@ -480,7 +480,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 								"\n"
 								""
 								"\n"
-								"declare module godot {"
+								"declare module " GODOT_OBJECT_NAME " {"
 								"\n"
 								"${singletons}"
 								"\n"

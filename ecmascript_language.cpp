@@ -159,6 +159,46 @@ void ECMAScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const
 	p_delimiters->push_back("` `");
 }
 
+Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const String &p_base_class_name) const {
+
+	String script_template = "class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
+							 "    \n"
+							 "    // Declare member variables here. Examples:\n"
+							 "    a = 2;\n"
+							 "    b = \"text\";\n"
+							 "    \n"
+							 "    constructor() {\n"
+							 "        super();\n"
+							 "    }\n"
+							 "    \n"
+							 "    // Called when the node enters the scene tree for the first time.\n"
+							 "    _ready() {\n"
+							 "        \n"
+							 "    }\n"
+							 "    \n"
+							 "    // Called every frame. 'delta' is the elapsed time since the previous frame.\n"
+							 "    _process(delta) {\n"
+							 "        \n"
+							 "    }\n"
+							 "}\n"
+							 "\n"
+							 "export default %CLASS%;\n";
+	script_template = script_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
+
+	Ref<ECMAScript> script;
+	script.instance();
+	script->set_source_code(script_template);
+	script->set_name(p_class_name);
+	script->set_script_path(p_class_name);
+	return script;
+}
+
+void ECMAScriptLanguage::make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script) {
+	String src = p_script->get_source_code();
+	src = src.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
+	p_script->set_source_code(src);
+}
+
 void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back("js");
 }

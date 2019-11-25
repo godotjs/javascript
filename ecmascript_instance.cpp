@@ -16,23 +16,15 @@ bool ECMAScriptInstance::has_method(const StringName &p_method) const {
 }
 
 bool ECMAScriptInstance::set(const StringName &p_name, const Variant &p_value) {
-	if (!script.is_null()) {
-		if (const ECMAClassInfo *cls = script->get_ecma_class()) {
-			if (const ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
-				return ECMAScriptLanguage::get_singleton()->binding->set_instance_property(this->ecma_object, p_name, p_value);
-			}
-		}
+	if (this->ecma_object.ecma_object) {
+		return ECMAScriptLanguage::get_singleton()->binding->set_instance_property(this->ecma_object, p_name, p_value);
 	}
 	return false;
 }
 
 bool ECMAScriptInstance::get(const StringName &p_name, Variant &r_ret) const {
-	if (!script.is_null()) {
-		if (const ECMAClassInfo *cls = script->get_ecma_class()) {
-			if (const ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
-				return ECMAScriptLanguage::get_singleton()->binding->get_instance_property(this->ecma_object, p_name, r_ret);
-			}
-		}
+	if (this->ecma_object.ecma_object) {
+		return ECMAScriptLanguage::get_singleton()->binding->get_instance_property(this->ecma_object, p_name, r_ret);
 	}
 	return false;
 }

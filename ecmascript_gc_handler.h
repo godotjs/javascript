@@ -9,6 +9,7 @@
 #define PROTO_LITERAL "__proto__"
 #define TO_STRING_LITERAL "toString"
 #define ECMA_CLASS_NAME_LITERAL "class_name"
+#define GODOT_OBJECT_NAME "godot"
 
 struct ECMAScriptGCHandler {
 	enum {
