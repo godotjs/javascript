@@ -1034,6 +1034,9 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 	}
 
 	return_val = JS_Call(ctx, method, object, p_argcount, argv);
+	for (int i = 0; i < p_argcount; i++) {
+		JS_FreeValue(ctx, argv[i]);
+	}
 
 	if (JS_IsException(return_val)) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_ARGUMENT;
