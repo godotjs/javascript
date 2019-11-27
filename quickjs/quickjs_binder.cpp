@@ -248,24 +248,39 @@ JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int arg
 JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_name, void *opaque) {
 	JSModuleDef *m = NULL;
 	Error err;
-	String file = module_name;
+	String file;
+	file.parse_utf8(module_name);
 	if (file.get_extension().empty()) {
 		file += ".js";
 	}
-	String code = FileAccess::get_file_as_string(file, &err);
-	if (err != OK || !code.size()) {
-		JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
-		return NULL;
+
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	if (JSModuleDef **ptr = binder->module_cache.getptr(file)) {
+		m = *ptr;
+#if MODULE_HAS_REFCOUNT
+		JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
+		JS_DupValue(ctx, val);
+#endif
 	}
-	m = js_compile_module(ctx, code, file);
-	if (m) {
-		JSValue func_val = JS_MKPTR(JS_TAG_MODULE, m);
-		JS_FreeValue(ctx, func_val);
+
+	if (!m) {
+		String code = FileAccess::get_file_as_string(file, &err);
+		if (err != OK || !code.size()) {
+			JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
+			return NULL;
+		}
+		m = js_compile_module(ctx, code, file);
+#if !MODULE_HAS_REFCOUNT
+		JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
+		JS_DupValue(ctx, val);
+#endif
 	}
+
 	return m;
 }
 
 JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename) {
+	JSModuleDef *module = NULL;
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
 	const char *cfilename = filename.ptr();
@@ -275,9 +290,21 @@ JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_co
 		JSValue e = JS_GetException(ctx);
 		ERR_PRINTS("Script error:\n" + dump_exception(ctx, e));
 		JS_Throw(ctx, e);
-		return NULL;
 	}
-	return static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+	module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	if (module) {
+#if MODULE_HAS_REFCOUNT
+		JSModuleDef **last_module = binder->module_cache.getptr(p_filename);
+		if (last_module && *last_module) {
+			JSValue val = JS_MKPTR(JS_TAG_MODULE, *last_module);
+			JS_FreeValue(ctx, val);
+		}
+#endif
+		binder->module_cache.set(p_filename, module);
+	}
+	return module;
 }
 
 JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -653,6 +680,20 @@ void QuickJSBinder::uninitialize() {
 		key = ecma_classes.next(key);
 	}
 	ecma_classes.clear();
+
+	// modules
+#if MODULE_HAS_REFCOUNT
+	const String *file = module_cache.next(NULL);
+	while (file) {
+		JSModuleDef *m = module_cache.get(*file);
+		if (m) {
+			JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
+			JS_FreeValue(ctx, val);
+		}
+		file = module_cache.next(file);
+	}
+#endif
+	module_cache.clear();
 
 	JS_FreeAtom(ctx, js_key_godot_classid);
 	JS_FreeAtom(ctx, js_key_godot_exports);

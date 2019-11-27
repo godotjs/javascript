@@ -10,6 +10,7 @@
 #define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
 #define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
 #define NO_MODULE_EXPORT_SUPPORT 0
+#define MODULE_HAS_REFCOUNT 0 // module seems don't follow the refrence count rule in quickjs
 
 class QuickJSBinder : public ECMAScriptBinder {
 
@@ -80,6 +81,7 @@ private:
 	const ClassBindData *godot_object_class;
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
+	HashMap<String, JSModuleDef *> module_cache;
 
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
