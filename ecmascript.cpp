@@ -77,8 +77,13 @@ bool ECMAScript::is_placeholder_fallback_enabled() const {
 }
 
 Error ECMAScript::reload(bool p_keep_state) {
-	Error err;
-	ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(code, get_script_path(), err);
+	Error err = OK;
+	ECMAscriptScriptError ecma_err;
+	ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(code, get_script_path(), &ecma_err);
+	if (!ecma_class) {
+		err = ERR_PARSE_ERROR;
+		print_error(ECMAScriptLanguage::get_singleton()->binding->error_to_string(ecma_err));
+	}
 	return err;
 }
 

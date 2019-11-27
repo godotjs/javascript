@@ -10,6 +10,14 @@ struct ECMAProperyInfo {
 	Variant default_value;
 };
 
+struct ECMAscriptScriptError {
+	int line;
+	int column;
+	String message;
+	String file;
+	Vector<String> stack;
+};
+
 struct ECMAClassInfo {
 	bool tool;
 	StringName class_name;
@@ -40,14 +48,16 @@ public:
 
 	virtual Error eval_string(const String &p_source, const String &p_path) = 0;
 	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error) = 0;
+	virtual String error_to_string(const ECMAscriptScriptError &p_error) = 0;
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object) = 0;
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) = 0;
-	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, Error &r_error) = 0;
+	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) = 0;
 	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal) = 0;
+	virtual bool validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) = 0;
 };
 
 #endif

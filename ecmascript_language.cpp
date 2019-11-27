@@ -199,6 +199,21 @@ void ECMAScriptLanguage::make_template(const String &p_class_name, const String 
 	p_script->set_source_code(src);
 }
 
+bool ECMAScriptLanguage::validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path, List<String> *r_functions, List<ScriptLanguage::Warning> *r_warnings, Set<int> *r_safe_lines) const {
+	ECMAscriptScriptError script_error;
+	bool ret = binding->validate(p_script, p_path, &script_error);
+	if (!ret) {
+		r_test_error = binding->error_to_string(script_error);
+		r_line_error = script_error.line;
+		r_col_error = script_error.column;
+	}
+	return ret;
+}
+
+Script *ECMAScriptLanguage::create_script() const {
+	return memnew(ECMAScript);
+}
+
 void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back("js");
 }

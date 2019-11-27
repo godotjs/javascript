@@ -219,9 +219,34 @@ bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValueC
 	}
 }
 
-String QuickJSBinder::dump_exception(JSContext *ctx, const JSValue &p_exception) {
-	Dictionary err = var_to_variant(ctx, p_exception);
-	return JSON::print(err, "\t");
+void QuickJSBinder::dump_exception(JSContext *ctx, const JSValue &p_exception, ECMAscriptScriptError *r_error) {
+	JSValue err_file = JS_GetProperty(ctx, p_exception, JS_ATOM_fileName);
+	JSValue err_line = JS_GetProperty(ctx, p_exception, JS_ATOM_lineNumber);
+	JSValue err_msg = JS_GetProperty(ctx, p_exception, JS_ATOM_message);
+	JSValue err_stack = JS_GetProperty(ctx, p_exception, JS_ATOM_stack);
+
+	JS_ToInt32(ctx, &r_error->line, err_line);
+	r_error->message = js_to_string(ctx, err_msg);
+	r_error->file = js_to_string(ctx, err_file);
+	r_error->stack.push_back(js_to_string(ctx, err_stack));
+	r_error->column = 0;
+
+	JS_FreeValue(ctx, err_file);
+	JS_FreeValue(ctx, err_line);
+	JS_FreeValue(ctx, err_msg);
+	JS_FreeValue(ctx, err_stack);
+}
+
+String QuickJSBinder::error_to_string(const ECMAscriptScriptError &p_error) {
+	String message = "JavaScript Error";
+	if (p_error.stack.size()) {
+		message += p_error.stack[0];
+	}
+	message += p_error.message;
+	for (int i = 1; i < p_error.stack.size(); i++) {
+		message += p_error.stack[i];
+	}
+	return message;
 }
 
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
@@ -269,17 +294,17 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
 			return NULL;
 		}
-		m = js_compile_module(ctx, code, file);
-#if !MODULE_HAS_REFCOUNT
-		JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
-		JS_DupValue(ctx, val);
-#endif
+		ECMAscriptScriptError err;
+		m = js_compile_module(ctx, code, file, &err);
 	}
 
 	return m;
 }
 
-JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename) {
+JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error) {
+
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+
 	JSModuleDef *module = NULL;
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
@@ -288,12 +313,12 @@ JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_co
 	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (JS_IsException(func)) {
 		JSValue e = JS_GetException(ctx);
-		ERR_PRINTS("Script error:\n" + dump_exception(ctx, e));
+		dump_exception(ctx, e, r_error);
 		JS_Throw(ctx, e);
+	} else {
+		module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
 	}
-	module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
 
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	if (module) {
 #if MODULE_HAS_REFCOUNT
 		JSModuleDef **last_module = binder->module_cache.getptr(p_filename);
@@ -725,7 +750,9 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.length(), utf8_path.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
-		ERR_PRINTS("Script error:\n" + dump_exception(ctx, e));
+		ECMAscriptScriptError err;
+		dump_exception(ctx, e, &err);
+		print_error(error_to_string(err));
 		JS_Throw(ctx, e);
 		return ERR_PARSE_ERROR;
 	}
@@ -1082,7 +1109,9 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 	if (JS_IsException(return_val)) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_ARGUMENT;
 		JSValue exception = JS_GetException(ctx);
-		print_error(dump_exception(ctx, exception));
+		ECMAscriptScriptError err;
+		dump_exception(ctx, exception, &err);
+		print_error(error_to_string(err));
 		JS_FreeValue(ctx, exception);
 	}
 finish:
@@ -1124,9 +1153,8 @@ bool QuickJSBinder::has_method(const ECMAScriptGCHandler &p_object, const String
 	return success;
 }
 
-const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const String &p_path, Error &r_error) {
+const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) {
 	const ECMAClassInfo *ecma_class = NULL;
-	r_error = ERR_PARSE_ERROR;
 #if NO_MODULE_EXPORT_SUPPORT // call godot.register_class(ClassFunction) to register script class
 	GLOBAL_LOCK_FUNCTION
 	parsing_script_file = p_path;
@@ -1138,7 +1166,8 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 	JSValue ret = JS_UNDEFINED;
 	JSValue module = JS_UNDEFINED;
 
-	JSModuleDef *m = js_compile_module(ctx, p_code, p_path);
+	ECMAscriptScriptError err;
+	JSModuleDef *m = js_compile_module(ctx, p_code, p_path, r_error);
 	if (m == NULL) {
 		JS_ThrowTypeError(ctx, "Compile error %s", p_path.utf8().ptr());
 		goto fail;
@@ -1174,9 +1203,6 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 		goto fail;
 	}
 	ecma_class = register_ecma_class(default_entry, p_path);
-	if (ecma_class) {
-		r_error = OK;
-	}
 fail:
 	JS_FreeValue(ctx, default_entry);
 	JS_FreeValue(ctx, ret);
@@ -1200,5 +1226,9 @@ bool QuickJSBinder::has_signal(const ECMAClassInfo *p_class, const StringName &p
 	JS_FreeValue(ctx, object);
 	return found;
 }
-
 /**************************** END Script --> C++ ******************************/
+
+bool QuickJSBinder::validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) {
+	JSModuleDef *module = js_compile_module(ctx, p_code, p_path, r_error);
+	return module != NULL;
+}

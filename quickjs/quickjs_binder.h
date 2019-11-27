@@ -66,7 +66,7 @@ private:
 	}
 	_FORCE_INLINE_ static void *js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
-	static JSModuleDef *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename);
+	static JSModuleDef *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 
 	struct ClassBindData {
 		JSClassID class_id;
@@ -127,7 +127,8 @@ public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
 	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
-	static String dump_exception(JSContext *ctx, const JSValueConst &p_exception);
+	static void dump_exception(JSContext *ctx, const JSValueConst &p_exception, ECMAscriptScriptError *r_error);
+	virtual String error_to_string(const ECMAscriptScriptError &p_error);
 
 	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
 		double_t v = 0;
@@ -193,8 +194,10 @@ public:
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
-	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, Error &r_error);
+	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
 	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal);
+
+	virtual bool validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
 };
 
 #endif // QUICKJS_BINDING_HELPER_H

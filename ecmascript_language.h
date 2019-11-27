@@ -50,9 +50,9 @@ public:
 	virtual Ref<Script> get_template(const String &p_class_name, const String &p_base_class_name) const;
 	virtual void make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script);
 
-	/* TODO */ virtual bool validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path = "", List<String> *r_functions = NULL, List<Warning> *r_warnings = NULL, Set<int> *r_safe_lines = NULL) const { return true; }
-	/* TODO */ virtual String validate_path(const String &p_path) const { return ""; }
-	/* TODO */ virtual Script *create_script() const { return NULL; }
+	virtual bool validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path = "", List<String> *r_functions = NULL, List<Warning> *r_warnings = NULL, Set<int> *r_safe_lines = NULL) const;
+	virtual String validate_path(const String &p_path) const { return ""; }
+	virtual Script *create_script() const;
 
 	/* TODO */ virtual int find_function(const String &p_function, const String &p_code) const { return -1; }
 	/* TODO */ virtual String make_function(const String &p_class, const String &p_name, const PoolStringArray &p_args) const { return ""; }
