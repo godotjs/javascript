@@ -25,10 +25,25 @@ def quickjs():
 	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
 	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
 
+def generate_definition_code():
+	with open("tools/godot.builtin.d.ts.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
+		source = open("misc/godot.builtin.d.ts", 'r').read()
+		lines = source.split('\n')
+		source = ""
+		length = len(lines)
+		for i in range(length):
+			line = lines[i].replace('"', '\\"')
+			line = '\t"' + line + '\\n"';
+			if i < length -1:
+				line += "\n"
+			source += line
+		f.write(text.replace('${source}', source))
+
 jsengine = 'quickjs'
 if jsengine == 'quickjs':
 	quickjs()
-	
+generate_definition_code()
 	
 sources = [
 	'register_types.cpp',

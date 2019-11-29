@@ -103,6 +103,7 @@ private:
 	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_get_type(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
 	void free_ecmas_class(const ECMAClassInfo &p_class);

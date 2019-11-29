@@ -49,38 +49,57 @@ static String applay_partern(const String &p_partern, const Dictionary &p_values
 	return ret;
 }
 
-static String format_doc_text(const String &p_source, const String &p_indent = "\t") {
-	Dictionary dict;
-	dict["[code]"] = "`";
-	dict["[/code]"] = "`";
-	dict["[codeblock]"] = "```gdscript";
-	dict["[/codeblock]"] = "```";
+static String format_doc_text(const String &p_bbcode, const String &p_indent = "\t") {
+	String markdown = p_bbcode.strip_edges();
 
-	Vector<String> lines = p_source.split("\n");
-	Vector<String> text_lines;
+	Vector<String> lines = markdown.split("\n");
+	bool in_code_block = false;
+	int code_block_indent = -1;
+
+	markdown = "";
 	for (int i = 0; i < lines.size(); i++) {
-		String line = lines[i].strip_edges();
-		if (line.empty()) continue;
-		text_lines.push_back(line);
-	}
-
-	String ret = "";
-	for (int i = 0; i < text_lines.size(); i++) {
-		if (i > 0) {
-			ret += p_indent;
+		String line = lines[i];
+		int block_start = line.find("[codeblock]");
+		if (block_start != -1) {
+			code_block_indent = block_start;
+			in_code_block = true;
+			line = "\n";
+		} else if (in_code_block) {
+			line = "\t" + line.substr(code_block_indent, line.length());
 		}
-		ret += text_lines[i];
-		if ((i < text_lines.size() - 1)) {
-			ret += "  \n";
-		}
-	}
 
-	for (const Variant *key = dict.next(); key; key = dict.next(key)) {
-		String p = *key;
-		String v = dict.get(*key, p);
-		ret = ret.replace(p, v);
+		if (in_code_block && line.find("[/codeblock]") != -1) {
+			line = "\n";
+			in_code_block = false;
+		}
+
+		if (!in_code_block) {
+			line = line.strip_edges();
+			line = line.replace("[code]", "`");
+			line = line.replace("[/code]", "`");
+			line = line.replace("[i]", "*");
+			line = line.replace("[/i]", "*");
+			line = line.replace("[b]", "**");
+			line = line.replace("[/b]", "**");
+			line = line.replace("[u]", "__");
+			line = line.replace("[/u]", "__");
+			line = line.replace("[method ", "`");
+			line = line.replace("[member ", "`");
+			line = line.replace("[signal ", "`");
+			line = line.replace("[enum ", "`");
+			line = line.replace("[constant ", "`");
+			line = line.replace("[", "`");
+			line = line.replace("]", "`");
+		}
+
+		if (!in_code_block && i < lines.size() - 1) {
+			line += "\n\n";
+		} else if (i < lines.size() - 1) {
+			line += "\n";
+		}
+		markdown += (i > 0 ? p_indent : "") + line;
 	}
-	return ret;
+	return markdown;
 }
 
 static String format_identifier(const String &p_ident) {
@@ -116,31 +135,24 @@ static String get_type_name(const String &p_type) {
 		return "object";
 	if (p_type == "Variant")
 		return "any";
-	if (Engine::get_singleton()->has_singleton(p_type))
-		return String("_") + p_type;
 	return p_type;
 }
 
-String _export_method(const DocData::MethodDoc &p_method, bool is_function = false) {
+String _export_method(const DocData::MethodDoc &p_method, bool is_function = false, bool is_static = false) {
 
-	String method_template = ""
-							 "\n"
-							 "		/** ${description} */"
-							 "\n"
-							 "		${name}(${params}) : ${return_type};"
-							 "\n";
+	String method_template = "\n"
+							 "\t\t/** ${description} */\n"
+							 "\t\t${static}${name}(${params}) : ${return_type};\n";
 	if (is_function) {
-		method_template = ""
-						  "\n"
-						  "	/** ${description} */"
-						  "\n"
-						  "	function ${name}(${params}) : ${return_type};"
-						  "\n";
+		method_template = "\n"
+						  "\t/** ${description} */\n"
+						  "\tfunction ${name}(${params}) : ${return_type};\n";
 	}
 
 	Dictionary dict;
 	dict["description"] = format_doc_text(p_method.description, "\t\t ");
 	dict["name"] = format_property_name(p_method.name);
+	dict["static"] = is_static ? "static " : "";
 	dict["return_type"] = get_type_name(p_method.return_type);
 	String params = "";
 	bool arg_default_value_started = false;
@@ -160,52 +172,23 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	}
 	dict["params"] = params;
 	return applay_partern(method_template, dict);
-	;
 }
 
 String _export_class(const DocData::ClassDoc &class_doc) {
 
-	const String class_template = ""
-								  "\n"
-								  ""
-								  "\n"
-								  "	namespace ${name} {"
-								  "\n"
-								  "		interface Signal${extends}${base_signal} {"
-								  "\n"
-								  "${signals}"
-								  "		}"
-								  "\n"
-								  "	}"
-								  "\n"
-								  ""
-								  "\n"
-								  "	/** ${brief_description}"
-								  "\n"
-								  ""
-								  "\n"
-								  "	 ${description} */"
-								  "\n"
-								  "	class ${name}${extends}${inherits} {"
-								  "\n"
-								  ""
-								  "\n"
-								  "		static readonly Signal: ${name}.Signal;"
-								  "\n"
-								  "		readonly Signal: ${name}.Signal;"
-								  "\n"
-								  "${constants}"
-								  "\n"
-								  "${properties}"
-								  "\n"
-								  "${methods}"
-								  "\n"
-								  "	}"
-								  "\n";
+	const String class_template = "\n"
+								  "\t/** ${brief_description}\n"
+								  "\t ${description} */\n"
+								  "\tclass ${name}${extends}${inherits} {\n"
+								  "${signals}\n"
+								  "${constants}\n"
+								  "${enumerations}\n"
+								  "${properties}\n"
+								  "${methods}\n"
+								  "\t}\n";
 	Dictionary dict;
 	dict["name"] = class_doc.name;
 	dict["inherits"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits);
-	dict["base_signal"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits) + ".Signal";
 	dict["extends"] = class_doc.inherits.empty() ? "" : " extends ";
 	String brief_description = format_doc_text(class_doc.brief_description, "\t ");
 	dict["brief_description"] = brief_description;
@@ -217,6 +200,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	}
 
 	String constants = "";
+	HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
 	for (int i = 0; i < class_doc.constants.size(); i++) {
 		const DocData::ConstantDoc &const_doc = class_doc.constants[i];
 		Dictionary dict;
@@ -228,50 +212,65 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			type = const_doc.value.split("(")[0];
 		}
 		dict["type"] = type;
-
-		if (class_doc.name.begins_with("_")) {
-			String signleton_const_str = ""
-										 "\n"
-										 "		/** ${description}"
-										 "\n"
-										 "		 * @value `${value}`"
-										 "\n"
-										 "		 */"
-										 "\n"
-										 "		readonly ${name}: ${type};"
-										 "\n";
-			constants += applay_partern(signleton_const_str, dict);
-		} else {
-			String const_str = ""
-							   "\n"
-							   "		/** ${description}"
-							   "\n"
-							   "		 * @value `${value}`"
-							   "\n"
-							   "		 */"
-							   "\n"
-							   "		static readonly ${name}: ${type};"
-							   "\n";
+		if (const_doc.value.is_valid_integer()) {
+			String const_str = "\n"
+							   "\t\t/** ${description} */\n"
+							   "\t\tstatic readonly ${name}: ${value};\n";
 			constants += applay_partern(const_str, dict);
+		} else {
+			String const_str = "\n"
+							   "\t\t/** ${description} \n"
+							   "\t\t * @value `${value}` */\n"
+							   "\t\tstatic readonly ${name}: ${type};\n";
+			dict["type"] = const_doc.value.split("(")[0];
+			constants += applay_partern(const_str, dict);
+		}
+
+		if (!const_doc.enumeration.empty()) {
+			if (!enumerations.has(const_doc.enumeration)) {
+				Vector<const DocData::ConstantDoc *> e;
+				e.push_back(&const_doc);
+				enumerations.set(const_doc.enumeration, e);
+			} else {
+				enumerations.get(const_doc.enumeration).push_back(&const_doc);
+			}
 		}
 	}
 	dict["constants"] = constants;
+
+	String enumerations_str = "";
+	const String *enum_name = enumerations.next(NULL);
+	while (enum_name) {
+		String enum_str = "\t\tstatic readonly " + *enum_name + " : {\n";
+		const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
+		for (int i = 0; i < enums.size(); i++) {
+			String const_str = "\t\t\t/** ${description} */\n"
+							   "\t\t\t${name}: ${value},\n";
+			Dictionary dict;
+			dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
+			dict["name"] = format_property_name(enums[i]->name);
+			dict["value"] = enums[i]->value;
+			enum_str += applay_partern(const_str, dict);
+		}
+		enum_str += "\t\t}\n";
+		enumerations_str += enum_str;
+		enum_name = enumerations.next(enum_name);
+	}
+	dict["enumerations"] = enumerations_str;
 
 	Vector<DocData::MethodDoc> method_list = class_doc.methods;
 	String properties = "";
 	for (int i = 0; i < class_doc.properties.size(); i++) {
 		const DocData::PropertyDoc &prop_doc = class_doc.properties[i];
 
-		String prop_str = ""
-						  "\n"
-						  "		/** ${description} */"
-						  "\n"
-						  "		${name}: ${type};"
-						  "\n";
+		String prop_str = "\n"
+						  "\t\t/** ${description} */\n"
+						  "\t\t${static}${name}: ${type};\n";
 		Dictionary dict;
 		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
 		dict["name"] = format_property_name(prop_doc.name);
 		dict["type"] = get_type_name(prop_doc.type);
+		dict["static"] = Engine::get_singleton()->has_singleton(class_doc.name) ? "static " : "";
 		properties += applay_partern(prop_str, dict);
 
 		if (!prop_doc.getter.empty()) {
@@ -299,12 +298,9 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String signals = "";
 	for (int i = 0; i < class_doc.signals.size(); ++i) {
 		const DocData::MethodDoc &signal = class_doc.signals[i];
-		String signal_str = ""
-							"\n"
-							"			/** ${description} */"
-							"\n"
-							"			${name}: '${name}',"
-							"\n";
+		String signal_str = "\n"
+							"\t\t/** ${description} */\n"
+							"\t\tstatic ${name}: '${name}';\n";
 		Dictionary dict;
 		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
 		dict["name"] = signal.name;
@@ -313,14 +309,13 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	dict["signals"] = signals;
 
 	// TODO: Theme properties
-
 	String methods = "";
 	for (int i = 0; i < method_list.size(); i++) {
 		const DocData::MethodDoc &method_doc = method_list[i];
 		if (method_doc.name == class_doc.name) {
 			continue;
 		}
-		methods += _export_method(method_doc);
+		methods += _export_method(method_doc, false, Engine::get_singleton()->has_singleton(class_doc.name));
 	}
 	dict["methods"] = methods;
 
@@ -331,28 +326,17 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	DocData *doc = EditorHelp::get_doc_data();
 	Dictionary dict;
 
-	const String godot_module = "// This file is generated by godot editor"
+	const String godot_module = "// This file is generated by godot editor\n"
+								"${buitins}\n"
 								"\n"
-								"${buitins}"
-								"\n"
-								""
-								"\n"
-								"declare module " GODOT_OBJECT_NAME " {"
-								"\n"
-								"${singletons}"
-								"\n"
-								"${constants}"
-								"\n"
-								"${functions}"
-								"\n"
-								"${classes}"
-								"\n"
-								"}"
-								"\n"
-								""
+								"declare module " GODOT_OBJECT_NAME " {\n"
+								"${constants}\n"
+								"${enumerations}\n"
+								"${functions}\n"
+								"${classes}\n"
+								"}\n"
 								"\n";
 
-	String classes = "";
 	Set<String> ignored_classes;
 	ignored_classes.insert("int");
 	ignored_classes.insert("float");
@@ -362,6 +346,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("Variant");
 	ignored_classes.insert("Array");
 	ignored_classes.insert("Dictionary");
+#if 1
 	ignored_classes.insert("Vector2");
 	ignored_classes.insert("Vector3");
 	ignored_classes.insert("Color");
@@ -369,11 +354,11 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("RID");
 	ignored_classes.insert("NodePath");
 	ignored_classes.insert("Transform2D");
+	ignored_classes.insert("Transform");
 	ignored_classes.insert("Basis");
 	ignored_classes.insert("Quat");
 	ignored_classes.insert("Plane");
 	ignored_classes.insert("AABB");
-	ignored_classes.insert("Transform");
 	ignored_classes.insert("PoolByteArray");
 	ignored_classes.insert("PoolIntArray");
 	ignored_classes.insert("PoolRealArray");
@@ -381,9 +366,9 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("PoolVector2Array");
 	ignored_classes.insert("PoolVector3Array");
 	ignored_classes.insert("PoolColorArray");
+#endif
 
-	String constants = "";
-
+	String classes = "";
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
 		DocData::ClassDoc class_doc = E->get();
 		if (ignored_classes.has(class_doc.name)) {
@@ -391,49 +376,53 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		}
 		class_doc.name = get_type_name(class_doc.name);
 		if (class_doc.name.begins_with("@")) {
+			HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
+				String constants = "";
 				for (int i = 0; i < class_doc.constants.size(); i++) {
 					const DocData::ConstantDoc &const_doc = class_doc.constants[i];
-					String const_str = ""
-									   "\n"
-									   "	/** ${description}"
-									   "\n"
-									   "	 * @value `${value}`"
-									   "\n"
-									   "	 */"
-									   "\n"
-									   "	const ${name}: number;"
-									   "\n";
+					String const_str = "\n"
+									   "\t/** ${description} */\n"
+									   "\tconst ${name}: ${value};\n";
 					Dictionary dict;
 					dict["description"] = format_doc_text(const_doc.description, "\t ");
 					dict["name"] = format_property_name(const_doc.name);
 					dict["value"] = const_doc.value;
 					constants += applay_partern(const_str, dict);
-					;
-				}
-			}
 
-			if (class_doc.name == "@GlobalScope") {
-				String singletons = "";
-				for (int i = 0; i < class_doc.properties.size(); i++) {
-					const DocData::PropertyDoc &prop_doc = class_doc.properties[i];
-
-					String prop_str = ""
-									  "\n"
-									  "	/** ${description} */"
-									  "\n"
-									  "	const ${name}: ${type};"
-									  "\n";
-					Dictionary dict;
-					dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
-					dict["name"] = format_property_name(prop_doc.name);
-					dict["type"] = get_type_name(prop_doc.type);
-					singletons += applay_partern(prop_str, dict);
+					if (!const_doc.enumeration.empty()) {
+						if (!enumerations.has(const_doc.enumeration)) {
+							Vector<const DocData::ConstantDoc *> e;
+							e.push_back(&const_doc);
+							enumerations.set(const_doc.enumeration, e);
+						} else {
+							enumerations.get(const_doc.enumeration).push_back(&const_doc);
+						}
+					}
 				}
-				dict["singletons"] = singletons;
 				dict["constants"] = constants;
-			} else if (class_doc.name == "@GDScript") {
-				String methods = "";
+
+				String enumerations_str = "";
+				const String *enum_name = enumerations.next(NULL);
+				while (enum_name) {
+					String enum_str = "\tconst " + (*enum_name).replace(".", "") + " : {\n";
+					const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
+					for (int i = 0; i < enums.size(); i++) {
+						String const_str = "\t\t/** ${description} */\n"
+										   "\t\t${name}: ${value},\n";
+						Dictionary dict;
+						dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
+						dict["name"] = format_property_name(enums[i]->name);
+						dict["value"] = enums[i]->value;
+						enum_str += applay_partern(const_str, dict);
+					}
+					enum_str += "\t}\n";
+					enumerations_str += enum_str;
+					enum_name = enumerations.next(enum_name);
+				}
+				dict["enumerations"] = enumerations_str;
+
+				String functions = "";
 				for (int i = 0; i < class_doc.methods.size(); i++) {
 					const DocData::MethodDoc &method_doc = class_doc.methods[i];
 					if (Expression::find_function(method_doc.name) == Expression::FUNC_MAX) {
@@ -442,15 +431,14 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					if (format_property_name(method_doc.name) != method_doc.name) {
 						continue;
 					}
-					methods += _export_method(method_doc, true);
+					functions += _export_method(method_doc, true);
 				}
-				dict["functions"] = methods;
+				dict["functions"] = functions;
 			}
 			continue;
 		}
 		classes += _export_class(class_doc);
 	}
-	dict["constants"] = constants;
 	dict["classes"] = classes;
 	dict["buitins"] = BUILTIN_DECLEARATION_TEXT;
 

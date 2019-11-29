@@ -270,6 +270,14 @@ JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int arg
 	return JS_NewStringLen(ctx, ascii.ptr(), ascii.length());
 }
 
+JSValue QuickJSBinder::godot_get_type(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	Variant value;
+	if (argc) {
+		value = var_to_variant(ctx, argv[0]);
+	}
+	return JS_NewInt32(ctx, value.get_type());
+}
+
 JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_name, void *opaque) {
 	JSModuleDef *m = NULL;
 	Error err;
@@ -539,6 +547,9 @@ void QuickJSBinder::add_godot_globals() {
 	JSValue js_func_register_property = JS_NewCFunction(ctx, godot_register_property, "register_property", 3);
 	JS_DefinePropertyValueStr(ctx, godot_object, "register_property", js_func_register_property, PROP_DEF_DEFAULT);
 
+	JSValue js_get_type = JS_NewCFunction(ctx, godot_get_type, "get_type", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "get_type", js_get_type, PROP_DEF_DEFAULT);
+
 	// Singletons
 	List<Engine::Singleton> singletons;
 	Engine::get_singleton()->get_singletons(&singletons);
@@ -617,9 +628,11 @@ void QuickJSBinder::add_godot_globals() {
 
 	// global enums
 	for (const StringName *enum_name = global_constants.next(NULL); enum_name; enum_name = global_constants.next(enum_name)) {
-		if (String(*enum_name).empty()) continue;
+		String enum_name_str = *enum_name;
+		if (enum_name_str.empty()) continue;
+		enum_name_str = enum_name_str.replace(".", "");
 
-		JSAtom atom_enum_name = get_atom(ctx, *enum_name);
+		JSAtom atom_enum_name = get_atom(ctx, enum_name_str);
 		JSValue enum_object = JS_NewObject(ctx);
 		JS_DefinePropertyValue(ctx, godot_object, atom_enum_name, enum_object, QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, atom_enum_name);
