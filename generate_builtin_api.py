@@ -2,9 +2,7 @@
 import json, os, sys
 import xml.etree.ElementTree as ET
 
-
-# MODULE_DIR = os.path.abspath( os.path.dirname(__file__) )
-MODULE_DIR = '/home/geequlim/Documents/Workspace/Develop/Godot/godot/modules/ECMAScript'
+MODULE_DIR = os.getcwd()
 DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
 if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
 	DOCS_DIR = sys.argv[-1]
