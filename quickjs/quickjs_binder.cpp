@@ -60,7 +60,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	CharString err_message;
 	switch (call_err.error) {
 		case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT: {
-			String err = "Invalid type for argument #" + itos(call_err.error) + ", expected '" + Variant::get_type_name(call_err.expected) + "'.";
+			String err = "Invalid type for argument #" + itos(call_err.argument) + ", expected '" + Variant::get_type_name(call_err.expected) + "'.";
 			err_message = err.utf8();
 		} break;
 		case Variant::CallError::CALL_ERROR_INVALID_METHOD: {
@@ -176,6 +176,13 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 	Variant::CallError err;
 	String err_msg;
 
+	Expression::BuiltinFunc func = (Expression::BuiltinFunc)magic;
+	int arg_required = Expression::get_func_argument_count(func);
+	if (argc < arg_required) {
+		String func_name = Expression::get_func_name(func);
+		return JS_ThrowTypeError(ctx, "%d arguments expected for builtin funtion %s", arg_required, func_name.ascii().ptr());
+	}
+
 	Variant *args = memnew_arr(Variant, argc);
 	const Variant **argsptr = memnew_arr(const Variant *, argc);
 	for (int i = 0; i < argc; ++i) {
@@ -183,7 +190,6 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		argsptr[i] = &(args[i]);
 	}
 
-	Expression::BuiltinFunc func = (Expression::BuiltinFunc)magic;
 	Expression::exec_func(func, argsptr, &ret, err, err_msg);
 	if (args != NULL) {
 		memdelete_arr(args);
@@ -288,12 +294,8 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	}
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-	if (JSModuleDef **ptr = binder->module_cache.getptr(file)) {
-		m = *ptr;
-#if MODULE_HAS_REFCOUNT
-		JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
-		JS_DupValue(ctx, val);
-#endif
+	if (ModuleCache *ptr = binder->module_cache.getptr(file)) {
+		m = ptr->module;
 	}
 
 	if (!m) {
@@ -312,32 +314,48 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error) {
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-
-	JSModuleDef *module = NULL;
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
 	const char *cfilename = filename.ptr();
 	if (!cfilename) cfilename = ""; // avoid crash with empty file name here
+
+	String md5 = p_code.md5_text();
+	ModuleCache *last_module = binder->module_cache.getptr(p_filename);
+	if (last_module) {
+		if (last_module->code_md5 == md5) {
+#if MODULE_HAS_REFCOUNT
+			if (last_module->module) {
+				JSValue val = JS_MKPTR(JS_TAG_MODULE, last_module->module);
+				JS_DupValue(ctx, val);
+			}
+#endif
+			return last_module->module;
+		} else {
+#if MODULE_HAS_REFCOUNT
+			JSModuleDef *m = last_module->module;
+			if (m) {
+				JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
+				JS_FreeValue(ctx, val);
+			}
+#endif
+		}
+	}
+
+	ModuleCache module;
+	module.code_md5 = md5;
+	module.module = NULL;
+
 	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (JS_IsException(func)) {
 		JSValue e = JS_GetException(ctx);
 		dump_exception(ctx, e, r_error);
 		JS_Throw(ctx, e);
 	} else {
-		module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
 	}
 
-	if (module) {
-#if MODULE_HAS_REFCOUNT
-		JSModuleDef **last_module = binder->module_cache.getptr(p_filename);
-		if (last_module && *last_module) {
-			JSValue val = JS_MKPTR(JS_TAG_MODULE, *last_module);
-			JS_FreeValue(ctx, val);
-		}
-#endif
-		binder->module_cache.set(p_filename, module);
-	}
-	return module;
+	binder->module_cache.set(p_filename, module);
+	return module.module;
 }
 
 JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -723,9 +741,9 @@ void QuickJSBinder::uninitialize() {
 #if MODULE_HAS_REFCOUNT
 	const String *file = module_cache.next(NULL);
 	while (file) {
-		JSModuleDef *m = module_cache.get(*file);
-		if (m) {
-			JSValue val = JS_MKPTR(JS_TAG_MODULE, m);
+		const ModuleCache &m = module_cache.get(*file);
+		if (m.module) {
+			JSValue val = JS_MKPTR(JS_TAG_MODULE, m.module);
 			JS_FreeValue(ctx, val);
 		}
 		file = module_cache.next(file);

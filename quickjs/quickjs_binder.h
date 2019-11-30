@@ -29,6 +29,11 @@ public:
 		}
 	};
 
+	struct ModuleCache {
+		JSModuleDef *module;
+		String code_md5;
+	};
+
 	enum {
 		PROP_DEF_DEFAULT = JS_PROP_ENUMERABLE,
 	};
@@ -81,7 +86,7 @@ private:
 	const ClassBindData *godot_object_class;
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
-	HashMap<String, JSModuleDef *> module_cache;
+	HashMap<String, ModuleCache> module_cache;
 
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;

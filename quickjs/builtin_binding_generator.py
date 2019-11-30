@@ -412,7 +412,7 @@ ${validation}
 		switch (magic) {\
 ${setters}
 		}
-		return argv[0];
+		return JS_DupValue(ctx, argv[0]);
 	};
 ${bindings}
 		'''
@@ -424,7 +424,7 @@ ${bindings}
 #ifdef DEBUG_METHODS_ENABLED
 				ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[0]), (JS_ThrowTypeError(ctx, "${type_name} expected for ${class}.${name}")));
 #endif
-				ptr->${name} = ${value};
+				ptr->${native} = ${value};
 				break;'''
 		TemplateItemBinding = '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
 		getters = ''
@@ -434,13 +434,15 @@ ${bindings}
 			p = cls['properties'][i]
 			type = p['type']
 			name = p['name']
+			native_name = p['native']
 			getters += apply_parttern(TemplateGetterItem, {
 				'index': str(i),
-				'value': apply_parttern(GodotToJSTemplates[type], { 'arg': apply_parttern('ptr->${name}', {'name': name}) })
+				'value': apply_parttern(GodotToJSTemplates[type], { 'arg': apply_parttern('ptr->${native}', {'native': native_name}) })
 			})
 			setters += apply_parttern(TemplateSetterItem, {
 				'index': str(i),
 				'name': name,
+				'native': native_name,
 				'type': VariantTypes[type],
 				'type_name': type,
 				'class': class_name,

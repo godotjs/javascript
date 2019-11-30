@@ -3,6 +3,7 @@ import json, os, sys
 import xml.etree.ElementTree as ET
 
 MODULE_DIR = os.getcwd()
+MODULE_DIR = "/home/geequlim/Documents/Workspace/Develop/Godot/godot/modules/ECMAScript"
 DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
 if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
 	DOCS_DIR = sys.argv[-1]
@@ -225,12 +226,30 @@ METHOD_POOL_ARRAY_GET = {
 IGNORED_PROPS = {
 	"Rect2": ['end', 'grow_margin'],
 	"Color": ['h', 's', 'v', 'r8', 'g8', 'b8', 'a8'],
-	"Transform2D": ['x', 'y', 'origin', 'xform', 'xform_inv'],
-	"Basis": ['x', 'y', 'z', 'is_equal_approx'],
-	"Plane": ['x', 'y', 'z', 'intersects_segment', 'intersects_ray', 'intersect_3'],
+	"Transform2D": ['xform', 'xform_inv'],
+	"Basis": ['is_equal_approx'],
+	"Plane": ['intersects_segment', 'intersects_ray', 'intersect_3'],
 	"AABB": ['end'],
 	"Transform": ['xform', 'xform_inv', 'IDENTITY', 'FLIP_X', 'FLIP_Y', 'FLIP_Z'],
 	"PoolByteArray": ['compress', 'decompress', 'get_string_from_ascii', 'get_string_from_utf8', 'sha256_string', 'hex_encode'],
+}
+
+PROPERTY_REMAP = {
+	"Transform2D": {
+		"x": "elements[0]",
+		"y": "elements[1]",
+		"origin": "elements[2]",
+	},
+	"Basis": {
+		"x": "elements[0]",
+		"y": "elements[1]",
+		"z": "elements[2]",
+	},
+	"Plane": {
+		"x": "normal.x",
+		"y": "normal.y",
+		"z": "normal.z",
+	}
 }
 
 OPERATOR_METHODS = {
@@ -345,7 +364,11 @@ def parse_class(cls):
 			continue
 		if type in TYPE_MAP:
 			type = TYPE_MAP[type]
-		members.append({'name': name, 'type': type })
+		native_prop = name
+		if class_name in PROPERTY_REMAP:
+			if name in PROPERTY_REMAP[class_name]:
+				native_prop = PROPERTY_REMAP[class_name][name]
+		members.append({'name': name, 'type': type, 'native': native_prop})
 	
 	for m in (cls.find("methods") if cls.find("methods") is not None else []):
 		m_dict = dict(m.attrib)
