@@ -27,6 +27,10 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, Variant::Type 
 	bind->godot_builtin_object_ptr = p_object;
 	JS_SetOpaque(obj, bind);
 
+#ifdef DUMP_LEAKS
+	QuickJSBinder::add_debug_binding_info(ctx, obj, bind);
+#endif
+
 	return obj;
 }
 

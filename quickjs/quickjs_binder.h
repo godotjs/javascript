@@ -90,7 +90,7 @@ private:
 
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
-
+	const ECMAScriptGCHandler *lastest_allocated_object = NULL;
 #if NO_MODULE_EXPORT_SUPPORT
 	String parsing_script_file;
 #endif
@@ -109,6 +109,7 @@ private:
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_get_type(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static void add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind);
 
 	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
 	void free_ecmas_class(const ECMAClassInfo &p_class);

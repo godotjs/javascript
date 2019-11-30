@@ -96,7 +96,17 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			ERR_FAIL_NULL_V(data, JS_UNDEFINED);
 			ERR_FAIL_NULL_V(data->ecma_object, JS_UNDEFINED);
 			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
-			JS_DupValue(ctx, js_obj);
+
+			QuickJSBinder *binder = get_context_binder(ctx);
+			if (binder->lastest_allocated_object == data) {
+				if (data->is_object()) {
+					JS_DupValue(ctx, js_obj);
+				}
+				binder->lastest_allocated_object = NULL;
+			} else {
+				JS_DupValue(ctx, js_obj);
+			}
+
 			return js_obj;
 		}
 		case Variant::ARRAY: {
@@ -282,6 +292,35 @@ JSValue QuickJSBinder::godot_get_type(JSContext *ctx, JSValue this_val, int argc
 		value = var_to_variant(ctx, argv[0]);
 	}
 	return JS_NewInt32(ctx, value.get_type());
+}
+
+void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind) {
+	if (!p_bind) return;
+	JSValue classname = JS_UNDEFINED;
+	if (p_bind->type != Variant::OBJECT) {
+		classname = to_js_string(ctx, Variant::get_type_name(p_bind->type));
+	} else {
+		if (p_bind->is_reference()) {
+			classname = to_js_string(ctx, (*p_bind->godot_reference)->get_class_name());
+		} else if (p_bind->is_object()) {
+			classname = to_js_string(ctx, p_bind->godot_object->get_class_name());
+		}
+	}
+
+	Array arr;
+	String ptr_str = "0x%X";
+	bool err;
+	union {
+		const void *p;
+		uint64_t i;
+	} u;
+	u.p = p_bind->godot_object;
+	arr.push_back(int(u.i));
+	ptr_str = ptr_str.sprintf(arr, &err);
+	JSValue ptrvalue = to_js_string(ctx, ptr_str);
+
+	JS_DefinePropertyValueStr(ctx, p_obj, "__class__", classname, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, p_obj, "__ptr__", ptrvalue, PROP_DEF_DEFAULT);
 }
 
 JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_name, void *opaque) {
@@ -831,6 +870,12 @@ void *QuickJSBinder::alloc_object_binding_data(Object *p_object) {
 			data->godot_reference = u.ref;
 		}
 		JS_SetOpaque(obj, data);
+#ifdef DUMP_LEAKS
+		add_debug_binding_info(ctx, obj, data);
+		JS_DefinePropertyValueStr(ctx, obj, "__id__", to_js_number(ctx, p_object->get_instance_id()), PROP_DEF_DEFAULT);
+#endif
+
+		lastest_allocated_object = data;
 		return data;
 	}
 	return NULL;
@@ -1133,26 +1178,23 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
 
 	JSValue object = GET_JSVALUE(p_object);
-
 	JSAtom atom = get_atom(ctx, p_method);
 	JSValue method = JS_GetProperty(ctx, object, atom);
 	JS_FreeAtom(ctx, atom);
 
 	JSValue return_val = JS_UNDEFINED;
-	JSValue *argv = memnew_arr(JSValue, p_argcount);
-	for (int i = 0; i < p_argcount; ++i) {
-		argv[i] = variant_to_var(ctx, *p_args[i]);
-	}
+	JSValue *argv = NULL;
 
-	if (!JS_IsFunction(ctx, method)) {
+	if (!JS_IsFunction(ctx, method) || JS_IsPureCFunction(ctx, method)) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
 		goto finish;
 	}
 
-	return_val = JS_Call(ctx, method, object, p_argcount, argv);
-	for (int i = 0; i < p_argcount; i++) {
-		JS_FreeValue(ctx, argv[i]);
+	argv = memnew_arr(JSValue, p_argcount);
+	for (int i = 0; i < p_argcount; ++i) {
+		argv[i] = variant_to_var(ctx, *p_args[i]);
 	}
+	return_val = JS_Call(ctx, method, object, p_argcount, argv);
 
 	if (JS_IsException(return_val)) {
 		r_error.error = Variant::CallError::CALL_ERROR_INVALID_ARGUMENT;
@@ -1160,11 +1202,16 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 		ECMAscriptScriptError err;
 		dump_exception(ctx, exception, &err);
 		print_error(error_to_string(err));
-		JS_FreeValue(ctx, exception);
+		JS_Throw(ctx, exception);
 	}
 finish:
 	Variant ret = var_to_variant(ctx, return_val);
-	if (argv) memdelete_arr(argv);
+	if (argv) {
+		for (int i = 0; i < p_argcount; i++) {
+			JS_FreeValue(ctx, argv[i]);
+		}
+		memdelete_arr(argv);
+	}
 	JS_FreeValue(ctx, return_val);
 	JS_FreeValue(ctx, method);
 	return ret;

@@ -25423,6 +25423,14 @@ JSAtom JS_GetModuleExportEntryName(JSContext *ctx, JSModuleDef *m, int idx) {
     return JS_DupAtom(ctx, m->export_entries[idx].export_name);
 }
 
+JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val) {
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) != JS_TAG_OBJECT)
+        return FALSE;
+    p = JS_VALUE_GET_OBJ(val);
+    return p->class_id == JS_CLASS_C_FUNCTION;
+}
+
 /* default module filename normalizer */
 static char *js_default_module_normalize_name(JSContext *ctx,
                                               const char *base_name,
