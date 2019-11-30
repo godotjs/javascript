@@ -29,6 +29,11 @@ struct ECMAClassInfo {
 	HashMap<StringName, ECMAProperyInfo> properties;
 };
 
+struct GlobalNumberConstant {
+	StringName name;
+	double_t value;
+};
+
 class ECMAScriptBinder {
 protected:
 	// Path ==> ECMA Class

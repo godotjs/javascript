@@ -643,6 +643,23 @@ void QuickJSBinder::add_godot_globals() {
 			global_constants.set(enum_name, enum_);
 		}
 	}
+	// global numbers
+	GlobalNumberConstant consts[] = {
+		{ "PI", Math_PI },
+		{ "TAU", Math_TAU },
+		{ "NAN", Math_NAN },
+		{ "INF", Math_INF },
+		{ "E", Math_E },
+		{ "LN2", Math_LN2 },
+		{ "SQRT2", Math_SQRT2 },
+		{ "SQRT12", Math_SQRT12 },
+	};
+	for (int i = 0; i < sizeof(consts) / sizeof(GlobalNumberConstant); i++) {
+		const GlobalNumberConstant &c = consts[i];
+		JSAtom js_const_name = get_atom(ctx, c.name);
+		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_NewFloat64(ctx, c.value), QuickJSBinder::PROP_DEF_DEFAULT);
+		JS_FreeAtom(ctx, js_const_name);
+	}
 
 	// global enums
 	for (const StringName *enum_name = global_constants.next(NULL); enum_name; enum_name = global_constants.next(enum_name)) {

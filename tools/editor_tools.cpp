@@ -379,11 +379,11 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 			HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
 				String constants = "";
+				String const_str = "\n"
+								   "\t/** ${description} */\n"
+								   "\tconst ${name}: ${value};\n";
 				for (int i = 0; i < class_doc.constants.size(); i++) {
 					const DocData::ConstantDoc &const_doc = class_doc.constants[i];
-					String const_str = "\n"
-									   "\t/** ${description} */\n"
-									   "\tconst ${name}: ${value};\n";
 					Dictionary dict;
 					dict["description"] = format_doc_text(const_doc.description, "\t ");
 					dict["name"] = format_property_name(const_doc.name);
@@ -400,6 +400,29 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 						}
 					}
 				}
+
+				GlobalNumberConstant consts[] = {
+					{ "PI", Math_PI },
+					{ "TAU", Math_TAU },
+					{ "NAN", Math_NAN },
+					{ "INF", Math_INF },
+					{ "E", Math_E },
+					{ "LN2", Math_LN2 },
+					{ "SQRT2", Math_SQRT2 },
+					{ "SQRT12", Math_SQRT12 },
+				};
+				for (int i = 0; i < sizeof(consts) / sizeof(GlobalNumberConstant); i++) {
+					Dictionary dict;
+					const GlobalNumberConstant &c = consts[i];
+					dict["description"] = format_doc_text("", "\t ");
+					dict["name"] = format_property_name(c.name);
+					dict["value"] = c.value;
+					if (c.name == "NAN" || c.name == "INF") {
+						dict["value"] = "number";
+					}
+					constants += applay_partern(const_str, dict);
+				}
+
 				dict["constants"] = constants;
 
 				String enumerations_str = "";
@@ -433,6 +456,21 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					}
 					functions += _export_method(method_doc, true);
 				}
+
+				for (int i = 0; i < Expression::FUNC_MAX; i++) {
+					DocData::MethodDoc md;
+					md.name = Expression::get_func_name(Expression::BuiltinFunc(i));
+					md.return_type = "any";
+					if (md.name == "typeof") continue;
+					for (int j = 0; j < Expression::get_func_argument_count(Expression::BuiltinFunc(i)); j++) {
+						DocData::ArgumentDoc ad;
+						ad.name = "v" + itos(j);
+						ad.type = "any";
+						md.arguments.push_back(ad);
+					}
+					functions += _export_method(md, true);
+				}
+
 				dict["functions"] = functions;
 			}
 			continue;
