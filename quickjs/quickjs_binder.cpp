@@ -1201,8 +1201,10 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 		JSValue exception = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, exception, &err);
-		print_error(error_to_string(err));
+		ERR_PRINTS(error_to_string(err));
 		JS_Throw(ctx, exception);
+	} else {
+		r_error.error = Variant::CallError::CALL_OK;
 	}
 finish:
 	Variant ret = var_to_variant(ctx, return_val);
