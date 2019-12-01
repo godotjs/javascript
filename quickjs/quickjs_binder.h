@@ -32,6 +32,7 @@ public:
 	struct ModuleCache {
 		JSModuleDef *module;
 		String code_md5;
+		bool evaluated;
 	};
 
 	enum {
@@ -71,7 +72,7 @@ private:
 	}
 	_FORCE_INLINE_ static void *js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
-	static JSModuleDef *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
+	ModuleCache *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 
 	struct ClassBindData {
 		JSClassID class_id;

@@ -344,13 +344,15 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			return NULL;
 		}
 		ECMAscriptScriptError err;
-		m = js_compile_module(ctx, code, file, &err);
+		if (ModuleCache *module = binder->js_compile_module(ctx, code, file, &err)) {
+			m = module->module;
+		}
 	}
 
 	return m;
 }
 
-JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error) {
+QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error) {
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	CharString code = p_code.utf8();
@@ -368,7 +370,7 @@ JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_co
 				JS_DupValue(ctx, val);
 			}
 #endif
-			return last_module->module;
+			return last_module;
 		} else {
 #if MODULE_HAS_REFCOUNT
 			JSModuleDef *m = last_module->module;
@@ -380,21 +382,21 @@ JSModuleDef *QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_co
 		}
 	}
 
-	ModuleCache module;
-	module.code_md5 = md5;
-	module.module = NULL;
-
 	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
-	if (JS_IsException(func)) {
+	if (!JS_IsException(func)) {
+		ModuleCache module;
+		module.code_md5 = md5;
+		module.module = NULL;
+		module.evaluated = false;
+		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+		binder->module_cache.set(p_filename, module);
+	} else {
 		JSValue e = JS_GetException(ctx);
 		dump_exception(ctx, e, r_error);
 		JS_Throw(ctx, e);
-	} else {
-		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+		return NULL;
 	}
-
-	binder->module_cache.set(p_filename, module);
-	return module.module;
+	return binder->module_cache.getptr(p_filename);
 }
 
 JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -1264,30 +1266,33 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 	JSValue module = JS_UNDEFINED;
 
 	ECMAscriptScriptError err;
-	JSModuleDef *m = js_compile_module(ctx, p_code, p_path, r_error);
-	if (m == NULL) {
+	ModuleCache *mc = js_compile_module(ctx, p_code, p_path, r_error);
+	if (mc == NULL || mc->module == NULL) {
 		JS_ThrowTypeError(ctx, "Compile error %s", p_path.utf8().ptr());
 		goto fail;
 	}
 
-	module = JS_MKPTR(JS_TAG_MODULE, m);
+	module = JS_MKPTR(JS_TAG_MODULE, mc->module);
 	if (JS_IsException(module)) {
 		ERR_PRINTS("Compile error " + p_path + "\n\t" + get_exception_message(ctx, module));
 		JS_Throw(ctx, module);
 		goto fail;
 	}
 
-	ret = JS_EvalFunction(ctx, module);
-	if (JS_IsException(ret)) {
-		ERR_PRINTS("Parse ECMAClass error " + p_path + "\n\t" + get_exception_message(ctx, ret));
-		JS_Throw(ctx, ret);
-		goto fail;
+	if (!mc->evaluated) {
+		ret = JS_EvalFunction(ctx, module);
+		mc->evaluated = true;
+		if (JS_IsException(ret)) {
+			ERR_PRINTS("Parse ECMAClass error " + p_path + "\n\t" + get_exception_message(ctx, ret));
+			JS_Throw(ctx, ret);
+			goto fail;
+		}
 	}
 
-	for (int i = 0; i < JS_GetModuleExportEntriesCount(m); i++) {
-		JSAtom name = JS_GetModuleExportEntryName(ctx, m, i);
+	for (int i = 0; i < JS_GetModuleExportEntriesCount(mc->module); i++) {
+		JSAtom name = JS_GetModuleExportEntryName(ctx, mc->module, i);
 		if (name == JS_ATOM_default) {
-			default_entry = JS_GetModuleExportEntry(ctx, m, i);
+			default_entry = JS_GetModuleExportEntry(ctx, mc->module, i);
 			JS_FreeAtom(ctx, name);
 			break;
 		}
@@ -1326,6 +1331,6 @@ bool QuickJSBinder::has_signal(const ECMAClassInfo *p_class, const StringName &p
 /**************************** END Script --> C++ ******************************/
 
 bool QuickJSBinder::validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) {
-	JSModuleDef *module = js_compile_module(ctx, p_code, p_path, r_error);
+	ModuleCache *module = js_compile_module(ctx, p_code, p_path, r_error);
 	return module != NULL;
 }
