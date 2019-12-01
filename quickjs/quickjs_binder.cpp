@@ -272,14 +272,6 @@ JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	return atom;
 }
 
-String QuickJSBinder::get_exception_message(JSContext *ctx, const JSValue &p_val) {
-	String msg;
-	const char *message = JS_ToCString(ctx, p_val);
-	JS_FreeCString(ctx, message);
-	msg = message;
-	return msg;
-}
-
 JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	String str = var_to_variant(ctx, this_val);
 	CharString ascii = str.ascii();
@@ -287,11 +279,23 @@ JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int arg
 }
 
 JSValue QuickJSBinder::godot_get_type(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+#ifdef DEBUG_METHODS_ENABLED
+	ERR_FAIL_COND_V(argc < 1, JS_ThrowTypeError(ctx, "parameter expected for %s.%s", GODOT_OBJECT_NAME, "get_type"));
+#endif
 	Variant value;
 	if (argc) {
 		value = var_to_variant(ctx, argv[0]);
 	}
 	return JS_NewInt32(ctx, value.get_type());
+}
+
+JSValue QuickJSBinder::godot_load(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+#ifdef DEBUG_METHODS_ENABLED
+	ERR_FAIL_COND_V(argc < 1 || !JS_IsString(argv[0]), JS_ThrowTypeError(ctx, "string expected for %s.%s", GODOT_OBJECT_NAME, "load"));
+#endif
+	String path = js_to_string(ctx, argv[0]);
+	RES res = ResourceLoader::load(path);
+	return variant_to_var(ctx, res);
 }
 
 void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind) {
@@ -328,8 +332,10 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	Error err;
 	String file;
 	file.parse_utf8(module_name);
-	if (file.get_extension().empty()) {
-		file += ".js";
+	String extension = file.get_extension();
+	if (extension.empty()) {
+		extension = ECMAScriptLanguage::get_singleton()->get_extension();
+		file += "." + extension;
 	}
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
@@ -338,14 +344,29 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	}
 
 	if (!m) {
-		String code = FileAccess::get_file_as_string(file, &err);
-		if (err != OK || !code.size()) {
-			JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
-			return NULL;
-		}
-		ECMAscriptScriptError err;
-		if (ModuleCache *module = binder->js_compile_module(ctx, code, file, &err)) {
-			m = module->module;
+		if (extension == ECMAScriptLanguage::get_singleton()->get_extension()) {
+			String code = FileAccess::get_file_as_string(file, &err);
+			if (err != OK || !code.size()) {
+				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
+				return NULL;
+			}
+			ECMAscriptScriptError err;
+			if (ModuleCache *module = binder->js_compile_module(ctx, code, file, &err)) {
+				m = module->module;
+			}
+		} else { // Try load as Resource
+			RES res = ResourceLoader::load(file);
+			if (res.is_null()) {
+				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
+				return NULL;
+			}
+			// hack the quick module to make the resource value as default entry
+			m = JS_NewCModule(ctx, file.utf8().ptr(), resource_module_initializer);
+			JS_AddModuleExport(ctx, m, "default");
+			JSValue func = JS_MKPTR(JS_TAG_MODULE, m);
+			JS_DupValue(ctx, func);
+			JS_EvalFunction(ctx, func);
+			JS_SetModuleExport(ctx, m, "default", variant_to_var(ctx, res));
 		}
 	}
 
@@ -397,6 +418,10 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 		return NULL;
 	}
 	return binder->module_cache.getptr(p_filename);
+}
+
+int QuickJSBinder::resource_module_initializer(JSContext *ctx, JSModuleDef *m) {
+	return JS_SetModuleExport(ctx, m, "default", JS_UNDEFINED);
 }
 
 JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -597,18 +622,6 @@ void QuickJSBinder::add_godot_classes() {
 }
 
 void QuickJSBinder::add_godot_globals() {
-	JSValue js_func_register_class = JS_NewCFunction(ctx, godot_register_class, "register_class", 4);
-	JS_DefinePropertyValueStr(ctx, godot_object, "register_class", js_func_register_class, PROP_DEF_DEFAULT);
-
-	JSValue js_func_register_signal = JS_NewCFunction(ctx, godot_register_signal, "register_signal", 2);
-	JS_DefinePropertyValueStr(ctx, godot_object, "register_signal", js_func_register_signal, PROP_DEF_DEFAULT);
-
-	JSValue js_func_register_property = JS_NewCFunction(ctx, godot_register_property, "register_property", 3);
-	JS_DefinePropertyValueStr(ctx, godot_object, "register_property", js_func_register_property, PROP_DEF_DEFAULT);
-
-	JSValue js_get_type = JS_NewCFunction(ctx, godot_get_type, "get_type", 1);
-	JS_DefinePropertyValueStr(ctx, godot_object, "get_type", js_get_type, PROP_DEF_DEFAULT);
-
 	// Singletons
 	List<Engine::Singleton> singletons;
 	Engine::get_singleton()->get_singletons(&singletons);
@@ -731,6 +744,22 @@ void QuickJSBinder::add_godot_globals() {
 		JS_DefinePropertyValue(ctx, godot_object, atom, js_func, QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, atom);
 	}
+
+	// godot.register_class
+	JSValue js_func_register_class = JS_NewCFunction(ctx, godot_register_class, "register_class", 2);
+	JS_DefinePropertyValueStr(ctx, godot_object, "register_class", js_func_register_class, PROP_DEF_DEFAULT);
+	// godot.register_signal
+	JSValue js_func_register_signal = JS_NewCFunction(ctx, godot_register_signal, "register_signal", 2);
+	JS_DefinePropertyValueStr(ctx, godot_object, "register_signal", js_func_register_signal, PROP_DEF_DEFAULT);
+	// godot.register_property
+	JSValue js_func_register_property = JS_NewCFunction(ctx, godot_register_property, "register_property", 3);
+	JS_DefinePropertyValueStr(ctx, godot_object, "register_property", js_func_register_property, PROP_DEF_DEFAULT);
+	// godot.get_type
+	JSValue js_get_type = JS_NewCFunction(ctx, godot_get_type, "get_type", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "get_type", js_get_type, PROP_DEF_DEFAULT);
+
+	JSValue js_func_load = JS_NewCFunction(ctx, godot_load, "load", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "load", js_func_load, PROP_DEF_DEFAULT);
 }
 
 QuickJSBinder::QuickJSBinder() {
@@ -841,7 +870,7 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 		JSValue e = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, e, &err);
-		print_error(error_to_string(err));
+		ERR_PRINTS(error_to_string(err));
 		JS_Throw(ctx, e);
 		return ERR_PARSE_ERROR;
 	}
@@ -1274,8 +1303,9 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 
 	module = JS_MKPTR(JS_TAG_MODULE, mc->module);
 	if (JS_IsException(module)) {
-		ERR_PRINTS("Compile error " + p_path + "\n\t" + get_exception_message(ctx, module));
-		JS_Throw(ctx, module);
+		JSValue e = JS_GetException(ctx);
+		dump_exception(ctx, e, r_error);
+		JS_Throw(ctx, e);
 		goto fail;
 	}
 
@@ -1283,8 +1313,9 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 		ret = JS_EvalFunction(ctx, module);
 		mc->evaluated = true;
 		if (JS_IsException(ret)) {
-			ERR_PRINTS("Parse ECMAClass error " + p_path + "\n\t" + get_exception_message(ctx, ret));
-			JS_Throw(ctx, ret);
+			JSValue e = JS_GetException(ctx);
+			dump_exception(ctx, e, r_error);
+			JS_Throw(ctx, e);
 			goto fail;
 		}
 	}

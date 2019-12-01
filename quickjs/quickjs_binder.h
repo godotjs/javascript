@@ -73,6 +73,7 @@ private:
 	_FORCE_INLINE_ static void *js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
 	ModuleCache *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
+	static int resource_module_initializer(JSContext *ctx, JSModuleDef *m);
 
 	struct ClassBindData {
 		JSClassID class_id;
@@ -110,6 +111,7 @@ private:
 	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_get_type(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_load(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static void add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind);
 
 	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
@@ -126,7 +128,6 @@ private:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
-	static String get_exception_message(JSContext *ctx, const JSValueConst &p_val);
 
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
