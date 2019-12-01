@@ -63,13 +63,13 @@ static String format_doc_text(const String &p_bbcode, const String &p_indent = "
 		if (block_start != -1) {
 			code_block_indent = block_start;
 			in_code_block = true;
-			line = "\n";
+			line = "```gdscript";
 		} else if (in_code_block) {
-			line = "\t" + line.substr(code_block_indent, line.length());
+			line = line.substr(code_block_indent, line.length());
 		}
 
 		if (in_code_block && line.find("[/codeblock]") != -1) {
-			line = "\n";
+			line = "```";
 			in_code_block = false;
 		}
 
@@ -369,6 +369,10 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 #endif
 
 	String classes = "";
+	String constants = "";
+	String enumerations_str = "";
+	String functions = "";
+
 	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
 		DocData::ClassDoc class_doc = E->get();
 		if (ignored_classes.has(class_doc.name)) {
@@ -378,7 +382,6 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		if (class_doc.name.begins_with("@")) {
 			HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
-				String constants = "";
 				String const_str = "\n"
 								   "\t/** ${description} */\n"
 								   "\tconst ${name}: ${value};\n";
@@ -388,6 +391,9 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					dict["description"] = format_doc_text(const_doc.description, "\t ");
 					dict["name"] = format_property_name(const_doc.name);
 					dict["value"] = const_doc.value;
+					if (const_doc.value == "nan" || const_doc.value == "inf") {
+						dict["value"] = "number";
+					}
 					constants += applay_partern(const_str, dict);
 
 					if (!const_doc.enumeration.empty()) {
@@ -401,31 +407,6 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					}
 				}
 
-				GlobalNumberConstant consts[] = {
-					{ "PI", Math_PI },
-					{ "TAU", Math_TAU },
-					{ "NAN", Math_NAN },
-					{ "INF", Math_INF },
-					{ "E", Math_E },
-					{ "LN2", Math_LN2 },
-					{ "SQRT2", Math_SQRT2 },
-					{ "SQRT12", Math_SQRT12 },
-				};
-				for (int i = 0; i < sizeof(consts) / sizeof(GlobalNumberConstant); i++) {
-					Dictionary dict;
-					const GlobalNumberConstant &c = consts[i];
-					dict["description"] = format_doc_text("", "\t ");
-					dict["name"] = format_property_name(c.name);
-					dict["value"] = c.value;
-					if (c.name == "NAN" || c.name == "INF") {
-						dict["value"] = "number";
-					}
-					constants += applay_partern(const_str, dict);
-				}
-
-				dict["constants"] = constants;
-
-				String enumerations_str = "";
 				const String *enum_name = enumerations.next(NULL);
 				while (enum_name) {
 					String enum_str = "\tconst " + (*enum_name).replace(".", "") + " : {\n";
@@ -443,9 +424,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					enumerations_str += enum_str;
 					enum_name = enumerations.next(enum_name);
 				}
-				dict["enumerations"] = enumerations_str;
 
-				String functions = "";
 				for (int i = 0; i < class_doc.methods.size(); i++) {
 					const DocData::MethodDoc &method_doc = class_doc.methods[i];
 					if (Expression::find_function(method_doc.name) == Expression::FUNC_MAX) {
@@ -456,28 +435,15 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					}
 					functions += _export_method(method_doc, true);
 				}
-
-				for (int i = 0; i < Expression::FUNC_MAX; i++) {
-					DocData::MethodDoc md;
-					md.name = Expression::get_func_name(Expression::BuiltinFunc(i));
-					md.return_type = "any";
-					if (md.name == "typeof") continue;
-					for (int j = 0; j < Expression::get_func_argument_count(Expression::BuiltinFunc(i)); j++) {
-						DocData::ArgumentDoc ad;
-						ad.name = "v" + itos(j);
-						ad.type = "any";
-						md.arguments.push_back(ad);
-					}
-					functions += _export_method(md, true);
-				}
-
-				dict["functions"] = functions;
 			}
 			continue;
 		}
 		classes += _export_class(class_doc);
 	}
 	dict["classes"] = classes;
+	dict["constants"] = constants;
+	dict["enumerations"] = enumerations_str;
+	dict["functions"] = functions;
 	dict["buitins"] = BUILTIN_DECLEARATION_TEXT;
 
 	String text = applay_partern(godot_module, dict);

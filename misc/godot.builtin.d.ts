@@ -27,6 +27,21 @@ declare module godot {
 	 * Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
 	 */
 	function get_type(val: any): number;
+	
+	/**
+	 * Loads a resource from the filesystem located at `path`.
+	 * 
+	 * **Note:** Resource paths can be obtained by right-clicking on a resource in the FileSystem dock and choosing **Copy Path**.
+	 * ```
+	 * // Load a scene called main located in the root of the project directory
+	 * const main = godot.load("res://main.tscn")
+	 * ```*/
+	function load(path: string): Resource;
+	
+	const E: 2.7182818284590452353602874714;
+	const LN2: 0.6931471805599453094172321215;
+	const SQRT2: 1.4142135623730950488016887242;
+	const SQRT12: 0.7071067811865475244008443621048490;
 }
 
 declare module godot {
