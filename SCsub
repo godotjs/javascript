@@ -25,25 +25,34 @@ def quickjs():
 	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
 	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
 
+def dump_text_file_to_cpp(file):
+	source = open(file, 'r').read()
+	lines = source.split('\n')
+	source = ""
+	length = len(lines)
+	for i in range(length):
+		line = lines[i].replace('"', '\\"')
+		line = '\t"' + line + '\\n"';
+		if i < length -1:
+			line += "\n"
+		source += line
+	return source
+
 def generate_definition_code():
 	with open("tools/godot.builtin.d.ts.gen.cpp", "w") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
-		source = open("misc/godot.builtin.d.ts", 'r').read()
-		lines = source.split('\n')
-		source = ""
-		length = len(lines)
-		for i in range(length):
-			line = lines[i].replace('"', '\\"')
-			line = '\t"' + line + '\\n"';
-			if i < length -1:
-				line += "\n"
-			source += line
-		f.write(text.replace('${source}', source))
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.builtin.d.ts")))
+
+def generate_script_binding_code():
+	with open("misc/godot.binding_script.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
 
 jsengine = 'quickjs'
 if jsengine == 'quickjs':
 	quickjs()
 generate_definition_code()
+generate_script_binding_code()
 	
 sources = [
 	'register_types.cpp',
@@ -54,6 +63,7 @@ sources = [
 
 if env['tools']:
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
+	env_module.add_source_files(env.modules_sources, 'misc/*.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.Append(CXXFLAGS=["-std=c++11"])

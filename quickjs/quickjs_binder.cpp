@@ -1,4 +1,5 @@
 #include "quickjs_binder.h"
+#include "../ecmascript_instance.h"
 #include "../ecmascript_language.h"
 #include "core/engine.h"
 #include "core/global_constants.h"
@@ -799,6 +800,8 @@ void QuickJSBinder::initialize() {
 	add_godot_classes();
 	// godot.print godot.sin ...
 	add_godot_globals();
+	// binding script
+	//	eval_string(BINDING_SCRIPT_CONTENT, "");
 }
 
 void QuickJSBinder::uninitialize() {
@@ -864,8 +867,9 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 	ERR_FAIL_COND_V(p_source.empty(), FAILED);
 
 	CharString utf8_str = p_source.utf8();
-	CharString utf8_path = p_path.utf8();
-	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.length(), utf8_path.ptr(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
+	const char *filename = p_path.utf8().ptr();
+	if (!filename) filename = "";
+	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.length(), filename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
 		ECMAscriptScriptError err;
@@ -954,6 +958,15 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		bind = BINDING_DATA_FROM_GD(gd_obj);
 		bind->flags |= ECMAScriptGCHandler::FLAG_FROM_SCRIPT;
 		js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		if (JS_IsFunction(ctx, new_target)) {
+			JSValue prototype = JS_GetProperty(ctx, new_target, QuickJSBinder::JS_ATOM_prototype);
+			JS_SetPrototype(ctx, js_obj, prototype);
+			JS_FreeValue(ctx, prototype);
+		}
+
+		ECMAScriptInstance *si = memnew(ECMAScriptInstance);
+		si->ecma_object = *bind;
+		gd_obj->set_script_instance(si);
 
 		if (bind->is_reference()) {
 			bind->godot_reference->ptr()->unreference();
@@ -1200,8 +1213,8 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 
 	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->constructor.ecma_object);
 	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-	JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object));
 	JS_CallConstructor2(ctx, constructor, object, 0, NULL);
+	JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object));
 
 	return *bind;
 }

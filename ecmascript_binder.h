@@ -38,6 +38,7 @@ class ECMAScriptBinder {
 protected:
 	// Path ==> ECMA Class
 	HashMap<String, ECMAClassInfo> ecma_classes;
+	static String BINDING_SCRIPT_CONTENT;
 
 public:
 	virtual void clear_classes() { ecma_classes.clear(); }

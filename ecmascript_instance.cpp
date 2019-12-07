@@ -49,7 +49,7 @@ Variant::Type ECMAScriptInstance::get_property_type(const StringName &p_name, bo
 
 Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
 
-	ERR_FAIL_COND_V(script.is_null() || !ecma_object.ecma_object, Variant());
+	ERR_FAIL_COND_V(!ecma_object.ecma_object, Variant());
 
 	//	ECMAClassInfo *cls = script->get_ecma_class();
 	//	if (cls == NULL) {
@@ -72,7 +72,7 @@ ScriptLanguage *ECMAScriptInstance::get_language() {
 
 ECMAScriptInstance::ECMAScriptInstance() {
 	owner = NULL;
-	ecma_object.ecma_object = NULL;
+	ecma_object.clear();
 }
 
 ECMAScriptInstance::~ECMAScriptInstance() {

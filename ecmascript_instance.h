@@ -8,7 +8,7 @@
 class ECMAScriptInstance : public ScriptInstance {
 
 	friend class ECMAScript;
-	friend class DuktapeBindingHelper;
+	friend class QuickJSBinder;
 
 	Object *owner;
 	Ref<ECMAScript> script;
