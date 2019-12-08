@@ -45,6 +45,7 @@ public:
 
 	virtual void initialize() = 0;
 	virtual void uninitialize() = 0;
+	virtual void frame() = 0;
 
 	virtual void *alloc_object_binding_data(Object *p_object) = 0;
 	virtual void free_object_binding_data(void *p_gc_handle) = 0;

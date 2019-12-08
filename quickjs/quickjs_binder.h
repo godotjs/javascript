@@ -188,6 +188,7 @@ public:
 
 	virtual void initialize();
 	virtual void uninitialize();
+	virtual void frame();
 
 	virtual void *alloc_object_binding_data(Object *p_object);
 	virtual void free_object_binding_data(void *p_gc_handle);

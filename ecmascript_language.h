@@ -105,7 +105,7 @@ public:
 	virtual void refcount_incremented_instance_binding(Object *p_object); //optional, not used by all languages
 	virtual bool refcount_decremented_instance_binding(Object *p_object); //return true if it can die //optional, not used by all languages
 
-	/* TODO */ virtual void frame(){};
+	virtual void frame();
 
 	/* TODO */ virtual bool handles_global_class_type(const String &p_type) const { return false; }
 	/* TODO */ virtual String get_global_class_name(const String &p_path, String *r_base_type = NULL, String *r_icon_path = NULL) const { return String(); }

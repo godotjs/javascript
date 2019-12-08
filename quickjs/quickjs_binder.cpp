@@ -868,6 +868,24 @@ void QuickJSBinder::uninitialize() {
 	runtime = NULL;
 }
 
+void QuickJSBinder::frame() {
+	JSContext *ctx1;
+	int err;
+	for (;;) {
+		err = JS_ExecutePendingJob(JS_GetRuntime(ctx), &ctx1);
+		if (err <= 0) {
+			if (err < 0) {
+				ECMAscriptScriptError script_err;
+				JSValue e = JS_GetException(ctx1);
+				dump_exception(ctx1, e, &script_err);
+				ERR_PRINTS(error_to_string(script_err));
+				JS_FreeValue(ctx1, e);
+			}
+			break;
+		}
+	}
+}
+
 Error QuickJSBinder::eval_string(const String &p_source, const String &p_path) {
 	String error;
 	Error err = safe_eval_text(p_source, p_path, error);

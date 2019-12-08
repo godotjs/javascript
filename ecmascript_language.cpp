@@ -234,6 +234,10 @@ bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object)
 	return binding->godot_refcount_decremented(static_cast<Reference *>(p_object));
 }
 
+void ECMAScriptLanguage::frame() {
+	binding->frame();
+}
+
 ECMAScriptLanguage::ECMAScriptLanguage() {
 
 	ERR_FAIL_COND(singleton);
