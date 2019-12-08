@@ -29,7 +29,7 @@
 			let target = args[2];
 			if (target instanceof godot.Object) {
 				let method = args[3];
-				if (typeof method === 'string' && object[method] instanceof Function) {
+				if (typeof method === 'string') {
 					method_name = method;
 				} else if (typeof method === 'function') {
 					if (target[method.name] === method) {

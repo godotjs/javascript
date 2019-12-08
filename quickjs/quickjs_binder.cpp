@@ -758,9 +758,23 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.get_type
 	JSValue js_get_type = JS_NewCFunction(ctx, godot_get_type, "get_type", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "get_type", js_get_type, PROP_DEF_DEFAULT);
-
+	// godot.load
 	JSValue js_func_load = JS_NewCFunction(ctx, godot_load, "load", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "load", js_func_load, PROP_DEF_DEFAULT);
+
+	{
+		// godot.DEBUG_ENABLED
+#ifdef DEBUG_ENABLED
+		JS_DefinePropertyValueStr(ctx, godot_object, "DEBUG_ENABLED", JS_TRUE, JS_PROP_ENUMERABLE);
+#endif
+		// godot.TOOLS_ENABLED
+#ifdef TOOLS_ENABLED
+		JS_DefinePropertyValueStr(ctx, godot_object, "TOOLS_ENABLED", JS_TRUE, JS_PROP_ENUMERABLE);
+#endif
+#ifdef DEBUG_METHODS_ENABLED
+		JS_DefinePropertyValueStr(ctx, godot_object, "DEBUG_METHODS_ENABLED", JS_TRUE, JS_PROP_ENUMERABLE);
+#endif
+	}
 }
 
 QuickJSBinder::QuickJSBinder() {
@@ -801,7 +815,7 @@ void QuickJSBinder::initialize() {
 	// godot.print godot.sin ...
 	add_godot_globals();
 	// binding script
-	//	eval_string(BINDING_SCRIPT_CONTENT, "");
+	eval_string(BINDING_SCRIPT_CONTENT, "");
 }
 
 void QuickJSBinder::uninitialize() {
