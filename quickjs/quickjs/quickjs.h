@@ -718,7 +718,6 @@ int JS_DefinePropertyGetSet(JSContext *ctx, JSValueConst this_obj,
 void JS_SetOpaque(JSValue obj, void *opaque);
 void *JS_GetOpaque(JSValueConst obj, JSClassID class_id);
 void *JS_GetOpaque2(JSContext *ctx, JSValueConst obj, JSClassID class_id);
-void *JS_GetOpaque3(JSValueConst obj);
 
 typedef void JSFreeArrayBufferDataFunc(JSRuntime *rt, void *opaque, void *ptr);
 JSValue JS_NewArrayBuffer(JSContext *ctx, uint8_t *buf, size_t len,
@@ -916,6 +915,7 @@ int JS_SetModuleExportList(JSContext *ctx, JSModuleDef *m,
 int JS_GetModuleExportEntriesCount(JSModuleDef *m);
 JSValue JS_GetModuleExportEntry(JSContext *ctx, JSModuleDef *m, int idx);
 JSAtom JS_GetModuleExportEntryName(JSContext *ctx, JSModuleDef *m, int idx);
+
 JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val);
 
 #undef js_unlikely
