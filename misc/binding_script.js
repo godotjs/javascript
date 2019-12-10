@@ -3,154 +3,167 @@
 	const GodotAnonymousConnectionManager = new(class GodotAnonymousConnectionManager extends godot.Reference {
 		anonymous_connection_index = 0;
 		
-		get_slot_id(emitter, signal) {
-			return `__slot_${emitter.get_instance_id()}_${signal}`;
+		get_slot_id(emitter, signal, target) {
+			return `__${emitter.get_instance_id()}:${signal}:${target.get_instance_id()}__`;
 		}
 
 		get_anonymous_method_name() {
-			return `__anonymous_method_${this.anonymous_connection_index++}`;
-		}
-
-		add_anonymous_method(method) {
-			let method_name = this.get_anonymous_method_name();
-			this[method_name] = method;
-			return method_name;
+			return `__anonymous_slot:${this.anonymous_connection_index++}`;
 		}
 	})();
 	
 	const godot_object_connect = godot.Object.prototype.connect;
-	function godot_connect_override(...args) {
-		if (args.length < 4) throw new Error('4 or more arguments expected');
-		let object = args[0];
-		if (!(object instanceof godot.Object)) throw new Error('godot.Object expected for argument #0');
-		let signal = args[1];
-		if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #1');
-		if (args.length >= 4) {
-			let params = args.length >= 5 && args[4].length ? args[4] : [];
-			let flags = args.length >= 6 && typeof (args[5]) === 'number' ? args[5] : 0;
-			let method_name = null;
-			let target = args[2] || GodotAnonymousConnectionManager;
-			if (target instanceof godot.Object) {
-				let method = args[3];
-				if (typeof method === 'string') {
-					method_name = method;
-				} else if (typeof method === 'function') {
-					if (target[method.name] === method) {
-						method_name = method.name;
-					} else {
-						method_name = GodotAnonymousConnectionManager.get_anonymous_method_name();
-						target[method_name] = method;
-					}
-					method[GodotAnonymousConnectionManager.get_slot_id(object, signal)] = method_name;
-				} else {
-					throw new Error('method name or function expected for argument #3');
-				}
-			} else {
-				let method = args[3];
-				if (typeof method === 'function') {
-					const slot_id = GodotAnonymousConnectionManager.get_slot_id(object, signal);
-					function callback(...args) { method.apply(target, args); };
-					method_name = GodotAnonymousConnectionManager.add_anonymous_method();
-					method[slot_id] = method_name;
-					callback[slot_id] = method_name;
-					target = GodotAnonymousConnectionManager;
-				} else {
-					throw new Error('function expected for argument #3');
-				}
-			}
-			if (target instanceof godot.Object && method_name) {
-				return godot_object_connect.apply(object, [signal, target, method_name, params, flags]);
-			} else {
-				throw new Error('Invalid arguments');
-			}
-		}
-		return godot.FAILED;
-	};
-	
 	Object.defineProperty(godot.Object.prototype, 'connect', {
-		value: function (...args) {
-			return godot_connect_override(this, ...args);
+		// Object.prototype.connect(signal_name, target, method, params, flags)
+		value: function connect(...args) {
+			if (args.length < 2) throw new Error('2 or more arguments expected');
+			let signal = args[0];
+			if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #0');
+			
+			let offset = 0;
+			let target = null;
+			let method = null;
+			let method_name = null;
+			let target_caller = null;
+			let params = [];
+			let flags = 0;
+			
+			if (typeof args[1] === 'function') {
+				offset = -1;
+				target = GodotAnonymousConnectionManager;
+				method = args[1];
+			} else if (args.length >= 3) {
+				target_caller = args[1];
+				target = target_caller || GodotAnonymousConnectionManager;
+				if (!(target instanceof godot.Object)) {
+					new Error('godot.Object expected for signal target');
+				}
+				method = args[2];
+			} else {
+				throw new Error('method name or function expected for signal method');
+			}
+			if (args.length > 3 + offset) {
+				let p = args[3 + offset];
+				if (p && p.length)
+					params = p;
+			}
+			if (args.length > 4 + offset) {
+				let p = args[4 + offset];
+				if (typeof p === 'number')
+					flags = p;
+			}
+			
+			if (typeof method === 'string' && method.length) {
+				method_name = method;
+			} else if (typeof method === 'function') {
+				const slot_id = GodotAnonymousConnectionManager.get_slot_id(this, signal, target);
+				if (target[method.name] === method) {
+					method_name = method.name;
+				} else {
+					method_name = GodotAnonymousConnectionManager.get_anonymous_method_name();
+					function callback(...args) { method.apply(target_caller, args); };
+					target[method_name] = callback;
+					callback[slot_id] = method_name;
+				}
+				method[slot_id] = method_name;
+			} else {
+				throw new Error('method name or function expected for signal method');
+			}
+			
+			// console.log("connect", this, signal, target, method_name, params, flags);
+			return godot_object_connect.apply(this, [signal, target, method_name, params, flags]);
 		},
 		writable: false,
 		configurable: true
 	});
 	
-	
 	const godot_object_disconnect = godot.Object.prototype.disconnect;
-	function godot_disconnect_override(...args) {
-		if (args.length < 4) throw new Error('4 arguments expected');
-		let object = args[0];
-		if (!(object instanceof godot.Object)) throw new Error('godot.Object expected for argument #0');
-		let signal = args[1];
-		if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #1');
-		let target = args[2] || GodotAnonymousConnectionManager;
-		let method = args[3];
-		let method_name = null;
-		let slot_id = undefined;
-		if (typeof method === 'string') {
-			method_name = method;
-		} else if (typeof method === 'function') {
-			slot_id = GodotAnonymousConnectionManager.get_slot_id(object, signal);
-			method_name = method[slot_id];
-			method[slot_id] = undefined;
-		} else {
-			throw new Error('method name or function expected for argument #3');
-		}
-		
-		
-		if (object instanceof godot.Object && target instanceof godot.Object && method_name) {
+	Object.defineProperty(godot.Object.prototype, 'disconnect', {
+		// Object.prototype.disconnect(signal_name, target, method)
+		value: function disconnect(...args) {
+			if (args.length < 2) throw new Error('2 or more arguments expected');
+			let signal = args[0];
+			if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #0');
+			
+			let target = null;
+			let method_name = null;
+			let method = null;
+			let slot_id = undefined;
+			
+			if (typeof args[1] === 'function') {
+				target = GodotAnonymousConnectionManager;
+				method = args[1];
+			} else if (args.length >= 3) {
+				target = args[1] || GodotAnonymousConnectionManager;
+				if (!(target instanceof godot.Object)) {
+					new Error('godot.Object expected for signal target');
+				}
+				method = args[2];
+			} else {
+				throw new Error('method name or function expected');
+			}
+			
+			if (typeof method === 'string' && method) {
+				method_name = method;
+			} else if (typeof method === 'function') {
+				slot_id = GodotAnonymousConnectionManager.get_slot_id(this, signal, target);
+				method_name = method[slot_id];
+				method[slot_id] = undefined;
+			} else {
+				throw new Error('method name or function expected');
+			}
+			
 			if (slot_id) {
-				if (typeof target[method_name] === 'function') {
+				if (typeof target[method_name] !== 'undefined') {
 					target[method_name] = undefined;
 					delete target[method_name];
 				}
 				delete method[slot_id];
 			}
-			godot_object_disconnect.apply(object, [signal, target, method_name]);
-		} else {
-			throw new Error('Invalid arguments');
-		}
-	};
-	
-	Object.defineProperty(godot.Object.prototype, 'disconnect', {
-		value: function (...args) {
-			godot_disconnect_override(this, ...args);
+			// console.log("disconnect", this, signal, target, method_name);
+			godot_object_disconnect.apply(this, [signal, target, method_name]);
 		},
 		writable: false,
 		configurable: true
 	});
 	
 	const godot_object_is_connected = godot.Object.prototype.is_connected;
-	function godot_is_connected_override(...args) {
-		if (args.length < 4) throw new Error('4 arguments expected');
-		let object = args[0];
-		if (!(object instanceof godot.Object)) throw new Error('godot.Object expected for argument #0');
-		let signal = args[1];
-		if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #1');
-		let target = args[2] || GodotAnonymousConnectionManager;
-		let method = args[3];
-		let method_name = null;
-		let slot_id = undefined;
-		if (typeof method === 'string') {
-			method_name = method;
-		} else if (typeof method === 'function') {
-			slot_id = GodotAnonymousConnectionManager.get_slot_id(object, signal);
-			method_name = method[slot_id];
-		} else {
-			throw new Error('method name or function expected for argument #3');
-		}
-		
-		if (object instanceof godot.Object && target instanceof godot.Object && method_name) {
-			return godot_object_is_connected.apply(object, [signal, target, method_name]);
-		} else {
-			throw new Error('Invalid arguments');
-		}
-		return false;
-	};
 	
 	Object.defineProperty(godot.Object.prototype, 'is_connected', {
-		value: function (...args) {
-			return godot_is_connected_override(this, ...args);
+		// Object.prototype.is_connected(signal_name, target, method)
+		value: function godot_is_connected_override(...args) {
+			if (args.length < 3) throw new Error('3 arguments expected');
+			let signal = args[0];
+			if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #1');
+			
+			let target = null;
+			let method = null;
+			let method_name = null;
+			let slot_id = undefined;
+			
+			if (typeof args[1] === 'function') {
+				target = GodotAnonymousConnectionManager;
+				method = args[1];
+			} else if (args.length >= 3) {
+				target = args[1] || GodotAnonymousConnectionManager;
+				if (!(target instanceof godot.Object)) {
+					new Error('godot.Object expected for signal target');
+				}
+				method = args[2];
+			} else {
+				throw new Error('method name or function expected for argument #2');
+			}
+			
+			if (typeof method === 'string') {
+				method_name = method;
+			} else if (typeof method === 'function') {
+				slot_id = GodotAnonymousConnectionManager.get_slot_id(this, signal, target);
+				method_name = method[slot_id];
+			} else {
+				throw new Error('method name or function expected');
+			}
+			
+			return godot_object_is_connected.apply(this, [signal, target, method_name]);
 		},
 		writable: false,
 		configurable: true
@@ -159,7 +172,7 @@
 	function godot_yield(target, signal) {
 		return new Promise(function(resolve, reject) {
 			function callback(...args) {
-				const slot_id = GodotAnonymousConnectionManager.get_slot_id(target, signal);
+				const slot_id = GodotAnonymousConnectionManager.get_slot_id(target, signal, GodotAnonymousConnectionManager);
 				const method_name = callback[slot_id];
 				GodotAnonymousConnectionManager[method_name] = undefined;
 				delete GodotAnonymousConnectionManager[method_name];
