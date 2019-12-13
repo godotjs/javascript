@@ -755,6 +755,9 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.register_property
 	JSValue js_func_register_property = JS_NewCFunction(ctx, godot_register_property, "register_property", 3);
 	JS_DefinePropertyValueStr(ctx, godot_object, "register_property", js_func_register_property, PROP_DEF_DEFAULT);
+	// godot.set_script_meta
+	JSValue js_func_set_script_meta = JS_NewCFunction(ctx, godot_set_script_metadata, "set_script_meta", 3);
+	JS_DefinePropertyValueStr(ctx, godot_object, "set_script_meta", js_func_set_script_meta, PROP_DEF_DEFAULT);
 	// godot.get_type
 	JSValue js_get_type = JS_NewCFunction(ctx, godot_get_type, "get_type", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "get_type", js_get_type, PROP_DEF_DEFAULT);
@@ -805,6 +808,8 @@ void QuickJSBinder::initialize() {
 	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
 	js_key_godot_exports = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("exports"));
 	js_key_godot_signals = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("signals"));
+	js_key_godot_tooled = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("tool"));
+	js_key_godot_icon_path = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("icon"));
 	JS_DefinePropertyValueStr(ctx, global_object, GODOT_OBJECT_NAME, godot_object, PROP_DEF_DEFAULT);
 	// godot.GodotOrigin
 	add_godot_origin();
@@ -856,6 +861,8 @@ void QuickJSBinder::uninitialize() {
 	module_cache.clear();
 
 	JS_FreeAtom(ctx, js_key_godot_classid);
+	JS_FreeAtom(ctx, js_key_godot_tooled);
+	JS_FreeAtom(ctx, js_key_godot_icon_path);
 	JS_FreeAtom(ctx, js_key_godot_exports);
 	JS_FreeAtom(ctx, js_key_godot_signals);
 	JS_FreeValue(ctx, empty_function);
@@ -1072,6 +1079,8 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 	QuickJSBinder *binder = get_context_binder(ctx);
 	JSValue prototype = JS_UNDEFINED;
 	JSValue classid = JS_UNDEFINED;
+	JSValue tooled = JS_UNDEFINED;
+	JSValue icon = JS_UNDEFINED;
 	JSClassID id = 0;
 
 	if (!JS_IsFunction(ctx, p_constructor)) {
@@ -1081,6 +1090,9 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 
 	prototype = JS_GetProperty(ctx, p_constructor, QuickJSBinder::JS_ATOM_prototype);
 	classid = JS_GetProperty(ctx, prototype, js_key_godot_classid);
+	tooled = JS_GetProperty(ctx, p_constructor, js_key_godot_tooled);
+	icon = JS_GetProperty(ctx, p_constructor, js_key_godot_icon_path);
+
 	if (JS_IsUndefined(classid)) {
 		JS_ThrowTypeError(ctx, "ECMAClass class expected: %s", p_path.utf8().ptr());
 		goto fail;
@@ -1102,6 +1114,10 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 		ecma_class.class_name = class_name;
 		ecma_class.prototype.ecma_object = JS_VALUE_GET_PTR(prototype);
 		ecma_class.constructor.ecma_object = JS_VALUE_GET_PTR(p_constructor);
+		ecma_class.tool = JS_ToBool(ctx, tooled);
+		if (JS_IsString(icon)) {
+			ecma_class.icon_path = js_to_string(ctx, icon);
+		}
 
 		// signals
 		JSValue signals = JS_GetProperty(ctx, prototype, js_key_godot_signals);
@@ -1149,6 +1165,8 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 fail:
 	JS_FreeValue(ctx, classid);
 	JS_FreeValue(ctx, prototype);
+	JS_FreeValue(ctx, icon);
+	JS_FreeValue(ctx, tooled);
 	return binder->ecma_classes.getptr(p_path);
 }
 
@@ -1210,6 +1228,18 @@ JSValue QuickJSBinder::godot_register_property(JSContext *ctx, JSValue this_val,
 	JS_SetProperty(ctx, prototype, binder->js_key_godot_exports, object);
 	JS_FreeValue(ctx, prototype);
 
+	return JS_UNDEFINED;
+}
+
+JSValue QuickJSBinder::godot_set_script_metadata(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"))
+	ERR_FAIL_COND_V(!JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "godot class expected for argument #0"));
+	JSValue constructor = argv[0];
+	QuickJSBinder *binder = get_context_binder(ctx);
+	JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[1]));
+	if (argc >= 3 && JS_IsString(argv[2])) {
+		JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[2]));
+	}
 	return JS_UNDEFINED;
 }
 

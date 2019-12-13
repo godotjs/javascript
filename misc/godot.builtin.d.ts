@@ -1,19 +1,21 @@
 declare module godot {
-
+	
+	type GodotClass = new() => godot.Object;
+	
 	/**
 	 * Export class to godot
 	 *
 	 * @param target The class extends from `godot.Object`
 	 * @param name The class name
 	 */
-	function register_class(target: Function, name: string);
+	function register_class(target: GodotClass, name: string);
 
 	/**
 	 * Register signal to class
 	 * @param target The class of the signal
 	 * @param name signal name
 	 */
-	function register_signal(target: Function|object, name: string);
+	function register_signal(target: GodotClass | godot.Object, name: string);
 
 	/**
 	 * Register property to class
@@ -21,7 +23,15 @@ declare module godot {
 	 * @param name The name of the property
 	 * @param value The default value of the property
 	 */
-	function register_property(target: Function|object, name: string, value: any);
+	function register_property(target: GodotClass | godot.Object, name: string, value: any);
+	
+	/**
+	 * The meta data of an script
+	 * @param target The script class
+	 * @param tool is tooled of this class
+	 * @param icon The icon of the class
+	 */
+	function set_script_meta(target: GodotClass, tool: boolean, icon?: string);
 	
 	/**
 	 * Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
@@ -37,6 +47,14 @@ declare module godot {
 	 * const main = godot.load("res://main.tscn")
 	 * ```*/
 	function load(path: string): Resource;
+	
+	
+	/**
+	 * Wait a signal of an object
+	 * @param target The owner of the signal to wait
+	 * @param signal The signal to wait
+	 */
+	function yield(target: godot.Object, signal: string): Promise<any[]>;
 	
 	const E: 2.7182818284590452353602874714;
 	const LN2: 0.6931471805599453094172321215;

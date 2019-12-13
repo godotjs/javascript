@@ -58,6 +58,8 @@ private:
 	JSValue godot_object;
 	JSValue empty_function;
 	JSAtom js_key_godot_classid;
+	JSAtom js_key_godot_tooled;
+	JSAtom js_key_godot_icon_path;
 	JSAtom js_key_godot_exports;
 	JSAtom js_key_godot_signals;
 	Vector<JSValue> godot_singletons;
@@ -119,6 +121,7 @@ private:
 	static JSValue godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_signal(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_property(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_set_script_metadata(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
