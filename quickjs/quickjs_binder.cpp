@@ -952,6 +952,7 @@ void QuickJSBinder::free_object_binding_data(void *p_gc_handle) {
 	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)p_gc_handle;
 	if (bind->is_object()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		JS_SetOpaque(js_obj, NULL);
 		JS_FreeValue(ctx, js_obj);
 	}
 	memdelete(bind);
