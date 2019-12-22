@@ -56,7 +56,7 @@ godot.register_signal(MySprite, 'game_over');
 export default class MySprite extends godot.Sprite {
 	_process(delta) {
 		// Yes! We can use operators in JavaScript like GDScript
-		this.position += this.direction * new Vector2(delta, delta);
+		this.position += this.direction * new godot.Vector2(delta, delta);
 	}
 };
 // export 'direction' properties to MySprite godot inspector
@@ -99,6 +99,21 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `godot.register_property(cls, name, default_value)` to define and export properties
   - `godot.register_class(cls, name)` to register named class manually
   - `godot.set_class_tags(tooled, icon)` to set `tool` and `icon` of the class
+  - `godot.requestAnimationFrame(callbacl)` to add a callback function to be called every frame
+  - `godot.cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
+  - `godot.get_type(val)` Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
+- Using signals in the ECMAScript way
+  - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect` and `godot.Object.is_connected`
+	```js
+		this.panel.connect(godot.Control.resized, (size) => {
+			console.log('The size of the panel changed to:', size);
+		});
+	```
+  - Using `await` to wait signals
+	```js
+	await godot.yield(this.get_tree().create_timer(1), godot.SceneTreeTimer.timeout);
+	console.log('After one second to show');
+	```
 
 You can run the menu command from godot editor to dump the api declearations.
 ```
