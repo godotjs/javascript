@@ -38,6 +38,7 @@ class ECMAScriptBinder {
 protected:
 	// Path ==> ECMA Class
 	HashMap<String, ECMAClassInfo> ecma_classes;
+	HashMap<int64_t, ECMAScriptGCHandler> frame_callbacks;
 	static String BINDING_SCRIPT_CONTENT;
 
 public:

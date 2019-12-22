@@ -6,6 +6,7 @@
 #include "core/io/json.h"
 #include "core/math/expression.h"
 #include "core/os/file_access.h"
+#include "core/os/os.h"
 #include "quickjs_binder.h"
 
 HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
@@ -764,6 +765,12 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.load
 	JSValue js_func_load = JS_NewCFunction(ctx, godot_load, "load", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "load", js_func_load, PROP_DEF_DEFAULT);
+	// godot.requestAnimationFrame
+	JSValue js_func_requestAnimationFrame = JS_NewCFunction(ctx, godot_request_animation_frame, "requestAnimationFrame", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "requestAnimationFrame", js_func_requestAnimationFrame, PROP_DEF_DEFAULT);
+	// godot.cancelAnimationFrame
+	JSValue js_func_cancelAnimationFrame = JS_NewCFunction(ctx, godot_cancel_animation_frame, "cancelAnimationFrame", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "cancelAnimationFrame", js_func_cancelAnimationFrame, PROP_DEF_DEFAULT);
 
 	{
 		// godot.DEBUG_ENABLED
@@ -846,6 +853,16 @@ void QuickJSBinder::uninitialize() {
 	}
 	ecma_classes.clear();
 
+	// Free frame callbacks
+	const int64_t *id = frame_callbacks.next(NULL);
+	while (id) {
+		const ECMAScriptGCHandler &func = frame_callbacks.get(*id);
+		JSValueConst js_func = JS_MKPTR(JS_TAG_OBJECT, func.ecma_object);
+		JS_FreeValue(ctx, js_func);
+		id = frame_callbacks.next(id);
+	}
+	frame_callbacks.clear();
+
 	// modules
 #if MODULE_HAS_REFCOUNT
 	const String *file = module_cache.next(NULL);
@@ -890,6 +907,15 @@ void QuickJSBinder::frame() {
 			}
 			break;
 		}
+	}
+
+	const int64_t *id = frame_callbacks.next(NULL);
+	while (id) {
+		const ECMAScriptGCHandler &func = frame_callbacks.get(*id);
+		JSValueConst js_func = JS_MKPTR(JS_TAG_OBJECT, func.ecma_object);
+		JSValue argvs = { JS_NewInt64(ctx, (int64_t)OS::get_singleton()->get_system_time_msecs()) };
+		JS_Call(ctx, js_func, godot_object, 1, &argvs);
+		id = frame_callbacks.next(id);
 	}
 }
 
@@ -1239,6 +1265,29 @@ JSValue QuickJSBinder::godot_set_script_metadata(JSContext *ctx, JSValue this_va
 	JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[1]));
 	if (argc >= 3 && JS_IsString(argv[2])) {
 		JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[2]));
+	}
+	return JS_UNDEFINED;
+}
+
+JSValue QuickJSBinder::godot_request_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 1 || !JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "Function expected for argument #0"));
+	static int64_t id = 0;
+	JSValue js_func = JS_DupValue(ctx, argv[0]);
+	ECMAScriptGCHandler func;
+	func.ecma_object = JS_VALUE_GET_PTR(js_func);
+	QuickJSBinder *binder = get_context_binder(ctx);
+	binder->frame_callbacks.set(++id, func);
+	return JS_NewInt64(ctx, id);
+}
+
+JSValue QuickJSBinder::godot_cancel_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 1 || !JS_IsInteger(argv[0]), JS_ThrowTypeError(ctx, "Request ID expected for argument #0"));
+	int32_t id = js_to_int(ctx, argv[0]);
+	QuickJSBinder *binder = get_context_binder(ctx);
+	if (ECMAScriptGCHandler *callback = binder->frame_callbacks.getptr(id)) {
+		JSValue func = JS_MKPTR(JS_TAG_OBJECT, callback->ecma_object);
+		JS_FreeValue(ctx, func);
+		binder->frame_callbacks.erase(id);
 	}
 	return JS_UNDEFINED;
 }
