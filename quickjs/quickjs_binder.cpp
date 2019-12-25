@@ -756,9 +756,12 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.register_property
 	JSValue js_func_register_property = JS_NewCFunction(ctx, godot_register_property, "register_property", 3);
 	JS_DefinePropertyValueStr(ctx, godot_object, "register_property", js_func_register_property, PROP_DEF_DEFAULT);
-	// godot.set_script_meta
-	JSValue js_func_set_script_meta = JS_NewCFunction(ctx, godot_set_script_metadata, "set_script_meta", 3);
-	JS_DefinePropertyValueStr(ctx, godot_object, "set_script_meta", js_func_set_script_meta, PROP_DEF_DEFAULT);
+	// godot.set_script_tooled
+	JSValue js_func_set_tooled = JS_NewCFunctionMagic(ctx, godot_set_script_meta, "set_script_tooled", 2, JS_CFUNC_generic_magic, QuickJSBinder::SCRIPT_META_TOOLED);
+	JS_DefinePropertyValueStr(ctx, godot_object, "set_script_tooled", js_func_set_tooled, PROP_DEF_DEFAULT);
+	// godot.set_script_icon
+	JSValue js_set_script_icon = JS_NewCFunctionMagic(ctx, godot_set_script_meta, "set_script_icon", 2, JS_CFUNC_generic_magic, QuickJSBinder::SCRIPT_META_ICON);
+	JS_DefinePropertyValueStr(ctx, godot_object, "set_script_icon", js_set_script_icon, PROP_DEF_DEFAULT);
 	// godot.get_type
 	JSValue js_get_type = JS_NewCFunction(ctx, godot_get_type, "get_type", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "get_type", js_get_type, PROP_DEF_DEFAULT);
@@ -1257,14 +1260,18 @@ JSValue QuickJSBinder::godot_register_property(JSContext *ctx, JSValue this_val,
 	return JS_UNDEFINED;
 }
 
-JSValue QuickJSBinder::godot_set_script_metadata(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::godot_set_script_meta(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"))
 	ERR_FAIL_COND_V(!JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "godot class expected for argument #0"));
 	JSValue constructor = argv[0];
 	QuickJSBinder *binder = get_context_binder(ctx);
-	JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[1]));
-	if (argc >= 3 && JS_IsString(argv[2])) {
-		JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[2]));
+	switch (magic) {
+		case QuickJSBinder::SCRIPT_META_TOOLED:
+			JS_SetProperty(ctx, constructor, binder->js_key_godot_tooled, JS_DupValue(ctx, argv[1]));
+			break;
+		case QuickJSBinder::SCRIPT_META_ICON:
+			JS_SetProperty(ctx, constructor, binder->js_key_godot_icon_path, JS_DupValue(ctx, argv[1]));
+			break;
 	}
 	return JS_UNDEFINED;
 }

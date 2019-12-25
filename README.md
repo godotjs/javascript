@@ -98,8 +98,9 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `godot.register_signal(cls, signal_name)` to register signals
   - `godot.register_property(cls, name, default_value)` to define and export properties
   - `godot.register_class(cls, name)` to register named class manually
-  - `godot.set_class_tags(tooled, icon)` to set `tool` and `icon` of the class
-  - `godot.requestAnimationFrame(callbacl)` to add a callback function to be called every frame
+  - `godot.set_script_tooled(tooled)` to set `tooled` of the class
+  - `godot.set_script_icon(path)` to set icon of the class
+  - `godot.requestAnimationFrame(callback)` to add a callback function to be called every frame
   - `godot.cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
   - `godot.get_type(val)` Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
 - Using signals in the ECMAScript way
@@ -114,11 +115,13 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 	await godot.yield(this.get_tree().create_timer(1), godot.SceneTreeTimer.timeout);
 	console.log('After one second to show');
 	```
-
-You can run the menu command from godot editor to dump the api declearations.
-```
-Project > Tools > ECMAScript > Generate TypeScript Declaration
-```
+- Preload resources with ECMAScript import statement
+	```js
+	import ICON from 'res://icon.png';
+	```
+- TypeScript support
+	- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Declaration` from godot editor to dump the api declearations
+	
 
 ## Demo
 You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos)

@@ -121,7 +121,13 @@ private:
 	static JSValue godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_signal(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_property(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue godot_set_script_metadata(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
+	enum {
+		SCRIPT_META_TOOLED,
+		SCRIPT_META_ICON,
+	};
+	static JSValue godot_set_script_meta(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
+
 	static JSValue godot_request_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_cancel_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
