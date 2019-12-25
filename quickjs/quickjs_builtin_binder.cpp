@@ -17,11 +17,11 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, Variant::Type 
 
 	ERR_FAIL_NULL_V(ctx, JS_UNDEFINED);
 
-	QuickJSBinder *binder = QuickJSBinder::context_binders.get(ctx);
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	const QuickJSBuiltinBinder::BuiltinClass &cls = binder->builtin_binder.get_class(p_type);
 	JSValue obj = JS_NewObjectProtoClass(ctx, cls.class_prototype, binder->get_origin_class_id());
 
-	ECMAScriptGCHandler *bind = memnew(ECMAScriptGCHandler);
+	ECMAScriptGCHandler *bind = binder->new_gc_handler();
 	bind->type = p_type;
 	bind->flags |= ECMAScriptGCHandler::FLAG_BUILTIN_CLASS;
 	bind->godot_builtin_object_ptr = p_object;
@@ -95,7 +95,7 @@ void QuickJSBuiltinBinder::builtin_finalizer(ECMAScriptGCHandler *p_bind) {
 }
 
 void QuickJSBuiltinBinder::register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc) {
-	QuickJSBinder *binder = QuickJSBinder::context_binders.get(ctx);
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	QuickJSBuiltinBinder::BuiltinClass &cls = binder->builtin_binder.get_class(p_type);
 	cls.id = 0;
 	cls.js_class.class_name = p_name;

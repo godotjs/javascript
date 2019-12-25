@@ -9,7 +9,7 @@
 #include "core/os/os.h"
 #include "quickjs_binder.h"
 
-HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
+uint16_t QuickJSBinder::global_context_id = 0;
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
 
 static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
@@ -97,9 +97,8 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			ECMAScriptGCHandler *data = BINDING_DATA_FROM_GD(obj);
 			ERR_FAIL_NULL_V(data, JS_UNDEFINED);
 			ERR_FAIL_NULL_V(data->ecma_object, JS_UNDEFINED);
-			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
-
 			QuickJSBinder *binder = get_context_binder(ctx);
+			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
 			if (binder->lastest_allocated_object == data) {
 				if (data->is_object()) {
 					JS_DupValue(ctx, js_obj);
@@ -637,7 +636,7 @@ void QuickJSBinder::add_godot_globals() {
 		const ClassBindData *cls = *cls_ptr;
 
 		JSValue obj = JS_NewObjectProtoClass(ctx, cls->prototype, get_origin_class_id());
-		ECMAScriptGCHandler *data = memnew(ECMAScriptGCHandler);
+		ECMAScriptGCHandler *data = new_gc_handler();
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
 		data->godot_object = s.ptr;
 		data->type = Variant::OBJECT;
@@ -791,6 +790,7 @@ void QuickJSBinder::add_godot_globals() {
 }
 
 QuickJSBinder::QuickJSBinder() {
+	context_id = global_context_id++;
 	internal_godot_method_id = 0;
 	godot_allocator.js_malloc = QuickJSBinder::js_malloc;
 	godot_allocator.js_free = QuickJSBinder::js_free;
@@ -804,8 +804,7 @@ void QuickJSBinder::initialize() {
 	runtime = JS_NewRuntime2(&godot_allocator, this);
 	ctx = JS_NewContext(runtime);
 	JS_SetModuleLoaderFunc(runtime, /*js_module_resolve*/ NULL, js_module_loader, this);
-
-	context_binders.set(ctx, this);
+	JS_SetContextOpaque(ctx, this);
 	runtime_context_map.set(runtime, ctx);
 
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
@@ -889,7 +888,6 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeValue(ctx, global_object);
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
-	context_binders.erase(ctx);
 	runtime_context_map.erase(runtime);
 	ctx = NULL;
 	runtime = NULL;
@@ -954,7 +952,7 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 void *QuickJSBinder::alloc_object_binding_data(Object *p_object) {
 	if (const ClassBindData **bind_ptr = classname_bindings.getptr(p_object->get_class_name())) {
 		JSValue obj = JS_NewObjectProtoClass(ctx, (*bind_ptr)->prototype, get_origin_class_id());
-		ECMAScriptGCHandler *data = memnew(ECMAScriptGCHandler);
+		ECMAScriptGCHandler *data = new_gc_handler();
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
 		data->godot_object = p_object;
 		data->type = Variant::OBJECT;

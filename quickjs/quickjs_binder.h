@@ -17,6 +17,9 @@ class QuickJSBinder : public ECMAScriptBinder {
 	friend class QuickJSBuiltinBinder;
 	QuickJSBuiltinBinder builtin_binder;
 
+protected:
+	static uint16_t global_context_id;
+	uint16_t context_id;
 public:
 	struct PtrHasher {
 		static _FORCE_INLINE_ uint32_t hash(const void *p_ptr) {
@@ -139,8 +142,6 @@ private:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
-
-	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
 
 public:
@@ -190,7 +191,16 @@ public:
 public:
 	QuickJSBinder();
 
-	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSContext *ctx) { return context_binders.get(ctx); }
+	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSContext *ctx) {
+		return static_cast<QuickJSBinder*>(JS_GetContextOpaque(ctx));
+	}
+
+	_FORCE_INLINE_ ECMAScriptGCHandler* new_gc_handler() {
+		ECMAScriptGCHandler *h = memnew(ECMAScriptGCHandler);
+		h->context_id = context_id;
+		return h;
+	}
+
 	_FORCE_INLINE_ QuickJSBuiltinBinder &get_builtin_binder() { return builtin_binder; }
 
 	_FORCE_INLINE_ JSClassID get_origin_class_id() { return godot_origin_class.class_id; }

@@ -21,9 +21,11 @@ struct ECMAScriptGCHandler {
 		FLAG_HOLDING_SCRIPT_REF = 1 << 4,
 		FLAG_SCRIPT_FINALIZED = 1 << 5,
 		FLAG_BUILTIN_CLASS = 1 << 6,
+		FLAG_CONTEXT_TRANSFERABLE = 1 << 7,
 	};
-	uint16_t flags;
 	Variant::Type type;
+	uint16_t flags;
+	uint16_t context_id;
 	void *ecma_object;
 	union {
 		Object *godot_object;
@@ -122,6 +124,7 @@ struct ECMAScriptGCHandler {
 		godot_object = NULL;
 		ecma_object = NULL;
 		type = Variant::NIL;
+		context_id = 0;
 	}
 
 	ECMAScriptGCHandler() {
@@ -129,6 +132,7 @@ struct ECMAScriptGCHandler {
 		godot_object = NULL;
 		ecma_object = NULL;
 		type = Variant::NIL;
+		context_id = 0;
 	}
 };
 
