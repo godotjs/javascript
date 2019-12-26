@@ -2,7 +2,7 @@
 #include "core/os/os.h"
 
 void QuickJSWorker::thread_main(void *p_this) {
-	QuickJSWorker *self = static_cast<QuickJSWorker*>(p_this);
+	QuickJSWorker *self = static_cast<QuickJSWorker *>(p_this);
 
 	self->initialize();
 	self->running = true;
@@ -28,9 +28,11 @@ void QuickJSWorker::thread_main(void *p_this) {
 	self->uninitialize();
 }
 
-QuickJSWorker::QuickJSWorker(): QuickJSBinder() {
+QuickJSWorker::QuickJSWorker(const QuickJSBinder *p_host_context) :
+		QuickJSBinder() {
 	thread = NULL;
 	running = false;
+	host_context = p_host_context;
 }
 
 QuickJSWorker::~QuickJSWorker() {

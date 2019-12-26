@@ -25,7 +25,7 @@ struct ECMAScriptGCHandler {
 	};
 	Variant::Type type;
 	uint16_t flags;
-	uint16_t context_id;
+	void *context;
 	void *ecma_object;
 	union {
 		Object *godot_object;
@@ -121,18 +121,18 @@ struct ECMAScriptGCHandler {
 	}
 
 	_FORCE_INLINE_ void clear() {
+		type = Variant::NIL;
 		godot_object = NULL;
 		ecma_object = NULL;
-		type = Variant::NIL;
-		context_id = 0;
+		context = NULL;
 	}
 
 	ECMAScriptGCHandler() {
+		type = Variant::NIL;
 		flags = FLAG_NONE;
 		godot_object = NULL;
 		ecma_object = NULL;
-		type = Variant::NIL;
-		context_id = 0;
+		context = NULL;
 	}
 };
 

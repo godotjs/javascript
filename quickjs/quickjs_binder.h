@@ -12,6 +12,8 @@
 #define NO_MODULE_EXPORT_SUPPORT 0
 #define MODULE_HAS_REFCOUNT 0 // module seems don't follow the refrence count rule in quickjs
 
+class QuickJSWorker;
+
 class QuickJSBinder : public ECMAScriptBinder {
 
 	friend class QuickJSBuiltinBinder;
@@ -20,6 +22,7 @@ class QuickJSBinder : public ECMAScriptBinder {
 protected:
 	static uint16_t global_context_id;
 	uint16_t context_id;
+
 public:
 	struct PtrHasher {
 		static _FORCE_INLINE_ uint32_t hash(const void *p_ptr) {
@@ -94,6 +97,7 @@ private:
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
 	HashMap<String, ModuleCache> module_cache;
+	ClassBindData worker_class_data;
 
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
@@ -107,6 +111,7 @@ private:
 	void add_godot_classes();
 	void add_godot_globals();
 	void add_global_console();
+	void add_godot_worker();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static void object_finalizer(ECMAScriptGCHandler *p_bind);
@@ -134,6 +139,10 @@ private:
 	static JSValue godot_request_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_cancel_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
+	static JSValue godot_worker_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static void godot_worker_finializer(JSRuntime *rt, JSValue val);
+	static JSValue godot_worker_terminate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
 	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
@@ -142,6 +151,7 @@ private:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
+	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
 
 public:
@@ -192,12 +202,12 @@ public:
 	QuickJSBinder();
 
 	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSContext *ctx) {
-		return static_cast<QuickJSBinder*>(JS_GetContextOpaque(ctx));
+		return context_binders.get(ctx);
 	}
 
-	_FORCE_INLINE_ ECMAScriptGCHandler* new_gc_handler() {
+	_FORCE_INLINE_ ECMAScriptGCHandler *new_gc_handler() {
 		ECMAScriptGCHandler *h = memnew(ECMAScriptGCHandler);
-		h->context_id = context_id;
+		h->context = ctx;
 		return h;
 	}
 
@@ -213,6 +223,7 @@ public:
 
 	virtual void *alloc_object_binding_data(Object *p_object);
 	virtual void free_object_binding_data(void *p_gc_handle);
+	static Error bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, Object *p_object);
 
 	virtual void godot_refcount_incremented(Reference *p_object);
 	virtual bool godot_refcount_decremented(Reference *p_object);

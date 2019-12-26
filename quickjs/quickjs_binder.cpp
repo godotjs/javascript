@@ -8,8 +8,10 @@
 #include "core/os/file_access.h"
 #include "core/os/os.h"
 #include "quickjs_binder.h"
+#include "quickjs_worker.h"
 
 uint16_t QuickJSBinder::global_context_id = 0;
+HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
 
 static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
@@ -800,12 +802,18 @@ QuickJSBinder::QuickJSBinder() {
 }
 
 void QuickJSBinder::initialize() {
+	
 	// create runtime and context for the binder
 	runtime = JS_NewRuntime2(&godot_allocator, this);
 	ctx = JS_NewContext(runtime);
 	JS_SetModuleLoaderFunc(runtime, /*js_module_resolve*/ NULL, js_module_loader, this);
 	JS_SetContextOpaque(ctx, this);
-	runtime_context_map.set(runtime, ctx);
+	
+	{ // Lock in this scope only
+		GLOBAL_LOCK_FUNCTION
+		context_binders.set(ctx, this);
+		runtime_context_map.set(runtime, ctx);
+	}
 
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
 	// global = globalThis
@@ -828,8 +836,15 @@ void QuickJSBinder::initialize() {
 	add_godot_classes();
 	// godot.print godot.sin ...
 	add_godot_globals();
+	// godot.Worker
+	add_godot_worker();
 	// binding script
-	eval_string(BINDING_SCRIPT_CONTENT, "");
+	if (context_id == 0 || true) { // Why quickjs crash in the second runtime ?
+		String script_binding_error;
+		if (OK != safe_eval_text(BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
+			CRASH_NOW_MSG("Execute script binding failed:\n" + script_binding_error);
+		}
+	}
 }
 
 void QuickJSBinder::uninitialize() {
@@ -888,7 +903,13 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeValue(ctx, global_object);
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
-	runtime_context_map.erase(runtime);
+	
+	{ // Lock in this scope only
+		GLOBAL_LOCK_FUNCTION
+		context_binders.erase(ctx);
+		runtime_context_map.erase(runtime);
+	}
+	
 	ctx = NULL;
 	runtime = NULL;
 }
@@ -923,7 +944,7 @@ void QuickJSBinder::frame() {
 Error QuickJSBinder::eval_string(const String &p_source, const String &p_path) {
 	String error;
 	Error err = safe_eval_text(p_source, p_path, error);
-	if (!error.empty()) {
+	if (err != OK && !error.empty()) {
 		ERR_PRINTS(error);
 	}
 	return err;
@@ -941,7 +962,6 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 		ECMAscriptScriptError err;
 		dump_exception(ctx, e, &err);
 		r_error = error_to_string(err);
-		ERR_PRINTS(r_error);
 		JS_Throw(ctx, e);
 		return ERR_PARSE_ERROR;
 	}
@@ -951,9 +971,29 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 /************************* Memory Management ******************************/
 
 void *QuickJSBinder::alloc_object_binding_data(Object *p_object) {
-	if (const ClassBindData **bind_ptr = classname_bindings.getptr(p_object->get_class_name())) {
-		JSValue obj = JS_NewObjectProtoClass(ctx, (*bind_ptr)->prototype, get_origin_class_id());
-		ECMAScriptGCHandler *data = new_gc_handler();
+	ECMAScriptGCHandler *data = new_gc_handler();
+	if (OK != bind_gc_object(ctx, data, p_object)) {
+		memdelete(data);
+		data = NULL;
+	}
+	lastest_allocated_object = data;
+	return data;
+}
+
+void QuickJSBinder::free_object_binding_data(void *p_gc_handle) {
+	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)p_gc_handle;
+	if (bind->is_object()) {
+		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		JS_SetOpaque(js_obj, NULL);
+		JS_FreeValue((JSContext *)bind->context, js_obj);
+	}
+	memdelete(bind);
+}
+
+Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, Object *p_object) {
+	QuickJSBinder *binder = get_context_binder(ctx);
+	if (const ClassBindData **bind_ptr = binder->classname_bindings.getptr(p_object->get_class_name())) {
+		JSValue obj = JS_NewObjectProtoClass(ctx, (*bind_ptr)->prototype, binder->get_origin_class_id());
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
 		data->godot_object = p_object;
 		data->type = Variant::OBJECT;
@@ -976,21 +1016,9 @@ void *QuickJSBinder::alloc_object_binding_data(Object *p_object) {
 		add_debug_binding_info(ctx, obj, data);
 		JS_DefinePropertyValueStr(ctx, obj, "__id__", to_js_number(ctx, p_object->get_instance_id()), PROP_DEF_DEFAULT);
 #endif
-
-		lastest_allocated_object = data;
-		return data;
+		return OK;
 	}
-	return NULL;
-}
-
-void QuickJSBinder::free_object_binding_data(void *p_gc_handle) {
-	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)p_gc_handle;
-	if (bind->is_object()) {
-		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-		JS_SetOpaque(js_obj, NULL);
-		JS_FreeValue(ctx, js_obj);
-	}
-	memdelete(bind);
+	return FAILED;
 }
 
 void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
@@ -1024,8 +1052,18 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 	} else {
 		Object *gd_obj = cls.gdclass->creation_func();
 		bind = BINDING_DATA_FROM_GD(gd_obj);
-		bind->flags |= ECMAScriptGCHandler::FLAG_FROM_SCRIPT;
 		js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		if (bind->context != ctx) {
+			JS_SetOpaque(js_obj, NULL);
+			JS_FreeValue((JSContext *)bind->context, js_obj);
+			if (bind->is_reference()) {
+				memdelete(bind->godot_reference);
+			}
+			bind_gc_object(ctx, bind, gd_obj);
+			js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		}
+		bind->flags |= ECMAScriptGCHandler::FLAG_FROM_SCRIPT;
+
 		if (JS_IsFunction(ctx, new_target)) {
 			JSValue prototype = JS_GetProperty(ctx, new_target, QuickJSBinder::JS_ATOM_prototype);
 			JS_SetPrototype(ctx, js_obj, prototype);
@@ -1491,6 +1529,47 @@ bool QuickJSBinder::has_signal(const ECMAClassInfo *p_class, const StringName &p
 	return found;
 }
 /**************************** END Script --> C++ ******************************/
+
+/********************************** Worker *************************************/
+JSValue QuickJSBinder::godot_worker_constructor(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 1 || !JS_IsString(argv[0]), JS_ThrowTypeError(ctx, "script path expected for argument #0"));
+	QuickJSBinder *host = QuickJSBinder::get_context_binder(ctx);
+	QuickJSWorker *worker = memnew(QuickJSWorker(host));
+	worker->start(js_to_string(ctx, argv[0]));
+	JSValue obj = JS_NewObjectProtoClass(ctx, host->worker_class_data.prototype, host->worker_class_data.class_id);
+	JS_SetOpaque(obj, worker);
+	return obj;
+}
+
+void QuickJSBinder::godot_worker_finializer(JSRuntime *rt, JSValue val) {
+	QuickJSBinder *host = QuickJSBinder::get_context_binder(runtime_context_map.get(rt));
+	if (QuickJSWorker *worker = static_cast<QuickJSWorker *>(JS_GetOpaque(val, host->worker_class_data.class_id))) {
+		worker->stop();
+		memdelete(worker);
+	}
+}
+
+void QuickJSBinder::add_godot_worker() {
+	worker_class_data.gdclass = NULL;
+	worker_class_data.class_id = 0;
+	worker_class_data.base_class = NULL;
+	worker_class_data.class_name = "Worker";
+	worker_class_data.jsclass.class_name = "Worker";
+	worker_class_data.jsclass.finalizer = godot_worker_finializer;
+	worker_class_data.jsclass.exotic = NULL;
+	worker_class_data.jsclass.gc_mark = NULL;
+	worker_class_data.jsclass.call = NULL;
+	worker_class_data.gdclass = NULL;
+	worker_class_data.prototype = JS_NewObject(ctx);
+	JS_NewClassID(&worker_class_data.class_id);
+	JS_NewClass(JS_GetRuntime(ctx), worker_class_data.class_id, &worker_class_data.jsclass);
+	JS_SetClassProto(ctx, worker_class_data.class_id, worker_class_data.prototype);
+	worker_class_data.constructor = JS_NewCFunction2(ctx, godot_worker_constructor, worker_class_data.jsclass.class_name, worker_class_data.class_name.size(), JS_CFUNC_constructor, 0);
+	JS_SetConstructor(ctx, worker_class_data.constructor, worker_class_data.prototype);
+	JS_DefinePropertyValueStr(ctx, godot_object, "Worker", worker_class_data.constructor, PROP_DEF_DEFAULT);
+}
+
+/********************************* END Worker **********************************/
 
 bool QuickJSBinder::validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) {
 	ModuleCache *module = js_compile_module(ctx, p_code, p_path, r_error);
