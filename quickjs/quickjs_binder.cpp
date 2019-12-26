@@ -802,13 +802,13 @@ QuickJSBinder::QuickJSBinder() {
 }
 
 void QuickJSBinder::initialize() {
-	
+
 	// create runtime and context for the binder
 	runtime = JS_NewRuntime2(&godot_allocator, this);
 	ctx = JS_NewContext(runtime);
 	JS_SetModuleLoaderFunc(runtime, /*js_module_resolve*/ NULL, js_module_loader, this);
 	JS_SetContextOpaque(ctx, this);
-	
+
 	{ // Lock in this scope only
 		GLOBAL_LOCK_FUNCTION
 		context_binders.set(ctx, this);
@@ -839,11 +839,9 @@ void QuickJSBinder::initialize() {
 	// godot.Worker
 	add_godot_worker();
 	// binding script
-	if (context_id == 0 || true) { // Why quickjs crash in the second runtime ?
-		String script_binding_error;
-		if (OK != safe_eval_text(BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
-			CRASH_NOW_MSG("Execute script binding failed:\n" + script_binding_error);
-		}
+	String script_binding_error;
+	if (OK != safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
+		CRASH_NOW_MSG("Execute script binding failed:\n" + script_binding_error);
 	}
 }
 
@@ -903,13 +901,13 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeValue(ctx, global_object);
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
-	
+
 	{ // Lock in this scope only
 		GLOBAL_LOCK_FUNCTION
 		context_binders.erase(ctx);
 		runtime_context_map.erase(runtime);
 	}
-	
+
 	ctx = NULL;
 	runtime = NULL;
 }

@@ -59,11 +59,11 @@ sources = [
 	'ecmascript_language.cpp',
 	'ecmascript_instance.cpp',
 	'ecmascript.cpp',
+	'misc/godot.binding_script.gen.cpp',
 ]
 
 if env['tools']:
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
-	env_module.add_source_files(env.modules_sources, 'misc/*.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.Append(CXXFLAGS=["-std=c++11"])
