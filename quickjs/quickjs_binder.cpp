@@ -940,7 +940,8 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 		JSValue e = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, e, &err);
-		ERR_PRINTS(error_to_string(err));
+		r_error = error_to_string(err);
+		ERR_PRINTS(r_error);
 		JS_Throw(ctx, e);
 		return ERR_PARSE_ERROR;
 	}
