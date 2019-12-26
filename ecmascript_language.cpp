@@ -161,7 +161,7 @@ void ECMAScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const
 
 Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const String &p_base_class_name) const {
 
-	String script_template = "class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
+	String script_template = "export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
 							 "    \n"
 							 "    // Declare member variables here. Examples:\n"
 							 "    a = 2;\n"
@@ -180,9 +180,7 @@ Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const S
 							 "    _process(delta) {\n"
 							 "        \n"
 							 "    }\n"
-							 "}\n"
-							 "\n"
-							 "export default %CLASS%;\n";
+							 "}\n";
 	script_template = script_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
 
 	Ref<ECMAScript> script;
