@@ -837,7 +837,7 @@ void QuickJSBinder::initialize() {
 	// godot.print godot.sin ...
 	add_godot_globals();
 	// godot.Worker
-	add_godot_worker();
+	add_global_worker();
 	// binding script
 	String script_binding_error;
 	if (OK != safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
@@ -927,6 +927,13 @@ void QuickJSBinder::frame() {
 			}
 			break;
 		}
+	}
+
+	for (List<ECMAScriptGCHandler *>::Element *E = workers.front(); E; E = E->next()) {
+		ECMAScriptGCHandler *bind = E->get();
+		QuickJSWorker *worker = static_cast<QuickJSWorker *>(bind->native_ptr);
+		JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		worker->frame_of_host(this, object);
 	}
 
 	const int64_t *id = frame_callbacks.next(NULL);
@@ -1529,42 +1536,86 @@ bool QuickJSBinder::has_signal(const ECMAClassInfo *p_class, const StringName &p
 /**************************** END Script --> C++ ******************************/
 
 /********************************** Worker *************************************/
-JSValue QuickJSBinder::godot_worker_constructor(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::worker_constructor(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc < 1 || !JS_IsString(argv[0]), JS_ThrowTypeError(ctx, "script path expected for argument #0"));
 	QuickJSBinder *host = QuickJSBinder::get_context_binder(ctx);
+
 	QuickJSWorker *worker = memnew(QuickJSWorker(host));
 	worker->start(js_to_string(ctx, argv[0]));
 	JSValue obj = JS_NewObjectProtoClass(ctx, host->worker_class_data.prototype, host->worker_class_data.class_id);
-	JS_SetOpaque(obj, worker);
+
+	ECMAScriptGCHandler *data = host->new_gc_handler();
+	data->native_ptr = worker;
+	data->ecma_object = JS_VALUE_GET_PTR(obj);
+	JS_SetOpaque(obj, data);
+	host->workers.push_back(data);
+
 	return obj;
 }
 
-void QuickJSBinder::godot_worker_finializer(JSRuntime *rt, JSValue val) {
+void QuickJSBinder::worker_finializer(JSRuntime *rt, JSValue val) {
 	QuickJSBinder *host = QuickJSBinder::get_context_binder(runtime_context_map.get(rt));
-	if (QuickJSWorker *worker = static_cast<QuickJSWorker *>(JS_GetOpaque(val, host->worker_class_data.class_id))) {
+	if (ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(val, host->worker_class_data.class_id))) {
+		QuickJSWorker *worker = static_cast<QuickJSWorker *>(bind->native_ptr);
 		worker->stop();
+		if (List<ECMAScriptGCHandler *>::Element *E = host->workers.find(bind)) {
+			host->workers.erase(E);
+		}
 		memdelete(worker);
+		memdelete(bind);
 	}
 }
 
-void QuickJSBinder::add_godot_worker() {
+JSValue QuickJSBinder::worker_post_message(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 1, JS_ThrowTypeError(ctx, "message value expected of argument #0"));
+	QuickJSBinder *host = QuickJSBinder::get_context_binder(ctx);
+	if (ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(this_val, host->worker_class_data.class_id))) {
+		QuickJSWorker *worker = static_cast<QuickJSWorker *>(bind->native_ptr);
+		worker->post_message_from_host(var_to_variant(ctx, argv[0]));
+	}
+	return JS_UNDEFINED;
+}
+
+JSValue QuickJSBinder::worker_terminate(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	QuickJSBinder *host = QuickJSBinder::get_context_binder(ctx);
+	if (ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(this_val, host->worker_class_data.class_id))) {
+		QuickJSWorker *worker = static_cast<QuickJSWorker *>(bind->native_ptr);
+		if (List<ECMAScriptGCHandler *>::Element *E = host->workers.find(bind)) {
+			host->workers.erase(E);
+		}
+		worker->stop();
+	}
+	return JS_UNDEFINED;
+}
+
+void QuickJSBinder::add_global_worker() {
 	worker_class_data.gdclass = NULL;
 	worker_class_data.class_id = 0;
 	worker_class_data.base_class = NULL;
 	worker_class_data.class_name = "Worker";
 	worker_class_data.jsclass.class_name = "Worker";
-	worker_class_data.jsclass.finalizer = godot_worker_finializer;
+	worker_class_data.jsclass.finalizer = worker_finializer;
 	worker_class_data.jsclass.exotic = NULL;
 	worker_class_data.jsclass.gc_mark = NULL;
 	worker_class_data.jsclass.call = NULL;
 	worker_class_data.gdclass = NULL;
+
 	worker_class_data.prototype = JS_NewObject(ctx);
+	// Worker.prototype.onmessage
+	JS_SetPropertyStr(ctx, worker_class_data.prototype, "onmessage", JS_NULL);
+	// Worker.prototype.postMessage
+	JSValue post_message_func = JS_NewCFunction(ctx, worker_post_message, "postMessage", 1);
+	JS_DefinePropertyValueStr(ctx, worker_class_data.prototype, "postMessage", post_message_func, PROP_DEF_DEFAULT);
+	// Worker.prototype.terminate
+	JSValue terminate_func = JS_NewCFunction(ctx, worker_terminate, "terminate", 1);
+	JS_DefinePropertyValueStr(ctx, worker_class_data.prototype, "terminate", terminate_func, PROP_DEF_DEFAULT);
+
 	JS_NewClassID(&worker_class_data.class_id);
 	JS_NewClass(JS_GetRuntime(ctx), worker_class_data.class_id, &worker_class_data.jsclass);
 	JS_SetClassProto(ctx, worker_class_data.class_id, worker_class_data.prototype);
-	worker_class_data.constructor = JS_NewCFunction2(ctx, godot_worker_constructor, worker_class_data.jsclass.class_name, worker_class_data.class_name.size(), JS_CFUNC_constructor, 0);
+	worker_class_data.constructor = JS_NewCFunction2(ctx, worker_constructor, worker_class_data.jsclass.class_name, worker_class_data.class_name.size(), JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, worker_class_data.constructor, worker_class_data.prototype);
-	JS_DefinePropertyValueStr(ctx, godot_object, "Worker", worker_class_data.constructor, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, global_object, "Worker", worker_class_data.constructor, PROP_DEF_DEFAULT);
 }
 
 /********************************* END Worker **********************************/

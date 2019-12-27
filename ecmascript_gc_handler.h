@@ -31,6 +31,7 @@ struct ECMAScriptGCHandler {
 		Object *godot_object;
 		REF *godot_reference;
 		void *godot_builtin_object_ptr;
+		void *native_ptr;
 	};
 
 	_FORCE_INLINE_ Variant get_value() const {

@@ -14,10 +14,29 @@ void QuickJSWorker::thread_main(void *p_this) {
 		String err_text;
 		err = self->safe_eval_text(text, self->entry_script, err_text);
 		if (err == OK) {
+			JSValue onmessage_callback = JS_GetPropertyStr(self->ctx, self->global_object, "onmessage");
+			bool onmessage_valid = JS_IsFunction(self->ctx, onmessage_callback);
 			while (self->running) {
 				self->frame();
+
+				if (onmessage_valid) {
+					List<Variant> messages;
+					{
+						GLOBAL_LOCK_FUNCTION
+						for (List<Variant>::Element *E = self->input_message_queue.front(); E; E = E->next()) {
+							messages.push_back(E->get());
+						}
+						self->input_message_queue.clear();
+					}
+					for (List<Variant>::Element *E = messages.front(); E; E = E->next()) {
+						JSValue argv[] = { variant_to_var(self->ctx, E->get()) };
+						JS_Call(self->ctx, onmessage_callback, self->global_object, 1, argv);
+						JS_FreeValue(self->ctx, argv[0]);
+					}
+				}
 				OS::get_singleton()->delay_usec(1000);
 			}
+			JS_FreeValue(self->ctx, onmessage_callback);
 		} else {
 			ERR_PRINTS("Failed to eval entry script:" + self->entry_script + "\nError:" + err_text);
 		}
@@ -26,6 +45,24 @@ void QuickJSWorker::thread_main(void *p_this) {
 	}
 
 	self->uninitialize();
+}
+
+JSValue QuickJSWorker::global_worker_close(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	QuickJSWorker *worker = dynamic_cast<QuickJSWorker *>(get_context_binder(ctx));
+	if (worker) {
+		worker->running = false;
+	}
+	return JS_UNDEFINED;
+}
+
+JSValue QuickJSWorker::global_worker_post_message(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 1, JS_ThrowTypeError(ctx, "message value expected of argument #0"));
+	QuickJSWorker *worker = dynamic_cast<QuickJSWorker *>(get_context_binder(ctx));
+	if (worker) {
+		GLOBAL_LOCK_FUNCTION
+		worker->output_message_queue.push_back(var_to_variant(ctx, argv[0]));
+	}
+	return JS_UNDEFINED;
 }
 
 QuickJSWorker::QuickJSWorker(const QuickJSBinder *p_host_context) :
@@ -41,10 +78,46 @@ QuickJSWorker::~QuickJSWorker() {
 
 void QuickJSWorker::initialize() {
 	QuickJSBinder::initialize();
+	JS_SetPropertyStr(ctx, global_object, "onmessage", JS_NULL);
+	JSValue close_func = JS_NewCFunction(ctx, global_worker_close, "close", 0);
+	JS_DefinePropertyValueStr(ctx, global_object, "close", close_func, PROP_DEF_DEFAULT);
+	JSValue post_message_func = JS_NewCFunction(ctx, global_worker_post_message, "postMessage", 1);
+	JS_DefinePropertyValueStr(ctx, global_object, "postMessage", post_message_func, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, global_object, "INSIDE_WORKER", JS_TRUE, JS_PROP_ENUMERABLE);
 }
 
 void QuickJSWorker::uninitialize() {
 	QuickJSBinder::uninitialize();
+}
+
+bool QuickJSWorker::frame_of_host(QuickJSBinder *host, const JSValueConst &value) {
+
+	JSValue onmessage_callback = JS_GetPropertyStr(host->ctx, value, "onmessage");
+	if (JS_IsFunction(host->ctx, onmessage_callback)) {
+
+		List<Variant> messages;
+		{
+			GLOBAL_LOCK_FUNCTION
+			for (List<Variant>::Element *E = output_message_queue.front(); E; E = E->next()) {
+				messages.push_back(E->get());
+			}
+			output_message_queue.clear();
+		}
+
+		for (List<Variant>::Element *E = messages.front(); E; E = E->next()) {
+			JSValue argv[] = { variant_to_var(host->ctx, E->get()) };
+			JS_Call(host->ctx, onmessage_callback, JS_NULL, 1, argv);
+			JS_FreeValue(host->ctx, argv[0]);
+		}
+	}
+
+	JS_FreeValue(host->ctx, onmessage_callback);
+	return running;
+}
+
+void QuickJSWorker::post_message_from_host(const Variant &p_message) {
+	GLOBAL_LOCK_FUNCTION
+	input_message_queue.push_back(p_message);
 }
 
 void QuickJSWorker::start(const String &p_path) {
@@ -55,10 +128,8 @@ void QuickJSWorker::start(const String &p_path) {
 
 void QuickJSWorker::stop() {
 	if (thread != NULL) {
-		if (running) {
-			running = false;
-			Thread::wait_to_finish(thread);
-		}
+		running = false;
+		Thread::wait_to_finish(thread);
 		memdelete(thread);
 		thread = NULL;
 	}

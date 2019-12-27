@@ -17,6 +17,7 @@ class QuickJSWorker;
 class QuickJSBinder : public ECMAScriptBinder {
 
 	friend class QuickJSBuiltinBinder;
+	friend class QuickJSWorker;
 	QuickJSBuiltinBinder builtin_binder;
 
 protected:
@@ -59,7 +60,7 @@ public:
 		JS_ATOM_END,
 	};
 
-private:
+protected:
 	JSValue global_object;
 	JSValue godot_object;
 	JSValue empty_function;
@@ -98,6 +99,7 @@ private:
 	HashMap<StringName, const ClassBindData *> classname_bindings;
 	HashMap<String, ModuleCache> module_cache;
 	ClassBindData worker_class_data;
+	List<ECMAScriptGCHandler *> workers;
 
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
@@ -111,7 +113,7 @@ private:
 	void add_godot_classes();
 	void add_godot_globals();
 	void add_global_console();
-	void add_godot_worker();
+	void add_global_worker();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
 	static void object_finalizer(ECMAScriptGCHandler *p_bind);
@@ -139,9 +141,10 @@ private:
 	static JSValue godot_request_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_cancel_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
-	static JSValue godot_worker_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static void godot_worker_finializer(JSRuntime *rt, JSValue val);
-	static JSValue godot_worker_terminate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue worker_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static void worker_finializer(JSRuntime *rt, JSValue val);
+	static JSValue worker_post_message(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue worker_terminate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
