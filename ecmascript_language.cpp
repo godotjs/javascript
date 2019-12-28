@@ -1,7 +1,6 @@
 #include "ecmascript_language.h"
 #include "core/class_db.h"
 #include "core/os/file_access.h"
-
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
 void ECMAScriptLanguage::init() {
@@ -12,6 +11,7 @@ void ECMAScriptLanguage::init() {
 
 void ECMAScriptLanguage::finish() {
 	binding->uninitialize();
+	binding->language_finalize();
 }
 
 Error ECMAScriptLanguage::execute_file(const String &p_path) {

@@ -46,6 +46,7 @@ public:
 
 	virtual void initialize() = 0;
 	virtual void uninitialize() = 0;
+	virtual void language_finalize() = 0;
 	virtual void frame() = 0;
 
 	virtual void *alloc_object_binding_data(Object *p_object) = 0;

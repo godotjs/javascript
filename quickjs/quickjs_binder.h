@@ -21,8 +21,9 @@ class QuickJSBinder : public ECMAScriptBinder {
 	QuickJSBuiltinBinder builtin_binder;
 
 protected:
-	static uint16_t global_context_id;
-	uint16_t context_id;
+	static uint32_t global_context_id;
+	static uint32_t global_transfer_id;
+	uint32_t context_id;
 
 public:
 	struct PtrHasher {
@@ -145,6 +146,8 @@ protected:
 	static void worker_finializer(JSRuntime *rt, JSValue val);
 	static JSValue worker_post_message(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue worker_terminate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue worker_abandon_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue worker_adopt_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
@@ -156,6 +159,7 @@ protected:
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
+	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
 
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
@@ -222,6 +226,7 @@ public:
 
 	virtual void initialize();
 	virtual void uninitialize();
+	virtual void language_finalize();
 	virtual void frame();
 
 	virtual void *alloc_object_binding_data(Object *p_object);

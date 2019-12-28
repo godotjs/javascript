@@ -10,9 +10,12 @@
 #include "quickjs_binder.h"
 #include "quickjs_worker.h"
 
-uint16_t QuickJSBinder::global_context_id = 0;
+uint32_t QuickJSBinder::global_context_id = 0;
+uint32_t QuickJSBinder::global_transfer_id = 0;
+
 HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
+HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 
 static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	PoolStringArray args;
@@ -99,6 +102,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			ECMAScriptGCHandler *data = BINDING_DATA_FROM_GD(obj);
 			ERR_FAIL_NULL_V(data, JS_UNDEFINED);
 			ERR_FAIL_NULL_V(data->ecma_object, JS_UNDEFINED);
+			ERR_FAIL_COND_V(data->context != ctx, (JS_UNDEFINED));
 			QuickJSBinder *binder = get_context_binder(ctx);
 			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
 			if (binder->lastest_allocated_object == data) {
@@ -326,8 +330,15 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 	ptr_str = ptr_str.sprintf(arr, &err);
 	JSValue ptrvalue = to_js_string(ctx, ptr_str);
 
+	u.p = ctx;
+	arr[0] = int(u.i);
+	ptr_str = "0x%X";
+	ptr_str = ptr_str.sprintf(arr, &err);
+	JSValue ptrctx = to_js_string(ctx, ptr_str);
+
 	JS_DefinePropertyValueStr(ctx, p_obj, "__class__", classname, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, p_obj, "__ptr__", ptrvalue, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, p_obj, "__ctx__", ptrctx, PROP_DEF_DEFAULT);
 }
 
 JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_name, void *opaque) {
@@ -912,6 +923,31 @@ void QuickJSBinder::uninitialize() {
 	runtime = NULL;
 }
 
+void QuickJSBinder::language_finalize() {
+
+	GLOBAL_LOCK_FUNCTION
+
+	const uint32_t *id = transfer_deopot.next(NULL);
+	while (id) {
+		ECMAScriptGCHandler *data = transfer_deopot.get(*id);
+		if (data->is_atomic_type()) {
+			Variant *ptr = static_cast<Variant *>(data->native_ptr);
+			memdelete(ptr);
+			memdelete(data);
+		} else {
+			Variant value = data->get_value();
+			if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
+				QuickJSBuiltinBinder::builtin_finalizer(data);
+			} else if (data->is_reference()) {
+				memdelete(data->godot_reference);
+			}
+		}
+		id = transfer_deopot.next(id);
+	}
+	context_binders.clear();
+	runtime_context_map.clear();
+}
+
 void QuickJSBinder::frame() {
 	JSContext *ctx1;
 	int err;
@@ -1001,6 +1037,7 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 		JSValue obj = JS_NewObjectProtoClass(ctx, (*bind_ptr)->prototype, binder->get_origin_class_id());
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
 		data->godot_object = p_object;
+		data->context = ctx;
 		data->type = Variant::OBJECT;
 		data->flags = ECMAScriptGCHandler::FLAG_OBJECT;
 		if (Reference *ref = Object::cast_to<Reference>(p_object)) {
@@ -1028,10 +1065,12 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 
 void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
-	JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-	if (!(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF)) {
-		JS_DupValue(ctx, js_obj); // JS ref_count ++
-		bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
+	if (bind->ecma_object) { // Can be NULL when adopting value
+		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		if (!(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF)) {
+			JS_DupValue(ctx, js_obj); // JS ref_count ++
+			bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
+		}
 	}
 }
 
@@ -1040,7 +1079,9 @@ bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 	if (bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF) {
 		bind->flags ^= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED)) {
-			JS_FreeValue(ctx, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
+			if (bind->ecma_object) { // This can be NULL when free an abandaned value
+				JS_FreeValue(ctx, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
+			}
 			return false;
 		}
 	}
@@ -1588,6 +1629,95 @@ JSValue QuickJSBinder::worker_terminate(JSContext *ctx, JSValue this_val, int ar
 	return JS_UNDEFINED;
 }
 
+JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc != 1, JS_ThrowTypeError(ctx, "one argument expected"));
+	JSValue &value = argv[0];
+	Variant gd_value = var_to_variant(ctx, value);
+
+	bool valid = true;
+	ECMAScriptGCHandler *data = NULL;
+	QuickJSBinder *binder = get_context_binder(ctx);
+
+	switch (gd_value.get_type()) {
+		case Variant::NIL:
+		case Variant::INT:
+		case Variant::BOOL:
+		case Variant::REAL:
+		case Variant::ARRAY:
+		case Variant::DICTIONARY:
+		case Variant::STRING: {
+			data = memnew(ECMAScriptGCHandler);
+			data->context = NULL;
+			data->type = gd_value.get_type();
+			data->native_ptr = memnew(Variant(gd_value));
+			data->flags = ECMAScriptGCHandler::FLAG_ATOMIC_VALUE | ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
+		} break;
+		default: {
+			data = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(value, binder->godot_origin_class.class_id));
+			if (data) {
+				if (data->type == Variant::OBJECT) {
+					JS_FreeValue(ctx, value);
+				}
+				data->ecma_object = NULL;
+				data->context = NULL;
+				data->flags |= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
+				JS_SetOpaque(value, NULL);
+			} else {
+				valid = false;
+			}
+		} break;
+	}
+
+	uint32_t id = 0;
+	if (valid) {
+		id = atomic_increment(&global_transfer_id);
+		GLOBAL_LOCK_FUNCTION
+		transfer_deopot.set(id, data);
+	}
+	return JS_NewInt64(ctx, id);
+}
+
+JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc != 1 || !JS_IsInteger(argv[0]), JS_ThrowTypeError(ctx, "value id expected"));
+	int64_t id = 0;
+
+	JS_ToInt64(ctx, &id, argv[0]);
+	ERR_FAIL_COND_V(id == 0, JS_ThrowTypeError(ctx, "id must greater than 0"));
+
+	ECMAScriptGCHandler *data = NULL;
+	{
+		GLOBAL_LOCK_FUNCTION
+		if (ECMAScriptGCHandler **ptr = transfer_deopot.getptr((uint32_t)id)) {
+			data = *ptr;
+			transfer_deopot.erase((uint32_t)id);
+		}
+	}
+	ERR_FAIL_NULL_V(data || !data->is_transferable(), JS_UNDEFINED);
+	JSValue ret = JS_UNDEFINED;
+	if (data->is_atomic_type()) {
+		Variant *ptr = static_cast<Variant *>(data->native_ptr);
+		ret = variant_to_var(ctx, *ptr);
+		memdelete(ptr);
+		memdelete(data);
+	} else {
+		Variant value = data->get_value();
+		if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
+			ret = variant_to_var(ctx, value);
+			QuickJSBuiltinBinder::builtin_finalizer(data);
+		} else if (value.get_type() == Variant::OBJECT) {
+			if (data->is_reference()) {
+				memdelete(data->godot_reference);
+			}
+			bind_gc_object(ctx, data, value);
+			ret = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
+			data->flags ^= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
+		} else {
+			ERR_FAIL_V((JS_UNDEFINED));
+		}
+	}
+	return ret;
+}
+
 void QuickJSBinder::add_global_worker() {
 	worker_class_data.gdclass = NULL;
 	worker_class_data.class_id = 0;
@@ -1599,8 +1729,9 @@ void QuickJSBinder::add_global_worker() {
 	worker_class_data.jsclass.gc_mark = NULL;
 	worker_class_data.jsclass.call = NULL;
 	worker_class_data.gdclass = NULL;
-
 	worker_class_data.prototype = JS_NewObject(ctx);
+	worker_class_data.constructor = JS_NewCFunction2(ctx, worker_constructor, worker_class_data.jsclass.class_name, worker_class_data.class_name.size(), JS_CFUNC_constructor, 0);
+
 	// Worker.prototype.onmessage
 	JS_SetPropertyStr(ctx, worker_class_data.prototype, "onmessage", JS_NULL);
 	// Worker.prototype.postMessage
@@ -1609,11 +1740,16 @@ void QuickJSBinder::add_global_worker() {
 	// Worker.prototype.terminate
 	JSValue terminate_func = JS_NewCFunction(ctx, worker_terminate, "terminate", 1);
 	JS_DefinePropertyValueStr(ctx, worker_class_data.prototype, "terminate", terminate_func, PROP_DEF_DEFAULT);
+	// Worker.abandonValue
+	JSValue abandon_value_func = JS_NewCFunction(ctx, worker_abandon_value, "abandonValue", 1);
+	JS_DefinePropertyValueStr(ctx, worker_class_data.constructor, "abandonValue", abandon_value_func, PROP_DEF_DEFAULT);
+	// Worker.adoptValue
+	JSValue adopt_value_func = JS_NewCFunction(ctx, worker_adopt_value, "adoptValue", 1);
+	JS_DefinePropertyValueStr(ctx, worker_class_data.constructor, "adoptValue", adopt_value_func, PROP_DEF_DEFAULT);
 
 	JS_NewClassID(&worker_class_data.class_id);
 	JS_NewClass(JS_GetRuntime(ctx), worker_class_data.class_id, &worker_class_data.jsclass);
 	JS_SetClassProto(ctx, worker_class_data.class_id, worker_class_data.prototype);
-	worker_class_data.constructor = JS_NewCFunction2(ctx, worker_constructor, worker_class_data.jsclass.class_name, worker_class_data.class_name.size(), JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, worker_class_data.constructor, worker_class_data.prototype);
 	JS_DefinePropertyValueStr(ctx, global_object, "Worker", worker_class_data.constructor, PROP_DEF_DEFAULT);
 }

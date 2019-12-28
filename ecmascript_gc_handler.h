@@ -21,7 +21,8 @@ struct ECMAScriptGCHandler {
 		FLAG_HOLDING_SCRIPT_REF = 1 << 4,
 		FLAG_SCRIPT_FINALIZED = 1 << 5,
 		FLAG_BUILTIN_CLASS = 1 << 6,
-		FLAG_CONTEXT_TRANSFERABLE = 1 << 7,
+		FLAG_ATOMIC_VALUE = 1 << 7,
+		FLAG_CONTEXT_TRANSFERABLE = 1 << 8,
 	};
 	Variant::Type type;
 	uint16_t flags;
@@ -119,6 +120,14 @@ struct ECMAScriptGCHandler {
 
 	_FORCE_INLINE_ bool is_reference() const {
 		return flags & FLAG_REFERENCE;
+	}
+
+	_FORCE_INLINE_ bool is_transferable() const {
+		return flags & FLAG_CONTEXT_TRANSFERABLE;
+	}
+
+	_FORCE_INLINE_ bool is_atomic_type() const {
+		return flags & FLAG_ATOMIC_VALUE;
 	}
 
 	_FORCE_INLINE_ void clear() {
