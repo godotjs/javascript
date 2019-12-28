@@ -17,7 +17,7 @@ HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::c
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 
-static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	PoolStringArray args;
 	args.resize(argc);
 	for (int i = 0; i < argc; ++i) {
@@ -26,15 +26,36 @@ static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, 
 		args.write()[i].parse_utf8(utf8, size);
 		JS_FreeCString(ctx, utf8);
 	}
-	print_line(args.join(" "));
+	switch (magic) {
+		case 2:
+			print_error(args.join(" "));
+			break;
+		case 1:
+		default:
+			print_line(args.join(" "));
+			break;
+	}
 	return JS_UNDEFINED;
 }
 
 void QuickJSBinder::add_global_console() {
 	JSValue console = JS_NewObject(ctx);
-	JSValue log = JS_NewCFunction(ctx, console_log_function, "log", 0);
+	JSValue log = JS_NewCFunctionMagic(ctx, console_log_function, "log", 0, JS_CFUNC_generic_magic, 0);
+	JSValue warn = JS_NewCFunctionMagic(ctx, console_log_function, "warn", 0, JS_CFUNC_generic_magic, 1);
+	JSValue err = JS_NewCFunctionMagic(ctx, console_log_function, "warn", 0, JS_CFUNC_generic_magic, 2);
 	JS_DefinePropertyValueStr(ctx, global_object, "console", console, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "log", log, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, console, "warn", warn, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, console, "err", err, PROP_DEF_DEFAULT);
+}
+
+void QuickJSBinder::add_global_properties() {
+	// globalThis.requestAnimationFrame
+	JSValue js_func_requestAnimationFrame = JS_NewCFunction(ctx, global_request_animation_frame, "requestAnimationFrame", 1);
+	JS_DefinePropertyValueStr(ctx, global_object, "requestAnimationFrame", js_func_requestAnimationFrame, PROP_DEF_DEFAULT);
+	// globalThis.cancelAnimationFrame
+	JSValue js_func_cancelAnimationFrame = JS_NewCFunction(ctx, global_cancel_animation_frame, "cancelAnimationFrame", 1);
+	JS_DefinePropertyValueStr(ctx, global_object, "cancelAnimationFrame", js_func_cancelAnimationFrame, PROP_DEF_DEFAULT);
 }
 
 JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int method_id) {
@@ -777,13 +798,6 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.load
 	JSValue js_func_load = JS_NewCFunction(ctx, godot_load, "load", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "load", js_func_load, PROP_DEF_DEFAULT);
-	// godot.requestAnimationFrame
-	JSValue js_func_requestAnimationFrame = JS_NewCFunction(ctx, godot_request_animation_frame, "requestAnimationFrame", 1);
-	JS_DefinePropertyValueStr(ctx, godot_object, "requestAnimationFrame", js_func_requestAnimationFrame, PROP_DEF_DEFAULT);
-	// godot.cancelAnimationFrame
-	JSValue js_func_cancelAnimationFrame = JS_NewCFunction(ctx, godot_cancel_animation_frame, "cancelAnimationFrame", 1);
-	JS_DefinePropertyValueStr(ctx, godot_object, "cancelAnimationFrame", js_func_cancelAnimationFrame, PROP_DEF_DEFAULT);
-
 	{
 		// godot.DEBUG_ENABLED
 #ifdef DEBUG_ENABLED
@@ -826,8 +840,6 @@ void QuickJSBinder::initialize() {
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
 	// global = globalThis
 	global_object = JS_GetGlobalObject(ctx);
-	// global.console
-	add_global_console();
 	// global.godot
 	godot_object = JS_NewObject(ctx);
 	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
@@ -844,8 +856,12 @@ void QuickJSBinder::initialize() {
 	add_godot_classes();
 	// godot.print godot.sin ...
 	add_godot_globals();
-	// godot.Worker
+	// globalThis.Worker
 	add_global_worker();
+	// Other global properties
+	add_global_properties();
+	// globalThis.console
+	add_global_console();
 	// binding script
 	String script_binding_error;
 	if (OK != safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
@@ -973,8 +989,16 @@ void QuickJSBinder::frame() {
 	while (id) {
 		const ECMAScriptGCHandler &func = frame_callbacks.get(*id);
 		JSValueConst js_func = JS_MKPTR(JS_TAG_OBJECT, func.ecma_object);
-		JSValue argvs = { JS_NewInt64(ctx, (int64_t)OS::get_singleton()->get_system_time_msecs()) };
-		JS_Call(ctx, js_func, godot_object, 1, &argvs);
+		JSValue argv[] = { JS_NewInt64(ctx, (int64_t)OS::get_singleton()->get_system_time_msecs()) };
+		JSValue ret = JS_Call(ctx, js_func, global_object, 1, argv);
+		JS_FreeValue(ctx, argv[0]);
+		if (JS_IsException(ret)) {
+			JSValue e = JS_GetException(ctx);
+			ECMAscriptScriptError err;
+			dump_exception(ctx, e, &err);
+			ERR_PRINTS("Error in requestAnimationFrame:\n" + error_to_string(err));
+			JS_FreeValue(ctx, e);
+		}
 		id = frame_callbacks.next(id);
 	}
 }
@@ -1355,7 +1379,7 @@ JSValue QuickJSBinder::godot_set_script_meta(JSContext *ctx, JSValue this_val, i
 	return JS_UNDEFINED;
 }
 
-JSValue QuickJSBinder::godot_request_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::global_request_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc < 1 || !JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "Function expected for argument #0"));
 	static int64_t id = 0;
 	JSValue js_func = JS_DupValue(ctx, argv[0]);
@@ -1366,7 +1390,7 @@ JSValue QuickJSBinder::godot_request_animation_frame(JSContext *ctx, JSValue thi
 	return JS_NewInt64(ctx, id);
 }
 
-JSValue QuickJSBinder::godot_cancel_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::global_cancel_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc < 1 || !JS_IsInteger(argv[0]), JS_ThrowTypeError(ctx, "Request ID expected for argument #0"));
 	int32_t id = js_to_int(ctx, argv[0]);
 	QuickJSBinder *binder = get_context_binder(ctx);

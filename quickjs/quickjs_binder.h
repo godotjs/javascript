@@ -114,6 +114,7 @@ protected:
 	void add_godot_classes();
 	void add_godot_globals();
 	void add_global_console();
+	void add_global_properties();
 	void add_global_worker();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
@@ -139,8 +140,9 @@ protected:
 	};
 	static JSValue godot_set_script_meta(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
-	static JSValue godot_request_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue godot_cancel_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic);
+	static JSValue global_request_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue global_cancel_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	static JSValue worker_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static void worker_finializer(JSRuntime *rt, JSValue val);
