@@ -106,13 +106,10 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			QuickJSBinder *binder = get_context_binder(ctx);
 			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
 			if (binder->lastest_allocated_object == data) {
-				if (data->is_object()) {
-					JS_DupValue(ctx, js_obj);
-				}
+				data->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
 				binder->lastest_allocated_object = NULL;
-			} else {
-				JS_DupValue(ctx, js_obj);
 			}
+			JS_DupValue(ctx, js_obj);
 
 			return js_obj;
 		}
@@ -1076,7 +1073,7 @@ void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
 
 bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
-	if (bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF) {
+	if (bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF || bind->flags & ECMAScriptGCHandler::FLAG_FROM_NATIVE) {
 		bind->flags ^= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED)) {
 			if (bind->ecma_object) { // This can be NULL when free an abandaned value
@@ -1093,7 +1090,6 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, new_target);
 	JSValue js_obj;
 	if (bind) {
-		bind->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
 		js_obj = new_target;
 	} else {
 		Object *gd_obj = cls.gdclass->creation_func();
@@ -1412,6 +1408,7 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
 	ERR_FAIL_NULL_V(bind, ECMAScriptGCHandler());
+	bind->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
 
 	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->constructor.ecma_object);
 	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
