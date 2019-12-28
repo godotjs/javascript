@@ -65,6 +65,19 @@ JSValue QuickJSWorker::global_worker_post_message(JSContext *ctx, JSValue this_v
 	return JS_UNDEFINED;
 }
 
+JSValue QuickJSWorker::global_import_scripts(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	for (int i = 0; i < argc; i++) {
+		if (JS_IsString(argv[i])) {
+			Error err;
+			String path = js_to_string(ctx, argv[0]);
+			String source = FileAccess::get_file_as_string(path, &err);
+			QuickJSBinder *bind = get_context_binder(ctx);
+			bind->eval_string(source, path);
+		}
+	}
+	return JS_UNDEFINED;
+}
+
 QuickJSWorker::QuickJSWorker(const QuickJSBinder *p_host_context) :
 		QuickJSBinder() {
 	thread = NULL;
@@ -78,12 +91,18 @@ QuickJSWorker::~QuickJSWorker() {
 
 void QuickJSWorker::initialize() {
 	QuickJSBinder::initialize();
+	// onmessage
 	JS_SetPropertyStr(ctx, global_object, "onmessage", JS_NULL);
+	// close
 	JSValue close_func = JS_NewCFunction(ctx, global_worker_close, "close", 0);
 	JS_DefinePropertyValueStr(ctx, global_object, "close", close_func, PROP_DEF_DEFAULT);
 	JSValue post_message_func = JS_NewCFunction(ctx, global_worker_post_message, "postMessage", 1);
+	// INSIDE_WORKER
 	JS_DefinePropertyValueStr(ctx, global_object, "postMessage", post_message_func, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, global_object, "INSIDE_WORKER", JS_TRUE, JS_PROP_ENUMERABLE);
+	// importScripts
+	JSValue import_scripts_func = JS_NewCFunction(ctx, global_import_scripts, "importScripts", 10);
+	JS_DefinePropertyValueStr(ctx, global_object, "importScripts", import_scripts_func, JS_PROP_ENUMERABLE);
 }
 
 void QuickJSWorker::uninitialize() {

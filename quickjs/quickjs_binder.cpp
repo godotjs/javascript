@@ -1710,6 +1710,9 @@ JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int 
 			}
 			bind_gc_object(ctx, data, value);
 			ret = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
+			if (data->is_object()) {
+				JS_DupValue(ctx, ret);
+			}
 			data->flags ^= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
 		} else {
 			ERR_FAIL_V((JS_UNDEFINED));

@@ -16,6 +16,7 @@ class QuickJSWorker : public QuickJSBinder {
 
 	static JSValue global_worker_close(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue global_worker_post_message(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue global_import_scripts(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 public:
 	QuickJSWorker(const QuickJSBinder *p_host_context);
