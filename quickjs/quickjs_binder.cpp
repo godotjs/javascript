@@ -1700,11 +1700,11 @@ JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int 
 		memdelete(ptr);
 		memdelete(data);
 	} else {
-		Variant value = data->get_value();
 		if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
-			ret = variant_to_var(ctx, value);
-			QuickJSBuiltinBinder::builtin_finalizer(data);
-		} else if (value.get_type() == Variant::OBJECT) {
+			ret = QuickJSBuiltinBinder::bind_builtin_object(ctx, data->type, data->godot_builtin_object_ptr);
+			memdelete(data);
+		} else if (data->type == Variant::OBJECT) {
+			Variant value = data->get_value();
 			if (data->is_reference()) {
 				memdelete(data->godot_reference);
 			}
