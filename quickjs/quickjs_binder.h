@@ -162,7 +162,7 @@ protected:
 	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
 	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
 	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
-	static Map<StringName, const char *> class_remap;
+	static Map<String, const char *> class_remap;
 
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);

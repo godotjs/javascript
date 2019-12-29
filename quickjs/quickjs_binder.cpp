@@ -17,7 +17,7 @@ uint32_t QuickJSBinder::global_transfer_id = 0;
 HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
-Map<StringName, const char *> QuickJSBinder::class_remap;
+Map<String, const char *> QuickJSBinder::class_remap;
 
 JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	PoolStringArray args;
