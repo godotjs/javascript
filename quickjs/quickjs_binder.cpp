@@ -13,9 +13,7 @@
 
 uint32_t QuickJSBinder::global_context_id = 0;
 uint32_t QuickJSBinder::global_transfer_id = 0;
-
-HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
-HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
+HashMap<JSRuntime *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_binders;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 
@@ -73,19 +71,13 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		argc = MIN(argc, mb->get_argument_count());
 	}
 
-	Variant *args = memnew_arr(Variant, argc);
-	const Variant **argsptr = memnew_arr(const Variant *, argc);
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	for (int i = 0; i < argc; ++i) {
-		args[i] = var_to_variant(ctx, argv[i]);
-		argsptr[i] = &(args[i]);
+		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
 	}
 
 	Variant::CallError call_err;
-	Variant ret_val = mb->call(obj, argsptr, argc, call_err);
-	if (args != NULL) {
-		memdelete_arr(args);
-		memdelete_arr(argsptr);
-	}
+	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc, call_err);
 #ifdef DEBUG_METHODS_ENABLED
 	CharString err_message;
 	switch (call_err.error) {
@@ -220,18 +212,11 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		return JS_ThrowTypeError(ctx, "%d arguments expected for builtin funtion %s", arg_required, func_name.ascii().ptr());
 	}
 
-	Variant *args = memnew_arr(Variant, argc);
-	const Variant **argsptr = memnew_arr(const Variant *, argc);
+	QuickJSBinder *binder = get_context_binder(ctx);
 	for (int i = 0; i < argc; ++i) {
-		args[i] = var_to_variant(ctx, argv[i]);
-		argsptr[i] = &(args[i]);
+		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
 	}
-
-	Expression::exec_func(func, argsptr, &ret, err, err_msg);
-	if (args != NULL) {
-		memdelete_arr(args);
-		memdelete_arr(argsptr);
-	}
+	Expression::exec_func(func, binder->method_call_argument_ptrs, &ret, err, err_msg);
 
 	if (err.error != Variant::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
@@ -846,6 +831,17 @@ QuickJSBinder::QuickJSBinder() {
 		class_remap.insert(_Mutex::get_class_static(), "");
 		class_remap.insert(_Semaphore::get_class_static(), "");
 	}
+
+	method_call_arguments = memnew_arr(Variant, MAX_ARGUMENT_COUNT);
+	method_call_argument_ptrs = memnew_arr(const Variant *, MAX_ARGUMENT_COUNT);
+	for (int i = 0; i < MAX_ARGUMENT_COUNT; ++i) {
+		method_call_argument_ptrs[i] = &(method_call_arguments[i]);
+	}
+}
+
+QuickJSBinder::~QuickJSBinder() {
+	memdelete_arr(method_call_arguments);
+	memdelete_arr(method_call_argument_ptrs);
 }
 
 void QuickJSBinder::initialize() {
@@ -855,11 +851,9 @@ void QuickJSBinder::initialize() {
 	ctx = JS_NewContext(runtime);
 	JS_SetModuleLoaderFunc(runtime, /*js_module_resolve*/ NULL, js_module_loader, this);
 	JS_SetContextOpaque(ctx, this);
-
 	{ // Lock in this scope only
 		GLOBAL_LOCK_FUNCTION
-		context_binders.set(ctx, this);
-		runtime_context_map.set(runtime, ctx);
+		runtime_binders.set(runtime, this);
 	}
 
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
@@ -948,13 +942,14 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeAtom(ctx, js_key_godot_signals);
 	JS_FreeValue(ctx, empty_function);
 	JS_FreeValue(ctx, global_object);
+
+	JS_SetContextOpaque(ctx, NULL);
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
 
 	{ // Lock in this scope only
 		GLOBAL_LOCK_FUNCTION
-		context_binders.erase(ctx);
-		runtime_context_map.erase(runtime);
+		runtime_binders.erase(runtime);
 	}
 
 	ctx = NULL;
@@ -982,8 +977,7 @@ void QuickJSBinder::language_finalize() {
 		}
 		id = transfer_deopot.next(id);
 	}
-	context_binders.clear();
-	runtime_context_map.clear();
+	runtime_binders.clear();
 }
 
 void QuickJSBinder::frame() {
@@ -1184,8 +1178,8 @@ void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
 }
 
 void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
-	JSContext *ctx = runtime_context_map.get(rt);
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, val);
+	QuickJSBinder *binder = runtime_binders.get(rt);
+	ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(val, binder->godot_origin_class.class_id));
 	if (bind) {
 		bind->flags |= ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED;
 		if (bind->type == Variant::OBJECT) {
@@ -1641,7 +1635,7 @@ JSValue QuickJSBinder::worker_constructor(JSContext *ctx, JSValue this_val, int 
 }
 
 void QuickJSBinder::worker_finializer(JSRuntime *rt, JSValue val) {
-	QuickJSBinder *host = QuickJSBinder::get_context_binder(runtime_context_map.get(rt));
+	QuickJSBinder *host = QuickJSBinder::get_context_binder(rt);
 	if (ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(val, host->worker_class_data.class_id))) {
 		QuickJSWorker *worker = static_cast<QuickJSWorker *>(bind->native_ptr);
 		worker->stop();

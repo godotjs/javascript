@@ -11,6 +11,7 @@
 #define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
 #define NO_MODULE_EXPORT_SUPPORT 0
 #define MODULE_HAS_REFCOUNT 0 // module seems don't follow the refrence count rule in quickjs
+#define MAX_ARGUMENT_COUNT 50
 
 class QuickJSWorker;
 
@@ -23,6 +24,9 @@ class QuickJSBinder : public ECMAScriptBinder {
 protected:
 	static uint32_t global_context_id;
 	static uint32_t global_transfer_id;
+	JSRuntime *runtime;
+	JSContext *ctx;
+	JSMallocFunctions godot_allocator;
 	uint32_t context_id;
 
 public:
@@ -65,16 +69,12 @@ protected:
 	JSValue global_object;
 	JSValue godot_object;
 	JSValue empty_function;
+	Vector<JSValue> godot_singletons;
 	JSAtom js_key_godot_classid;
 	JSAtom js_key_godot_tooled;
 	JSAtom js_key_godot_icon_path;
 	JSAtom js_key_godot_exports;
 	JSAtom js_key_godot_signals;
-	Vector<JSValue> godot_singletons;
-
-	JSRuntime *runtime;
-	JSContext *ctx;
-	JSMallocFunctions godot_allocator;
 
 	_FORCE_INLINE_ static void *js_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
 	_FORCE_INLINE_ static void js_free(JSMallocState *s, void *ptr) {
@@ -101,10 +101,12 @@ protected:
 	HashMap<String, ModuleCache> module_cache;
 	ClassBindData worker_class_data;
 	List<ECMAScriptGCHandler *> workers;
-
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
 	const ECMAScriptGCHandler *lastest_allocated_object = NULL;
+	Variant *method_call_arguments;
+	const Variant **method_call_argument_ptrs;
+
 #if NO_MODULE_EXPORT_SUPPORT
 	String parsing_script_file;
 #endif
@@ -159,8 +161,7 @@ protected:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
-	static HashMap<JSContext *, QuickJSBinder *, PtrHasher> context_binders;
-	static HashMap<JSRuntime *, JSContext *, PtrHasher> runtime_context_map;
+	static HashMap<JSRuntime *, QuickJSBinder *, PtrHasher> runtime_binders;
 	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
 	static Map<String, const char *> class_remap;
 
@@ -210,9 +211,14 @@ public:
 
 public:
 	QuickJSBinder();
+	virtual ~QuickJSBinder();
 
 	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSContext *ctx) {
-		return context_binders.get(ctx);
+		return static_cast<QuickJSBinder *>(JS_GetContextOpaque(ctx));
+	}
+
+	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSRuntime *rt) {
+		return runtime_binders.get(rt);
 	}
 
 	_FORCE_INLINE_ ECMAScriptGCHandler *new_gc_handler() {
