@@ -1,3 +1,50 @@
+
+//@ts-ignore
+declare module globalThis {
+	/**
+	 * A long integer value, the request id, that uniquely identifies the entry in the callback list.
+	 * This is a non-zero value, but you may not make any other assumptions about its value.
+	 * You can pass this value to `godot.cancelAnimationFrame()` to cancel the refresh callback request.
+	 */
+	type FrameRequetID = number;
+
+	/**
+	 * Request a refresh callback request, the `callback` will be called every frame
+	 * @param callback The function to call when it's time to update your animation for the next repaint. The callback function is passed one single argument, a number similar to the one returned by `godot.OS.get_system_time_msecs()`, indicating the point in time when requestAnimationFrame() starts to execute callback functions.
+	 */
+	function requestAnimationFrame(callback: (time_stamp: number) => void): FrameRequetID;
+
+	/**
+	 * Cancel an frame request previously scheduled through a call to `godot.requestAnimationFrame()`.
+	 * @param request_id The ID value returned by the call to `godot.requestAnimationFrame()` that requested the callback.
+	 */
+	function cancelAnimationFrame(request_id: FrameRequetID): void;
+	
+	//@ts-ignore
+	const console: {
+		log(...message): void;
+		warn(...message): void;
+		error(...message): void;
+	}
+
+	//@ts-ignore
+	class Worker {
+		onmessage(msg: any): void;
+		postMessage(msg: any): void;
+		terminate(): void;
+		static abandonValue(value: any): number;
+		static adoptValue(value_id: number): any;
+	}
+	
+	function close(): void;
+	//@ts-ignore
+	function onmessage(msg: any): void;
+	function postMessage(msg: any): void;
+	function importScripts(...msg: string[]): void;
+	
+	const INSIDE_WORKER: true | undefined;
+}
+
 declare module godot {
 	
 	type GodotClass = new() => godot.Object;
@@ -56,29 +103,14 @@ declare module godot {
 	 */
 	function yield(target: godot.Object, signal: string): Promise<any[]>;
 	
-	/**
-	 * A long integer value, the request id, that uniquely identifies the entry in the callback list.
-	 * This is a non-zero value, but you may not make any other assumptions about its value.
-	 * You can pass this value to `godot.cancelAnimationFrame()` to cancel the refresh callback request.
-	 */
-	type FrameRequetID = number;
-	
-	/**
-	 * Request a refresh callback request, the `callback` will be called every frame
-	 * @param callback The function to call when it's time to update your animation for the next repaint. The callback function is passed one single argument, a number similar to the one returned by `godot.OS.get_system_time_msecs()`, indicating the point in time when requestAnimationFrame() starts to execute callback functions.
-	 */
-	function requestAnimationFrame(callback: (time_stamp: number) => void): FrameRequetID;
-	
-	/**
-	 * Cancel an frame request previously scheduled through a call to `godot.requestAnimationFrame()`.
-	 * @param request_id The ID value returned by the call to `godot.requestAnimationFrame()` that requested the callback.
-	 */
-	function cancelAnimationFrame(request_id: FrameRequetID): void;
-	
 	const E: 2.7182818284590452353602874714;
 	const LN2: 0.6931471805599453094172321215;
 	const SQRT2: 1.4142135623730950488016887242;
 	const SQRT12: 0.7071067811865475244008443621048490;
+	
+	const DEBUG_ENABLED: boolean;
+	const TOOLS_ENABLED: boolean;
+	const DEBUG_METHODS_ENABLED: boolean;
 }
 
 declare module godot {

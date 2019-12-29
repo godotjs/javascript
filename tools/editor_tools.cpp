@@ -3,6 +3,9 @@
 #include "core/math/expression.h"
 #include "editor/filesystem_dock.h"
 
+#define TS_IGNORE "//@ts-ignore\n"
+static Map<String, Set<String> > ts_ignore_errors;
+
 struct ECMAScriptAlphCompare {
 	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
 		return String(l->get_class_name()) < String(r->get_class_name());
@@ -37,6 +40,22 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	declaration_file_dialog->set_current_file("godot.d.ts");
 	declaration_file_dialog->connect("file_selected", this, "_export_typescript_declare_file");
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
+
+	ts_ignore_errors.clear();
+	Set<String> ts_ignore_error_members;
+	ts_ignore_errors.insert("ArrayMesh", ts_ignore_error_members);
+	ts_ignore_error_members.clear();
+	ts_ignore_error_members.insert("FLAG_MAX");
+	ts_ignore_errors.insert("CPUParticles", ts_ignore_error_members);
+	ts_ignore_error_members.clear();
+	ts_ignore_error_members.insert("joy_connection_changed");
+	ts_ignore_errors.insert("Input", ts_ignore_error_members);
+	ts_ignore_error_members.clear();
+	ts_ignore_error_members.insert("rotate");
+	ts_ignore_errors.insert("PathFollow2D", ts_ignore_error_members);
+	ts_ignore_error_members.clear();
+	ts_ignore_error_members.insert("FLAG_MAX");
+	ts_ignore_errors.insert("SpriteBase3D", ts_ignore_error_members);
 }
 
 static String applay_partern(const String &p_partern, const Dictionary &p_values) {
@@ -138,15 +157,28 @@ static String get_type_name(const String &p_type) {
 	return p_type;
 }
 
-String _export_method(const DocData::MethodDoc &p_method, bool is_function = false, bool is_static = false) {
+String _export_method(const DocData::MethodDoc &p_method, bool is_function = false, bool is_static = false, bool ts_ignore_error = false) {
 
 	String method_template = "\n"
 							 "\t\t/** ${description} */\n"
+							 "${TS_IGNORE}"
 							 "\t\t${static}${name}(${params}) : ${return_type};\n";
 	if (is_function) {
 		method_template = "\n"
 						  "\t/** ${description} */\n"
+						  "${TS_IGNORE}"
 						  "\tfunction ${name}(${params}) : ${return_type};\n";
+		if (ts_ignore_error) {
+			method_template = method_template.replace("${TS_IGNORE}", "\t" TS_IGNORE);
+		} else {
+			method_template = method_template.replace("${TS_IGNORE}", "");
+		}
+	} else {
+		if (ts_ignore_error) {
+			method_template = method_template.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
+		} else {
+			method_template = method_template.replace("${TS_IGNORE}", "");
+		}
 	}
 
 	Dictionary dict;
@@ -175,17 +207,18 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 }
 
 String _export_class(const DocData::ClassDoc &class_doc) {
-
-	const String class_template = "\n"
-								  "\t/** ${brief_description}\n"
-								  "\t ${description} */\n"
-								  "\tclass ${name}${extends}${inherits} {\n"
-								  "${signals}\n"
-								  "${constants}\n"
-								  "${enumerations}\n"
-								  "${properties}\n"
-								  "${methods}\n"
-								  "\t}\n";
+	String class_template = "\n"
+							"\t/** ${brief_description}\n"
+							"\t ${description} */\n"
+							"${TS_IGNORE}"
+							"\tclass ${name}${extends}${inherits} {\n"
+							"${signals}\n"
+							"${constants}\n"
+							"${enumerations}\n"
+							"${properties}\n"
+							"${methods}\n"
+							"\t}\n";
+	class_template = class_template.replace("${TS_IGNORE}", ts_ignore_errors.has(class_doc.name) ? "\t" TS_IGNORE : "");
 	Dictionary dict;
 	dict["name"] = class_doc.name;
 	dict["inherits"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits);
@@ -215,7 +248,13 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		if (const_doc.value.is_valid_integer()) {
 			String const_str = "\n"
 							   "\t\t/** ${description} */\n"
+							   "${TS_IGNORE}"
 							   "\t\tstatic readonly ${name}: ${value};\n";
+			if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(const_doc.name)) {
+				const_str = const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
+			} else {
+				const_str = const_str.replace("${TS_IGNORE}", "");
+			}
 			constants += applay_partern(const_str, dict);
 		} else {
 			String const_str = "\n"
@@ -265,7 +304,14 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 
 		String prop_str = "\n"
 						  "\t\t/** ${description} */\n"
+						  "${TS_IGNORE}"
 						  "\t\t${static}${name}: ${type};\n";
+		if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(prop_doc.name)) {
+			prop_str = prop_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
+		} else {
+			prop_str = prop_str.replace("${TS_IGNORE}", "");
+		}
+
 		Dictionary dict;
 		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
 		dict["name"] = format_property_name(prop_doc.name);
@@ -300,7 +346,13 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		const DocData::MethodDoc &signal = class_doc.signals[i];
 		String signal_str = "\n"
 							"\t\t/** ${description} */\n"
+							"${TS_IGNORE}"
 							"\t\tstatic ${name}: '${name}';\n";
+		if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(signal.name)) {
+			signal_str = signal_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
+		} else {
+			signal_str = signal_str.replace("${TS_IGNORE}", "");
+		}
 		Dictionary dict;
 		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
 		dict["name"] = signal.name;
@@ -315,7 +367,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		if (method_doc.name == class_doc.name) {
 			continue;
 		}
-		methods += _export_method(method_doc, false, Engine::get_singleton()->has_singleton(class_doc.name));
+		methods += _export_method(method_doc, false, Engine::get_singleton()->has_singleton(class_doc.name), ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(method_doc.name));
 	}
 	dict["methods"] = methods;
 
@@ -367,6 +419,9 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("PoolVector3Array");
 	ignored_classes.insert("PoolColorArray");
 #endif
+	ignored_classes.insert("Semaphore");
+	ignored_classes.insert("Thread");
+	ignored_classes.insert("Mutex");
 
 	String classes = "";
 	String constants = "";
@@ -433,7 +488,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					if (format_property_name(method_doc.name) != method_doc.name) {
 						continue;
 					}
-					functions += _export_method(method_doc, true);
+					functions += _export_method(method_doc, true, false, ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(method_doc.name));
 				}
 			}
 			continue;

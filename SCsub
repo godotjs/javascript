@@ -39,9 +39,9 @@ def dump_text_file_to_cpp(file):
 	return source
 
 def generate_definition_code():
-	with open("tools/godot.builtin.d.ts.gen.cpp", "w") as f:
+	with open("tools/godot.d.ts.gen.cpp", "w") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.builtin.d.ts")))
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.d.ts")))
 
 def generate_script_binding_code():
 	with open("misc/godot.binding_script.gen.cpp", "w") as f:

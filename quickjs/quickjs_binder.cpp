@@ -1,6 +1,7 @@
 #include "quickjs_binder.h"
 #include "../ecmascript_instance.h"
 #include "../ecmascript_language.h"
+#include "core/bind/core_bind.h"
 #include "core/engine.h"
 #include "core/global_constants.h"
 #include "core/io/json.h"
@@ -16,6 +17,7 @@ uint32_t QuickJSBinder::global_transfer_id = 0;
 HashMap<JSContext *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::context_binders;
 HashMap<JSRuntime *, JSContext *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_context_map;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
+Map<StringName, const char *> QuickJSBinder::class_remap;
 
 JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	PoolStringArray args;
@@ -461,8 +463,18 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 	ClassBindData data;
 	data.class_id = 0;
 	data.base_class = NULL;
-	data.class_name = String(p_cls->name).ascii();
-	data.jsclass.class_name = data.class_name.ptr();
+
+	if (class_remap.has(p_cls->name)) {
+		data.class_name = class_remap[p_cls->name];
+		data.jsclass.class_name = class_remap[p_cls->name];
+		if (data.jsclass.class_name == "") {
+			return 0;
+		}
+	} else {
+		data.class_name = String(p_cls->name).ascii();
+		data.jsclass.class_name = data.class_name.ptr();
+	}
+
 	data.jsclass.exotic = NULL;
 	data.jsclass.gc_mark = NULL;
 	data.jsclass.call = NULL;
@@ -615,7 +627,9 @@ void QuickJSBinder::add_godot_classes() {
 	const StringName *key = ClassDB::classes.next(NULL);
 	while (key) {
 		const ClassDB::ClassInfo *cls = ClassDB::classes.getptr(*key);
-		gdclass_jsmap.insert(cls, register_class(cls));
+		if (JSClassID id = register_class(cls)) {
+			gdclass_jsmap.insert(cls, id);
+		}
 		key = ClassDB::classes.next(key);
 	}
 
@@ -808,6 +822,7 @@ void QuickJSBinder::add_godot_globals() {
 		JS_DefinePropertyValueStr(ctx, godot_object, "TOOLS_ENABLED", JS_TRUE, JS_PROP_ENUMERABLE);
 #endif
 #ifdef DEBUG_METHODS_ENABLED
+		// godot.DEBUG_METHODS_ENABLED
 		JS_DefinePropertyValueStr(ctx, godot_object, "DEBUG_METHODS_ENABLED", JS_TRUE, JS_PROP_ENUMERABLE);
 #endif
 	}
@@ -821,6 +836,14 @@ QuickJSBinder::QuickJSBinder() {
 	godot_allocator.js_realloc = QuickJSBinder::js_realloc;
 	godot_allocator.js_malloc_usable_size = NULL;
 	godot_object_class = NULL;
+
+	if (class_remap.empty()) {
+		class_remap.insert(_File::get_class_static(), "File");
+		class_remap.insert(_Directory::get_class_static(), "Directory");
+		class_remap.insert(_Thread::get_class_static(), "");
+		class_remap.insert(_Mutex::get_class_static(), "");
+		class_remap.insert(_Semaphore::get_class_static(), "");
+	}
 }
 
 void QuickJSBinder::initialize() {
