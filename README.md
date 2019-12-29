@@ -100,9 +100,9 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `godot.register_class(cls, name)` to register named class manually
   - `godot.set_script_tooled(tooled)` to set `tooled` of the class
   - `godot.set_script_icon(path)` to set icon of the class
-  - `godot.requestAnimationFrame(callback)` to add a callback function to be called every frame
-  - `godot.cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
   - `godot.get_type(val)` Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
+  - `requestAnimationFrame(callback)` to add a callback function to be called every frame
+  - `cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
 - Using signals in the ECMAScript way
   - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect` and `godot.Object.is_connected`
 	```js
@@ -119,8 +119,32 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 	```js
 	import ICON from 'res://icon.png';
 	```
+- Multi-threading with minimal [Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Worker)
+	- Start a new thread with Worker
+		```js
+		const worker = new Worker('worker.js'); // Run worker.js in a new thread context
+		worker.postMessage({type: 'load_dlc', value: 'dlc01.pck'});
+		worker.onmessage = function(msg) {
+			console.log("[MainThread] recived message from worker thread:", msg);
+		}
+		```
+	- Tansfer value in different thread context with `Worker.abandonValue` and `Worker.adoptValue`
+		```js
+		// In worker thread
+		let id = Worker.abandonValue(object);
+		postMessage({ type: 'return_value', id: id });
+		
+		// In the host thread
+		worker.onmessage = function(msg) {
+			if (typeof msg === 'object' && msg.type === 'return_value') {
+				let value_from_worker = Worker.adoptValue(msg.id);
+			}
+		}
+		```
+	
 - TypeScript support
 	- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Declaration` from godot editor to dump the api declearations
+	- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from godot editor to generate a TypeScript project
 	
 
 ## Demo
