@@ -22,6 +22,9 @@ void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
 		case MenuItem::ITEM_GEN_DECLAR_FILE:
 			declaration_file_dialog->popup_centered_ratio();
 			break;
+		case MenuItem::ITEM_GEN_TYPESCRIPT_PROJECT:
+			_generate_typescript_project();
+			break;
 	}
 }
 
@@ -30,6 +33,7 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	PopupMenu *menu = memnew(PopupMenu);
 	add_tool_submenu_item(TTR("ECMAScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLAR_FILE);
+	menu->add_item(TTR("Generate TypeScript Project"), ITEM_GEN_TYPESCRIPT_PROJECT);
 	menu->connect("id_pressed", this, "_on_menu_item_pressed");
 
 	declaration_file_dialog = memnew(EditorFileDialog);
@@ -505,6 +509,15 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
 	if (f.f && f->is_open()) {
 		f->store_string(text);
+		f->close();
+	}
+}
+
+void ECMAScriptPlugin::_generate_typescript_project() {
+	_export_typescript_declare_file("res://godot.d.ts");
+	FileAccessRef f = FileAccess::open("res://tsconfig.json", FileAccess::WRITE);
+	if (f.f && f->is_open()) {
+		f->store_string(TSCONFIG_CONTENT);
 		f->close();
 	}
 }

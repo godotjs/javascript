@@ -38,22 +38,13 @@ def dump_text_file_to_cpp(file):
 		source += line
 	return source
 
-def generate_definition_code():
-	with open("tools/godot.d.ts.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.d.ts")))
-
-def generate_script_binding_code():
-	with open("misc/godot.binding_script.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
-
 jsengine = 'quickjs'
 if jsengine == 'quickjs':
 	quickjs()
-generate_definition_code()
-generate_script_binding_code()
-	
+with open("misc/godot.binding_script.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
+
 sources = [
 	'register_types.cpp',
 	'ecmascript_language.cpp',
@@ -63,6 +54,12 @@ sources = [
 ]
 
 if env['tools']:
+	with open("tools/godot.d.ts.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.d.ts")))
+	with open("tools/tsconfig.json.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TSCONFIG_CONTENT = \n${source};'
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/tsconfig.json")))
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])

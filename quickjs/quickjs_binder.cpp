@@ -413,7 +413,9 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
 	const char *cfilename = filename.ptr();
+	const char *cfilesource = code.ptr();
 	if (!cfilename) cfilename = ""; // avoid crash with empty file name here
+	if (!cfilesource) cfilesource = ""; // avoid crash with empty source code here
 
 	String md5 = p_code.md5_text();
 	ModuleCache *last_module = binder->module_cache.getptr(p_filename);
@@ -437,7 +439,7 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 		}
 	}
 
-	JSValue func = JS_Eval(ctx, code.ptr(), code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+	JSValue func = JS_Eval(ctx, cfilesource, code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (!JS_IsException(func)) {
 		ModuleCache module;
 		module.code_md5 = md5;

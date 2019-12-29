@@ -20,28 +20,115 @@ declare module globalThis {
 	 */
 	function cancelAnimationFrame(request_id: FrameRequetID): void;
 	
+	
+	/**
+	 * The Console API provides functionality to allow developers to perform debugging tasks, such as logging messages or the values of variables at set points in your code, or timing how long an operation takes to complete.
+	 */
 	//@ts-ignore
 	const console: {
+		/**
+		 * Outputs a message to the console. The message may be a single string (with optional substitution values), or it may be any one or more JavaScript objects.
+		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
+		 */
 		log(...message): void;
+		
+		/**
+		 * Outputs a warning message to the console.
+		 * @param message  list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
+		 */
 		warn(...message): void;
+		
+		/**
+		 * Outputs an error message to the console.
+		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
+		 */
 		error(...message): void;
 	}
 
+	/**
+	 * A worker is an object created using a constructor of `Worker` that runs a named JavaScript file — this file contains the code that will run in the worker thread;
+	 *
+	 * Workers run in another global context that is different from the current context.
+	 * 
+	 * You can run whatever code you like inside the worker thread. All of the godot API are avaliable inside workers.
+	 * 
+	 * Data is sent between workers and the main thread via a system of messages — both sides send their messages using the `postMessage()` method, and respond to messages via the `onmessage` event handler (the message is contained within the Message event's data attribute.) The data is copied rather than shared.
+	 *
+	 * You can **transfer** value with `Worker.abandonValue` and `Worker.adoptValue`. After a value is abandoned you cannot using it anymore in the context.
+	 *
+	 * Workers may, in turn, spawn new workers, all sub-worker will be stopped when the host context stop.
+	 */
 	//@ts-ignore
 	class Worker {
-		onmessage(msg: any): void;
-		postMessage(msg: any): void;
+		
+		/**
+		 * The `onmessage` property of the Worker interface represents an event handler, that is a function to be called when the message event occurs.
+		 * It will be called when the worker's parent receives a message from the worker context by `postMessage` method.
+		 */
+		onmessage(message: any): void;
+		
+		/**
+		 * Sends a message to the worker's inner scope. This accepts a single parameter, which is the data to send to the worker.
+		 * @param message The object to deliver to the worker; this will be in the data field in the event delivered to the `onmessage` handler.
+		 * @note The data cannot be instance of `godot.Object` or any other JavaScript object conains functions.
+		 */
+		postMessage(message: any): void;
+		
+		/**
+		 * Stop the worker thread
+		 */
 		terminate(): void;
+		
+		/**
+		 * Drop the `value` in the context. You should never touching an abandoned value anymore be for it is adopted.
+		 * 
+		 * You can adopt the value in another thread context to transfer the value.
+		 * 
+		 * An `non zero` ID is return if no error happen.
+		 * @param value The value to abandon in the context
+		 * @note You can transfer any type the godot `Variant` can represent. But you cannot transfer JavaScript objects with function properties.
+		 * @returns The ID of the abandoned value
+		 */
 		static abandonValue(value: any): number;
+		
+		/**
+		 * Adopt an abandoned value.
+		 * @param value_id The ID of the abandoned value
+		 */
 		static adoptValue(value_id: number): any;
 	}
 	
+	/** **Worker context only**
+	 * 
+	 *  Stop the worker thread of current context
+	 */
 	function close(): void;
-	//@ts-ignore
-	function onmessage(msg: any): void;
-	function postMessage(msg: any): void;
-	function importScripts(...msg: string[]): void;
 	
+	/** **Worker context only**
+	 * 
+	 * The message handler to handle messages send from the host context
+	 */
+	//@ts-ignore
+	function onmessage(message: any): void;
+	
+	/** **Worker context only**
+	 * 
+	 * Sends a message to the host thread context that spawned it.
+	 *
+	 * @param {*} message The message to send
+	 */
+	function postMessage(message: any): void;
+	
+	/** **Worker context only**
+	 * 
+	 * Synchronously load and run one or more scripts in the worker thread.
+	 */
+	function importScripts(...scripts: string[]): void;
+	
+	/** **Worker context only**
+	 * 
+	 * The flag is `true` if current context is inside a worker thread.
+	 */
 	const INSIDE_WORKER: true | undefined;
 }
 
@@ -108,8 +195,13 @@ declare module godot {
 	const SQRT2: 1.4142135623730950488016887242;
 	const SQRT12: 0.7071067811865475244008443621048490;
 	
+	/** The flag is `true` if current binary is compiled with `target=debug` or `target=release_debug` */
 	const DEBUG_ENABLED: boolean;
+	
+	/** The flag is `true` if current binary is godot editor which is compiled with `tool=yes` */
 	const TOOLS_ENABLED: boolean;
+	
+	/** The flag is `true` if current binary enable debug method information */
 	const DEBUG_METHODS_ENABLED: boolean;
 }
 
