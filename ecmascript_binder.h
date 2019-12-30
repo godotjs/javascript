@@ -42,6 +42,9 @@ protected:
 	static String BINDING_SCRIPT_CONTENT;
 
 public:
+	ECMAScriptBinder() {}
+	virtual ~ECMAScriptBinder(){};
+
 	virtual void clear_classes() { ecma_classes.clear(); }
 
 	virtual void initialize() = 0;
