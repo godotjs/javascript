@@ -1,8 +1,9 @@
 {
+	"include": ["."],
 	"compilerOptions": {
 		"module": "ESNext",
-		"types": [ "godot.d.ts" ],
-		"lib": [ "ES2020" ],
+		"lib": ["ES2020"],
+		"types": [],
 		"allowJs": true
 	}
 }
