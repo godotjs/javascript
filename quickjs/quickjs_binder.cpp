@@ -958,9 +958,8 @@ void QuickJSBinder::language_finalize() {
 			memdelete(ptr);
 			memdelete(data);
 		} else {
-			Variant value = data->get_value();
 			if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
-				QuickJSBuiltinBinder::builtin_finalizer(data);
+				builtin_binder.builtin_finalizer(data);
 			} else if (data->is_reference()) {
 				memdelete(data->godot_reference);
 			}
@@ -1174,7 +1173,7 @@ void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
 		if (bind->type == Variant::OBJECT) {
 			object_finalizer(bind);
 		} else {
-			QuickJSBuiltinBinder::builtin_finalizer(bind);
+			binder->builtin_binder.builtin_finalizer(bind);
 		}
 	}
 }
@@ -1730,7 +1729,7 @@ JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int 
 		memdelete(data);
 	} else {
 		if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
-			ret = QuickJSBuiltinBinder::bind_builtin_object(ctx, data->type, data->godot_builtin_object_ptr);
+			ret = QuickJSBuiltinBinder::bind_builtin_object_static(ctx, data->type, data->godot_builtin_object_ptr);
 			memdelete(data);
 		} else if (data->type == Variant::OBJECT) {
 			Variant value = data->get_value();

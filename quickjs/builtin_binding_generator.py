@@ -117,7 +117,7 @@ def generate_constructor(cls):
 static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
 	${class} *ptr = memnew(${class});
 	${initializer}
-	return QuickJSBuiltinBinder::bind_builtin_object(ctx, ${type}, ptr);
+	return QuickJSBuiltinBinder::bind_builtin_object_static(ctx, ${type}, ptr);
 }
 '''
 	TemplatePoolArrays = '''

@@ -13,11 +13,8 @@ QuickJSBuiltinBinder::~QuickJSBuiltinBinder() {
 
 #include <core/math/vector2.h>
 
-JSValue QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, Variant::Type p_type, void *p_object) {
+JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, void *p_object) {
 
-	ERR_FAIL_NULL_V(ctx, JS_UNDEFINED);
-
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	const QuickJSBuiltinBinder::BuiltinClass &cls = binder->builtin_binder.get_class(p_type);
 	JSValue obj = JS_NewObjectProtoClass(ctx, cls.class_prototype, binder->get_origin_class_id());
 
@@ -166,6 +163,10 @@ void QuickJSBuiltinBinder::uninitialize() {
 	JS_FreeAtom(ctx, js_key_to_string);
 }
 
+JSValue QuickJSBuiltinBinder::bind_builtin_object_static(JSContext *ctx, Variant::Type p_type, void *p_object) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(p_type, p_object);
+}
+
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Variant &p_val) {
 	void *ptr = NULL;
 	switch (p_val.get_type()) {
@@ -246,7 +247,80 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Variant &p_v
 			ptr = v;
 		} break;
 	}
-	return bind_builtin_object(ctx, p_val.get_type(), ptr);
+
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(p_val.get_type(), ptr);
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Vector2 &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::VECTOR2, memnew(Vector2(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Vector3 &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::VECTOR3, memnew(Vector3(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Rect2 &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::RECT2, memnew(Rect2(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Color &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::COLOR, memnew(Color(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Transform2D &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::TRANSFORM2D, memnew(Transform2D(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Transform &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::TRANSFORM, memnew(Transform(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Quat &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::QUAT, memnew(Quat(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Plane &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PLANE, memnew(Plane(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const RID &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::_RID, memnew(RID(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const AABB &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::AABB, memnew(AABB(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Basis &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::BASIS, memnew(Basis(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolIntArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_INT_ARRAY, memnew(PoolIntArray(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolByteArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_BYTE_ARRAY, memnew(PoolByteArray(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolRealArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_REAL_ARRAY, memnew(PoolRealArray(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolColorArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_COLOR_ARRAY, memnew(PoolColorArray(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolStringArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_STRING_ARRAY, memnew(PoolStringArray(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector2Array &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_VECTOR2_ARRAY, memnew(PoolVector2Array(p_val)));
+}
+
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector3Array &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_VECTOR3_ARRAY, memnew(PoolVector3Array(p_val)));
 }
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
