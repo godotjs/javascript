@@ -33662,6 +33662,10 @@ JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val)
     return p->class_id == JS_CLASS_C_FUNCTION;
 }
 
+const JSMallocState* JS_GetMollocState(JSRuntime *rt) {
+    return &rt->malloc_state;
+}
+
 /* Note: 'func_obj' is not necessarily a constructor */
 static void JS_SetConstructor2(JSContext *ctx,
                                JSValueConst func_obj,

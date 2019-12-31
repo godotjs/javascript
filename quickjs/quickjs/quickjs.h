@@ -934,7 +934,7 @@ JSValue JS_GetModuleExportEntry(JSContext *ctx, JSModuleDef *m, int idx);
 JSAtom JS_GetModuleExportEntryName(JSContext *ctx, JSModuleDef *m, int idx);
 
 JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val);
-
+const JSMallocState* JS_GetMollocState(JSRuntime *rt);
 
 #undef js_unlikely
 #undef js_force_inline

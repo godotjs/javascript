@@ -13,7 +13,6 @@
 
 uint32_t QuickJSBinder::global_context_id = 0;
 uint32_t QuickJSBinder::global_transfer_id = 0;
-HashMap<JSRuntime *, QuickJSBinder *, QuickJSBinder::PtrHasher> QuickJSBinder::runtime_binders;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 
@@ -851,10 +850,6 @@ void QuickJSBinder::initialize() {
 	ctx = JS_NewContext(runtime);
 	JS_SetModuleLoaderFunc(runtime, /*js_module_resolve*/ NULL, js_module_loader, this);
 	JS_SetContextOpaque(ctx, this);
-	{ // Lock in this scope only
-		GLOBAL_LOCK_FUNCTION
-		runtime_binders.set(runtime, this);
-	}
 
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
 	// global = globalThis
@@ -947,11 +942,6 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
 
-	{ // Lock in this scope only
-		GLOBAL_LOCK_FUNCTION
-		runtime_binders.erase(runtime);
-	}
-
 	ctx = NULL;
 	runtime = NULL;
 }
@@ -977,7 +967,6 @@ void QuickJSBinder::language_finalize() {
 		}
 		id = transfer_deopot.next(id);
 	}
-	runtime_binders.clear();
 }
 
 void QuickJSBinder::frame() {
@@ -1178,7 +1167,7 @@ void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
 }
 
 void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
-	QuickJSBinder *binder = runtime_binders.get(rt);
+	QuickJSBinder *binder = get_runtime_binder(rt);
 	ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(val, binder->godot_origin_class.class_id));
 	if (bind) {
 		bind->flags |= ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED;
@@ -1635,7 +1624,7 @@ JSValue QuickJSBinder::worker_constructor(JSContext *ctx, JSValue this_val, int 
 }
 
 void QuickJSBinder::worker_finializer(JSRuntime *rt, JSValue val) {
-	QuickJSBinder *host = QuickJSBinder::get_context_binder(rt);
+	QuickJSBinder *host = QuickJSBinder::get_runtime_binder(rt);
 	if (ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(val, host->worker_class_data.class_id))) {
 		QuickJSWorker *worker = static_cast<QuickJSWorker *>(bind->native_ptr);
 		worker->stop();

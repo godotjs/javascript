@@ -66,15 +66,16 @@ public:
 	};
 
 protected:
-	JSValue global_object;
-	JSValue godot_object;
-	JSValue empty_function;
-	Vector<JSValue> godot_singletons;
 	JSAtom js_key_godot_classid;
 	JSAtom js_key_godot_tooled;
 	JSAtom js_key_godot_icon_path;
 	JSAtom js_key_godot_exports;
 	JSAtom js_key_godot_signals;
+
+	JSValue global_object;
+	JSValue godot_object;
+	JSValue empty_function;
+	Vector<JSValue> godot_singletons;
 
 	_FORCE_INLINE_ static void *js_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
 	_FORCE_INLINE_ static void js_free(JSMallocState *s, void *ptr) {
@@ -161,7 +162,6 @@ protected:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
-	static HashMap<JSRuntime *, QuickJSBinder *, PtrHasher> runtime_binders;
 	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
 	static Map<String, const char *> class_remap;
 
@@ -217,8 +217,8 @@ public:
 		return static_cast<QuickJSBinder *>(JS_GetContextOpaque(ctx));
 	}
 
-	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSRuntime *rt) {
-		return runtime_binders.get(rt);
+	_FORCE_INLINE_ static QuickJSBinder *get_runtime_binder(JSRuntime *rt) {
+		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);
 	}
 
 	_FORCE_INLINE_ ECMAScriptGCHandler *new_gc_handler() {
