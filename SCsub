@@ -26,7 +26,7 @@ def quickjs():
 	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
 
 def dump_text_file_to_cpp(file):
-	source = open(file, 'r').read()
+	source = open(file, 'r', encoding='utf8').read()
 	lines = source.split('\n')
 	source = ""
 	length = len(lines)
