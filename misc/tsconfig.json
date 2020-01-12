@@ -4,6 +4,6 @@
 		"module": "ESNext",
 		"lib": ["ES2020"],
 		"types": [],
-		"allowJs": true
+		"experimentalDecorators": true
 	}
 }
