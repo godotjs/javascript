@@ -77,11 +77,12 @@ protected:
 	JSValue empty_function;
 	Vector<JSValue> godot_singletons;
 
-	_FORCE_INLINE_ static void *js_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
-	_FORCE_INLINE_ static void js_free(JSMallocState *s, void *ptr) {
+	_FORCE_INLINE_ static void *js_binder_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
+	_FORCE_INLINE_ static void js_binder_free(JSMallocState *s, void *ptr) {
 		if (ptr) memfree(ptr);
 	}
-	_FORCE_INLINE_ static void *js_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
+	_FORCE_INLINE_ static void *js_binder_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
+
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
 	ModuleCache *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 	static int resource_module_initializer(JSContext *ctx, JSModuleDef *m);
@@ -248,14 +249,19 @@ public:
 	virtual Error eval_string(const String &p_source, const String &p_path);
 	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error);
 
+	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode);
+	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module);
+
+	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
+	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, ECMAscriptScriptError *r_error);
+	const ECMAClassInfo *parse_ecma_class_from_module(ModuleCache *p_module, const String &p_path, ECMAscriptScriptError *r_error);
+
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object);
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
-	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
 	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal);
-
 	virtual bool validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
 };
 

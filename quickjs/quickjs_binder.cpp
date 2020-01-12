@@ -817,9 +817,9 @@ void QuickJSBinder::add_godot_globals() {
 QuickJSBinder::QuickJSBinder() {
 	context_id = global_context_id++;
 	internal_godot_method_id = 0;
-	godot_allocator.js_malloc = QuickJSBinder::js_malloc;
-	godot_allocator.js_free = QuickJSBinder::js_free;
-	godot_allocator.js_realloc = QuickJSBinder::js_realloc;
+	godot_allocator.js_malloc = QuickJSBinder::js_binder_malloc;
+	godot_allocator.js_free = QuickJSBinder::js_binder_free;
+	godot_allocator.js_realloc = QuickJSBinder::js_binder_realloc;
 	godot_allocator.js_malloc_usable_size = NULL;
 	godot_object_class = NULL;
 
@@ -1024,8 +1024,10 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 
 	CharString utf8_str = p_source.utf8();
 	const char *filename = p_path.utf8().ptr();
+	const char *code = utf8_str.ptr();
 	if (!filename) filename = "";
-	JSValue ret = JS_Eval(ctx, utf8_str.ptr(), utf8_str.length(), filename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
+	if (!code) code = "";
+	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
 		ECMAscriptScriptError err;
@@ -1034,6 +1036,42 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 		JS_Throw(ctx, e);
 		return ERR_PARSE_ERROR;
 	}
+	return OK;
+}
+
+Error QuickJSBinder::compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode) {
+	Error err;
+	if (err == OK) {
+		ECMAscriptScriptError script_err;
+		if (ModuleCache *mc = js_compile_module(ctx, p_code, "", &script_err)) {
+			JSValue module = JS_MKPTR(JS_TAG_MODULE, mc->module);
+			if (JS_IsException(module)) {
+				JSValue e = JS_GetException(ctx);
+				dump_exception(ctx, e, &script_err);
+				JS_FreeValue(ctx, e);
+				ERR_PRINTS(error_to_string(script_err));
+				return ERR_PARSE_ERROR;
+			}
+			size_t size;
+			if (uint8_t *buf = JS_WriteObject(ctx, &size, module, JS_WRITE_OBJ_BYTECODE)) {
+				r_bytecode.resize(size);
+				copymem(r_bytecode.ptrw(), buf, size);
+				js_free(ctx, buf);
+				err = OK;
+			} else {
+				return ERR_PARSE_ERROR;
+			}
+		} else {
+			return ERR_PARSE_ERROR;
+		}
+	}
+	return err;
+}
+
+Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module) {
+	JSValue value = JS_ReadObject(ctx, p_bytecode.ptr(), p_bytecode.size(), JS_READ_OBJ_BYTECODE);
+	ERR_FAIL_COND_V(value.tag != JS_TAG_MODULE, ERR_PARSE_ERROR);
+	r_module->ecma_object = JS_VALUE_GET_PTR(value);
 	return OK;
 }
 
@@ -1525,26 +1563,30 @@ bool QuickJSBinder::has_method(const ECMAScriptGCHandler &p_object, const String
 }
 
 const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) {
+
+	ECMAscriptScriptError err;
+	ModuleCache *mc = js_compile_module(ctx, p_code, p_path, r_error);
+	return parse_ecma_class_from_module(mc, p_path, r_error);
+}
+
+const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, ECMAscriptScriptError *r_error) {
+	ModuleCache mc;
+	ECMAScriptGCHandler module;
+	if (OK == load_bytecode(p_bytecode, &module)) {
+		mc.module = static_cast<JSModuleDef *>(module.ecma_object);
+	}
+	return parse_ecma_class_from_module(&mc, p_path, r_error);
+}
+
+const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_module, const String &p_path, ECMAscriptScriptError *r_error) {
+	ERR_FAIL_COND_V(p_module == NULL || p_module->module == NULL, NULL);
+
 	const ECMAClassInfo *ecma_class = NULL;
-#if NO_MODULE_EXPORT_SUPPORT // call godot.register_class(ClassFunction) to register script class
-	GLOBAL_LOCK_FUNCTION
-	parsing_script_file = p_path;
-	r_error = eval_string(p_code, p_path);
-	parsing_script_file = "";
-	ecma_class = ecma_classes.getptr(p_path);
-#else // export default = ClassFunction to register class
 	JSValue default_entry = JS_UNDEFINED;
 	JSValue ret = JS_UNDEFINED;
 	JSValue module = JS_UNDEFINED;
 
-	ECMAscriptScriptError err;
-	ModuleCache *mc = js_compile_module(ctx, p_code, p_path, r_error);
-	if (mc == NULL || mc->module == NULL) {
-		JS_ThrowTypeError(ctx, "Compile error %s", p_path.utf8().ptr());
-		goto fail;
-	}
-
-	module = JS_MKPTR(JS_TAG_MODULE, mc->module);
+	module = JS_MKPTR(JS_TAG_MODULE, p_module->module);
 	if (JS_IsException(module)) {
 		JSValue e = JS_GetException(ctx);
 		dump_exception(ctx, e, r_error);
@@ -1552,9 +1594,9 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 		goto fail;
 	}
 
-	if (!mc->evaluated) {
+	if (!p_module->evaluated) {
 		ret = JS_EvalFunction(ctx, module);
-		mc->evaluated = true;
+		p_module->evaluated = true;
 		if (JS_IsException(ret)) {
 			JSValue e = JS_GetException(ctx);
 			dump_exception(ctx, e, r_error);
@@ -1563,10 +1605,10 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 		}
 	}
 
-	for (int i = 0; i < JS_GetModuleExportEntriesCount(mc->module); i++) {
-		JSAtom name = JS_GetModuleExportEntryName(ctx, mc->module, i);
+	for (int i = 0; i < JS_GetModuleExportEntriesCount(p_module->module); i++) {
+		JSAtom name = JS_GetModuleExportEntryName(ctx, p_module->module, i);
 		if (name == JS_ATOM_default) {
-			default_entry = JS_GetModuleExportEntry(ctx, mc->module, i);
+			default_entry = JS_GetModuleExportEntry(ctx, p_module->module, i);
 			JS_FreeAtom(ctx, name);
 			break;
 		}
@@ -1582,7 +1624,6 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const
 fail:
 	JS_FreeValue(ctx, default_entry);
 	JS_FreeValue(ctx, ret);
-#endif
 	return ecma_class;
 }
 

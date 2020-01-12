@@ -1,5 +1,6 @@
 #include "ecmascript.h"
 #include "core/engine.h"
+#include "core/io/file_access_encrypted.h"
 #include "ecmascript_instance.h"
 #include "ecmascript_language.h"
 #include "scene/resources/resource_format_text.h"
@@ -79,7 +80,11 @@ bool ECMAScript::is_placeholder_fallback_enabled() const {
 Error ECMAScript::reload(bool p_keep_state) {
 	Error err = OK;
 	ECMAscriptScriptError ecma_err;
-	ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(code, get_script_path(), &ecma_err);
+	if (!bytecode.empty()) {
+		ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(bytecode, get_script_path(), &ecma_err);
+	} else {
+		ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(code, get_script_path(), &ecma_err);
+	}
 	if (!ecma_class) {
 		err = ERR_PARSE_ERROR;
 		ERR_PRINTS(ECMAScriptLanguage::get_singleton()->binding->error_to_string(ecma_err));
@@ -203,34 +208,76 @@ void ECMAScript::_bind_methods() {
 }
 
 RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
+	Error err;
 
 	if (r_error)
 		*r_error = ERR_FILE_CANT_OPEN;
 
 	Ref<ECMAScript> script;
 	script.instance();
+	script->set_script_path(p_path);
 
 	if (p_path.ends_with(".js")) {
-		Error err;
 		String code = FileAccess::get_file_as_string(p_path, &err);
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load source code from file '" + p_path + "'.");
 		script->set_source_code(code);
-		script->set_script_path(p_path);
-		if (OK != script->reload()) {
-			ERR_PRINTS("Cannot parse source code from file '" + p_path + "'.");
+	} else if (p_path.ends_with(".jsc")) {
+		Error err;
+		script->bytecode = FileAccess::get_file_as_array(p_path, &err);
+		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load bytecode from file '" + p_path + "'.");
+	} else if (p_path.ends_with(".jse")) {
+		FileAccess *fa = FileAccess::open(p_path, FileAccess::READ);
+		if (fa->is_open()) {
+			FileAccessEncrypted *fae = memnew(FileAccessEncrypted);
+			Vector<uint8_t> key;
+			key.resize(32);
+			for (int i = 0; i < key.size(); i++) {
+				key.write[i] = script_encryption_key[i];
+			}
+			err = fae->open_and_parse(fa, key, FileAccessEncrypted::MODE_READ);
+			if (err == OK) {
+				Vector<uint8_t> encrypted_code;
+				encrypted_code.resize(fae->get_len());
+				fae->get_buffer(encrypted_code.ptrw(), encrypted_code.size());
+
+				String code;
+				if (code.parse_utf8((const char *)encrypted_code.ptr(), encrypted_code.size())) {
+					err = ERR_PARSE_ERROR;
+				} else {
+					script->set_source_code(code);
+				}
+				fa->close();
+				fae->close();
+				memdelete(fae);
+			} else {
+				fa->close();
+				fae->close();
+				memdelete(fae);
+				memdelete(fa);
+			}
+		} else {
+			err = ERR_CANT_OPEN;
 		}
-		if (r_error)
-			*r_error = err;
 	}
+
+	err = script->reload();
+	if (OK != err) {
+		ERR_PRINTS("Cannot parse source code from file '" + p_path + "'.");
+	}
+	if (r_error)
+		*r_error = err;
+
 	return script;
 }
 
 void ResourceFormatLoaderECMAScript::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_front("js");
+	p_extensions->push_back("jsc");
+	p_extensions->push_back("jse");
 }
 
 void ResourceFormatLoaderECMAScript::get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const {
-	p_extensions->push_front("js");
+	get_recognized_extensions(p_extensions);
 }
 
 bool ResourceFormatLoaderECMAScript::handles_type(const String &p_type) const {
@@ -239,7 +286,7 @@ bool ResourceFormatLoaderECMAScript::handles_type(const String &p_type) const {
 
 String ResourceFormatLoaderECMAScript::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == "js")
+	if (el == "js" || el == "jsc" || el == "jse")
 		return "ECMAScript";
 	return "";
 }

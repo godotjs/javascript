@@ -12,12 +12,14 @@ class ECMAScript : public Script {
 private:
 	friend class ECMAScriptInstance;
 	friend class QuickJSBinder;
+	friend class ResourceFormatLoaderECMAScript;
 
 	Set<Object *> instances;
 	const ECMAClassInfo *ecma_class;
 	StringName class_name;
 	String code;
 	String script_path;
+	Vector<uint8_t> bytecode;
 
 #ifdef TOOLS_ENABLED
 	Set<PlaceHolderScriptInstance *> placeholders;
@@ -42,6 +44,7 @@ public:
 
 	virtual bool has_source_code() const { return true; }
 	virtual String get_source_code() const { return code; }
+
 	virtual void set_source_code(const String &p_code) { code = p_code; }
 	virtual Error reload(bool p_keep_state = false);
 

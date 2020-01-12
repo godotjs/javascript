@@ -33,9 +33,88 @@
 #include "ecmascript_language.h"
 
 #ifdef TOOLS_ENABLED
+#include "core/io/file_access_encrypted.h"
+#include "editor/editor_export.h"
 #include "editor/editor_node.h"
 #include "tools/editor_tools.h"
 void editor_init_callback();
+
+class EditorExportECMAScript : public EditorExportPlugin {
+
+	GDCLASS(EditorExportECMAScript, EditorExportPlugin);
+
+public:
+	virtual void _export_file(const String &p_path, const String &p_type, const Set<String> &p_features) {
+		int script_mode = EditorExportPreset::MODE_SCRIPT_COMPILED;
+		const Ref<EditorExportPreset> &preset = get_export_preset();
+
+		if (preset.is_valid()) {
+			script_mode = preset->get_script_export_mode();
+		}
+
+		if (!p_path.ends_with(".js") || script_mode == EditorExportPreset::MODE_SCRIPT_TEXT)
+			return;
+
+		if (script_mode == EditorExportPreset::MODE_SCRIPT_ENCRYPTED) {
+			Vector<uint8_t> file = FileAccess::get_file_as_array(p_path);
+			if (file.empty())
+				return;
+
+			String script_key = preset->get_script_encryption_key().to_lower();
+			String tmp_path = EditorSettings::get_singleton()->get_cache_dir().plus_file("script.jse");
+			FileAccess *fa = FileAccess::open(tmp_path, FileAccess::WRITE);
+
+			Vector<uint8_t> key;
+			key.resize(32);
+			for (int i = 0; i < 32; i++) {
+				int v = 0;
+				if (i * 2 < script_key.length()) {
+					CharType ct = script_key[i * 2];
+					if (ct >= '0' && ct <= '9')
+						ct = ct - '0';
+					else if (ct >= 'a' && ct <= 'f')
+						ct = 10 + ct - 'a';
+					v |= ct << 4;
+				}
+
+				if (i * 2 + 1 < script_key.length()) {
+					CharType ct = script_key[i * 2 + 1];
+					if (ct >= '0' && ct <= '9')
+						ct = ct - '0';
+					else if (ct >= 'a' && ct <= 'f')
+						ct = 10 + ct - 'a';
+					v |= ct;
+				}
+				key.write[i] = v;
+			}
+			FileAccessEncrypted *fae = memnew(FileAccessEncrypted);
+			Error err = fae->open_and_parse(fa, key, FileAccessEncrypted::MODE_WRITE_AES256);
+
+			if (err == OK) {
+				fae->store_buffer(file.ptr(), file.size());
+			}
+
+			memdelete(fae);
+
+			file = FileAccess::get_file_as_array(tmp_path);
+			add_file(p_path.get_basename() + ".jse", file, true);
+
+			// Clean up temporary file.
+			DirAccess::remove_file_or_error(tmp_path);
+
+		} else {
+
+			Error err;
+			String code = FileAccess::get_file_as_string(p_path, &err);
+			ERR_FAIL_COND(err != OK);
+
+			Vector<uint8_t> file;
+			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_binder()->compile_to_bytecode(code, file) != OK);
+			add_file(p_path.get_basename() + ".jsc", file, true);
+		}
+	}
+};
+
 #endif
 
 Ref<ResourceFormatLoaderECMAScript> resource_loader_ecmascript;
@@ -75,5 +154,9 @@ void unregister_ECMAScript_types() {
 void editor_init_callback() {
 	ECMAScriptPlugin *plugin = memnew(ECMAScriptPlugin(EditorNode::get_singleton()));
 	EditorNode::get_singleton()->add_editor_plugin(plugin);
+
+	Ref<EditorExportECMAScript> js_export;
+	js_export.instance();
+	EditorExport::get_singleton()->add_export_plugin(js_export);
 }
 #endif
