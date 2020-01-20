@@ -1145,7 +1145,8 @@ bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 	if (bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF || bind->flags & ECMAScriptGCHandler::FLAG_FROM_NATIVE) {
 		bind->flags ^= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED)) {
-			if (bind->ecma_object) { // This can be NULL when free an abandaned value
+			if (bind->ecma_object && !(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF)) { // This can be NULL when free an abandaned value
+				bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF;
 				JS_FreeValue(ctx, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
 			}
 			return false;
@@ -1213,6 +1214,7 @@ void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
 		} else {
 			binder->builtin_binder.builtin_finalizer(bind);
 		}
+		JS_SetOpaque(val, NULL);
 	}
 }
 
