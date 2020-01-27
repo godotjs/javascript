@@ -65,7 +65,7 @@ godot.register_property(MySprite, 'direction', new godot.Vector2(1, 0));
 
 #### About the API
 
-Nothing is exported to the `global` namespace. All godot api are define in the `godot` namespace.
+All godot api are define in the `godot` namespace.
 
 We didn't change any api name so you don't need to change your habbit at all.
 
@@ -74,9 +74,10 @@ GDScript | ECMAScript
 null | null
 int | number
 float | number
-String | String
+String | string
 Array | Array
 Dictionary | Object
+NodePath | string
 Object | godot.Object
 Resource | godot.Resource
 Vector2 | godot.Vecotor2
