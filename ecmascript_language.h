@@ -5,6 +5,8 @@
 #include "ecmascript.h"
 #include "quickjs/quickjs_binder.h"
 
+#define GET_BINDER(ecma_object) ECMAScriptLanguage::get_singleton()->binding->get_context_binder((ecma_object).context)
+
 /*********************** ECMAScriptLanguage ***********************/
 class ECMAScriptBinder;
 class ECMAScriptLanguage : public ScriptLanguage {

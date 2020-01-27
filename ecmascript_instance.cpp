@@ -12,19 +12,19 @@ void ECMAScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
 }
 
 bool ECMAScriptInstance::has_method(const StringName &p_method) const {
-	return ECMAScriptLanguage::get_singleton()->binding->has_method(ecma_object, p_method);
+	return GET_BINDER(ecma_object)->has_method(ecma_object, p_method);
 }
 
 bool ECMAScriptInstance::set(const StringName &p_name, const Variant &p_value) {
 	if (this->ecma_object.ecma_object) {
-		return ECMAScriptLanguage::get_singleton()->binding->set_instance_property(this->ecma_object, p_name, p_value);
+		return GET_BINDER(ecma_object)->set_instance_property(ecma_object, p_name, p_value);
 	}
 	return false;
 }
 
 bool ECMAScriptInstance::get(const StringName &p_name, Variant &r_ret) const {
 	if (this->ecma_object.ecma_object) {
-		return ECMAScriptLanguage::get_singleton()->binding->get_instance_property(this->ecma_object, p_name, r_ret);
+		return GET_BINDER(ecma_object)->get_instance_property(this->ecma_object, p_name, r_ret);
 	}
 	return false;
 }
@@ -62,8 +62,7 @@ Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_a
 	//		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
 	//		return Variant();
 	//	}
-
-	return ECMAScriptLanguage::get_singleton()->binding->call_method(ecma_object, p_method, p_args, p_argcount, r_error);
+	return GET_BINDER(ecma_object)->call_method(ecma_object, p_method, p_args, p_argcount, r_error);
 }
 
 ScriptLanguage *ECMAScriptInstance::get_language() {

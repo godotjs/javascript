@@ -45,6 +45,8 @@ public:
 	ECMAScriptBinder() {}
 	virtual ~ECMAScriptBinder(){};
 
+	virtual ECMAScriptBinder* get_context_binder(void *p_context) = 0;
+
 	virtual void clear_classes() { ecma_classes.clear(); }
 
 	virtual void initialize() = 0;

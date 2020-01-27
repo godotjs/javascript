@@ -218,6 +218,10 @@ public:
 		return static_cast<QuickJSBinder *>(JS_GetContextOpaque(ctx));
 	}
 
+	virtual ECMAScriptBinder *get_context_binder(void *p_context) {
+		return QuickJSBinder::get_context_binder((JSContext*)p_context);
+	}
+
 	_FORCE_INLINE_ static QuickJSBinder *get_runtime_binder(JSRuntime *rt) {
 		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);
 	}
