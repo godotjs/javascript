@@ -5,6 +5,8 @@
 #include "ecmascript_language.h"
 #include "scene/resources/resource_format_text.h"
 
+#define GET_CLASS_BINDER(cls) ECMAScriptLanguage::get_singleton()->binding->get_context_binder(cls->constructor.context)
+
 ScriptLanguage *ECMAScript::get_language() const {
 	return ECMAScriptLanguage::get_singleton();
 }
@@ -46,7 +48,7 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	}
 
 	Variant::CallError unchecked_error;
-	ECMAScriptGCHandler ecma_instance = ECMAScriptLanguage::get_singleton()->binding->create_ecma_instance_for_godot_object(cls, p_this);
+	ECMAScriptGCHandler ecma_instance = GET_CLASS_BINDER(cls)->create_ecma_instance_for_godot_object(cls, p_this);
 	ERR_FAIL_NULL_V(ecma_instance.ecma_object, NULL);
 
 	ECMAScriptInstance *instance = memnew(ECMAScriptInstance);
@@ -105,7 +107,7 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 bool ECMAScript::has_method(const StringName &p_method) const {
 	const ECMAClassInfo *cls = get_ecma_class();
 	if (!cls) return false;
-	return ECMAScriptLanguage::get_singleton()->binding->has_method(cls->prototype, p_method);
+	return GET_CLASS_BINDER(cls)->has_method(cls->prototype, p_method);
 }
 
 MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
@@ -186,7 +188,7 @@ bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 	bool found = false;
 	if (cls->signals.has(p_signal)) {
 		found = true;
-	} else if (ECMAScriptLanguage::get_singleton()->binding->has_signal(cls, p_signal)) {
+	} else if (GET_CLASS_BINDER(cls)->has_signal(cls, p_signal)) {
 		found = true;
 	}
 	return found;

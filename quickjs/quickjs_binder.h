@@ -6,7 +6,6 @@
 #include "quickjs_builtin_binder.h"
 #include <quickjs.h>
 #define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
-#define BINDING_DATA_FROM_GD(p_object) (p_object ? (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL)
 #define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
 #define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
 #define NO_MODULE_EXPORT_SUPPORT 0
@@ -226,7 +225,7 @@ public:
 		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);
 	}
 
-	_FORCE_INLINE_ ECMAScriptGCHandler *new_gc_handler() {
+	_FORCE_INLINE_ static ECMAScriptGCHandler *new_gc_handler(JSContext* ctx) {
 		ECMAScriptGCHandler *h = memnew(ECMAScriptGCHandler);
 		h->context = ctx;
 		return h;

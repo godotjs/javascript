@@ -16,6 +16,20 @@ uint32_t QuickJSBinder::global_transfer_id = 0;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 
+_FORCE_INLINE_ static ECMAScriptGCHandler* BINDING_DATA_FROM_GD(JSContext *ctx, Object *p_object){
+
+	ERR_FAIL_COND_V(p_object == NULL, NULL);
+
+	ECMAScriptGCHandler *bind = p_object ? (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL;
+	if (ctx) {
+		if (!bind->context) {
+			QuickJSBinder::bind_gc_object(ctx, bind, p_object);
+		}
+		ERR_FAIL_COND_V(bind->context && bind->context != ctx, NULL);
+	}
+	return bind;
+}
+
 JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	PoolStringArray args;
 	args.resize(argc);
@@ -113,7 +127,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			return to_js_string(ctx, p_var);
 		case Variant::OBJECT: {
 			Object *obj = p_var;
-			ECMAScriptGCHandler *data = BINDING_DATA_FROM_GD(obj);
+			ECMAScriptGCHandler *data = BINDING_DATA_FROM_GD(ctx, obj);
 			ERR_FAIL_NULL_V(data, JS_UNDEFINED);
 			ERR_FAIL_NULL_V(data->ecma_object, JS_UNDEFINED);
 			ERR_FAIL_COND_V(data->context != ctx, (JS_UNDEFINED));
@@ -667,7 +681,7 @@ void QuickJSBinder::add_godot_globals() {
 		const ClassBindData *cls = *cls_ptr;
 
 		JSValue obj = JS_NewObjectProtoClass(ctx, cls->prototype, get_origin_class_id());
-		ECMAScriptGCHandler *data = new_gc_handler();
+		ECMAScriptGCHandler *data = new_gc_handler(ctx);
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
 		data->godot_object = s.ptr;
 		data->type = Variant::OBJECT;
@@ -1078,11 +1092,7 @@ Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScript
 /************************* Memory Management ******************************/
 
 void *QuickJSBinder::alloc_object_binding_data(Object *p_object) {
-	ECMAScriptGCHandler *data = new_gc_handler();
-	if (OK != bind_gc_object(ctx, data, p_object)) {
-		memdelete(data);
-		data = NULL;
-	}
+	ECMAScriptGCHandler *data = new_gc_handler(NULL);
 	lastest_allocated_object = data;
 	return data;
 }
@@ -1130,24 +1140,24 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 }
 
 void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
-	if (bind->ecma_object) { // Can be NULL when adopting value
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(NULL, p_object);
+	if (bind->ecma_object && bind->context) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF)) {
-			JS_DupValue(ctx, js_obj); // JS ref_count ++
+			JS_DupValue((JSContext*)bind->context, js_obj); // JS ref_count ++
 			bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
 		}
 	}
 }
 
 bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(NULL, p_object);
 	if (bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF || bind->flags & ECMAScriptGCHandler::FLAG_FROM_NATIVE) {
 		bind->flags ^= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED)) {
-			if (bind->ecma_object && !(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF)) { // This can be NULL when free an abandaned value
+			if (bind->ecma_object && bind->context && !(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF)) {
 				bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF;
-				JS_FreeValue(ctx, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
+				JS_FreeValue((JSContext*)bind->context, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
 			}
 			return false;
 		}
@@ -1163,7 +1173,7 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		js_obj = new_target;
 	} else {
 		Object *gd_obj = cls.gdclass->creation_func();
-		bind = BINDING_DATA_FROM_GD(gd_obj);
+		bind = BINDING_DATA_FROM_GD(ctx, gd_obj);
 		js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		if (bind->context != ctx) {
 			JS_SetOpaque(js_obj, NULL);
@@ -1291,7 +1301,9 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 		ecma_class.tool = false;
 		ecma_class.native_class = bind->gdclass;
 		ecma_class.class_name = class_name;
+		ecma_class.prototype.context = ctx;
 		ecma_class.prototype.ecma_object = JS_VALUE_GET_PTR(prototype);
+		ecma_class.constructor.context = ctx;
 		ecma_class.constructor.ecma_object = JS_VALUE_GET_PTR(p_constructor);
 		ecma_class.tool = JS_ToBool(ctx, tooled);
 		if (JS_IsString(icon)) {
@@ -1477,7 +1489,7 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 	ERR_FAIL_NULL_V(p_object, ECMAScriptGCHandler());
 	ERR_FAIL_NULL_V(p_class, ECMAScriptGCHandler());
 
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(ctx, p_object);
 	ERR_FAIL_NULL_V(bind, ECMAScriptGCHandler());
 	bind->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
 
@@ -1656,7 +1668,7 @@ JSValue QuickJSBinder::worker_constructor(JSContext *ctx, JSValue this_val, int 
 	worker->start(js_to_string(ctx, argv[0]));
 	JSValue obj = JS_NewObjectProtoClass(ctx, host->worker_class_data.prototype, host->worker_class_data.class_id);
 
-	ECMAScriptGCHandler *data = host->new_gc_handler();
+	ECMAScriptGCHandler *data = host->new_gc_handler(ctx);
 	data->native_ptr = worker;
 	data->ecma_object = JS_VALUE_GET_PTR(obj);
 	JS_SetOpaque(obj, data);
@@ -1717,8 +1729,7 @@ JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, in
 		case Variant::ARRAY:
 		case Variant::DICTIONARY:
 		case Variant::STRING: {
-			data = memnew(ECMAScriptGCHandler);
-			data->context = NULL;
+			data = new_gc_handler(NULL);
 			data->type = gd_value.get_type();
 			data->native_ptr = memnew(Variant(gd_value));
 			data->flags = ECMAScriptGCHandler::FLAG_ATOMIC_VALUE | ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;

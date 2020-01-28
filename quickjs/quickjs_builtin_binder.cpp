@@ -18,7 +18,7 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, void *p_
 	const QuickJSBuiltinBinder::BuiltinClass &cls = binder->builtin_binder.get_class(p_type);
 	JSValue obj = JS_NewObjectProtoClass(ctx, cls.class_prototype, binder->get_origin_class_id());
 
-	ECMAScriptGCHandler *bind = binder->new_gc_handler();
+	ECMAScriptGCHandler *bind = QuickJSBinder::new_gc_handler(ctx);
 	bind->type = p_type;
 	bind->flags |= ECMAScriptGCHandler::FLAG_BUILTIN_CLASS;
 	bind->godot_builtin_object_ptr = p_object;
