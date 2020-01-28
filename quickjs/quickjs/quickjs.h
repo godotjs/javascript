@@ -1,8 +1,8 @@
 /*
  * QuickJS Javascript Engine
  *
- * Copyright (c) 2017-2019 Fabrice Bellard
- * Copyright (c) 2017-2019 Charlie Gordon
+ * Copyright (c) 2017-2020 Fabrice Bellard
+ * Copyright (c) 2017-2020 Charlie Gordon
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,7 @@ typedef struct JSClass JSClass;
 typedef uint32_t JSClassID;
 typedef uint32_t JSAtom;
 
-#if defined(__x86_64__) || defined(__aarch64__)
+#if INTPTR_MAX >= INT64_MAX
 #define JS_PTR64
 #define JS_PTR64_DEF(a) a
 #else
@@ -66,7 +66,8 @@ typedef uint32_t JSAtom;
 
 enum {
     /* all tags with a reference count are negative */
-    JS_TAG_FIRST       = -10, /* first negative tag */
+    JS_TAG_FIRST       = -11, /* first negative tag */
+    JS_TAG_BIG_DECIMAL = -11,
     JS_TAG_BIG_INT     = -10,
     JS_TAG_BIG_FLOAT   = -9,
     JS_TAG_SYMBOL      = -8,
@@ -119,6 +120,11 @@ typedef const struct __JSValue *JSValueConst;
 static inline JSValue __JS_NewFloat64(JSContext *ctx, double d)
 {
     return JS_MKVAL(JS_TAG_FLOAT64, (int)d);
+}
+
+static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
+{
+    return 0;
 }
 
 #elif defined(JS_NAN_BOXING)
@@ -179,6 +185,13 @@ static inline int JS_VALUE_GET_NORM_TAG(JSValue v)
         return tag;
 }
 
+static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
+{
+    uint32_t tag;
+    tag = JS_VALUE_GET_TAG(v);
+    return tag == (JS_NAN >> 32);
+}
+
 #else /* !JS_NAN_BOXING */
 
 typedef union JSValueUnion {
@@ -215,6 +228,18 @@ static inline JSValue __JS_NewFloat64(JSContext *ctx, double d)
     v.tag = JS_TAG_FLOAT64;
     v.u.float64 = d;
     return v;
+}
+
+static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
+{
+    union {
+        double d;
+        uint64_t u64;
+    } u;
+    if (v.tag != JS_TAG_FLOAT64)
+        return 0;
+    u.d = v.u.float64;
+    return (u.u64 & 0x7fffffffffffffff) > 0x7ff0000000000000;
 }
 
 #endif /* !JS_NAN_BOXING */
@@ -338,6 +363,14 @@ void JS_AddIntrinsicProxy(JSContext *ctx);
 void JS_AddIntrinsicMapSet(JSContext *ctx);
 void JS_AddIntrinsicTypedArrays(JSContext *ctx);
 void JS_AddIntrinsicPromise(JSContext *ctx);
+void JS_AddIntrinsicBigInt(JSContext *ctx);
+void JS_AddIntrinsicBigFloat(JSContext *ctx);
+void JS_AddIntrinsicBigDecimal(JSContext *ctx);
+/* enable operator overloading */
+void JS_AddIntrinsicOperators(JSContext *ctx);
+/* enable "use math" */
+void JS_EnableBignumExt(JSContext *ctx, JS_BOOL enable);
+
 JSValue js_string_codePointRange(JSContext *ctx, JSValueConst this_val,
                                  int argc, JSValueConst *argv);
 
@@ -500,18 +533,28 @@ static js_force_inline JSValue JS_NewFloat64(JSContext *ctx, double d)
     return v;
 }
 
-JS_BOOL JS_IsNumber(JSValueConst v);
-
-static inline JS_BOOL JS_IsInteger(JSValueConst v)
+static inline JS_BOOL JS_IsNumber(JSValueConst v)
 {
     int tag = JS_VALUE_GET_TAG(v);
-    return tag == JS_TAG_INT || tag == JS_TAG_BIG_INT;
+    return tag == JS_TAG_INT || JS_TAG_IS_FLOAT64(tag);
+}
+
+static inline JS_BOOL JS_IsBigInt(JSContext *ctx, JSValueConst v)
+{
+    int tag = JS_VALUE_GET_TAG(v);
+    return tag == JS_TAG_BIG_INT;
 }
 
 static inline JS_BOOL JS_IsBigFloat(JSValueConst v)
 {
     int tag = JS_VALUE_GET_TAG(v);
     return tag == JS_TAG_BIG_FLOAT;
+}
+
+static inline JS_BOOL JS_IsBigDecimal(JSValueConst v)
+{
+    int tag = JS_VALUE_GET_TAG(v);
+    return tag == JS_TAG_BIG_DECIMAL;
 }
 
 static inline JS_BOOL JS_IsBool(JSValueConst v)
@@ -847,7 +890,7 @@ static inline JSValue JS_NewCFunctionMagic(JSContext *ctx, JSCFunctionMagic *fun
 {
     return JS_NewCFunction2(ctx, (JSCFunction *)func, name, length, cproto, magic);
 }
-void JS_SetConstructor(JSContext *ctx, JSValueConst func_obj, 
+void JS_SetConstructor(JSContext *ctx, JSValueConst func_obj,
                        JSValueConst proto);
 
 /* C property definition */
@@ -934,7 +977,7 @@ JSValue JS_GetModuleExportEntry(JSContext *ctx, JSModuleDef *m, int idx);
 JSAtom JS_GetModuleExportEntryName(JSContext *ctx, JSModuleDef *m, int idx);
 
 JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val);
-const JSMallocState* JS_GetMollocState(JSRuntime *rt);
+const JSMallocState *JS_GetMollocState(JSRuntime *rt);
 
 #undef js_unlikely
 #undef js_force_inline

@@ -246,7 +246,7 @@ bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValueC
 		case Variant::BOOL:
 		case Variant::INT:
 		case Variant::REAL:
-			return JS_IsNumber(p_val) || JS_IsInteger(p_val) || JS_IsBool(p_val) || JS_IsNull(p_val) || JS_IsUndefined(p_val);
+			return JS_IsNumber(p_val) || JS_IsBool(p_val) || JS_IsNull(p_val) || JS_IsUndefined(p_val);
 		case Variant::STRING:
 			return JS_IsString(p_val);
 		case Variant::DICTIONARY:
@@ -862,12 +862,17 @@ void QuickJSBinder::initialize() {
 	// create runtime and context for the binder
 	runtime = JS_NewRuntime2(&godot_allocator, this);
 	ctx = JS_NewContext(runtime);
+	JS_AddIntrinsicOperators(ctx);
+
 	JS_SetModuleLoaderFunc(runtime, /*js_module_resolve*/ NULL, js_module_loader, this);
 	JS_SetContextOpaque(ctx, this);
 
 	empty_function = JS_NewCFunction(ctx, js_empty_func, "virtual_fuction", 0);
 	// global = globalThis
 	global_object = JS_GetGlobalObject(ctx);
+	// globalThis.Operators.create
+	js_operators = JS_GetProperty(ctx, global_object, JS_ATOM_Operators);
+	js_operators_create = JS_GetPropertyStr(ctx, js_operators, "create");
 	// global.godot
 	godot_object = JS_NewObject(ctx);
 	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
@@ -949,6 +954,8 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeAtom(ctx, js_key_godot_icon_path);
 	JS_FreeAtom(ctx, js_key_godot_exports);
 	JS_FreeAtom(ctx, js_key_godot_signals);
+	JS_FreeValue(ctx, js_operators);
+	JS_FreeValue(ctx, js_operators_create);
 	JS_FreeValue(ctx, empty_function);
 	JS_FreeValue(ctx, global_object);
 
@@ -1422,6 +1429,21 @@ JSValue QuickJSBinder::godot_register_property(JSContext *ctx, JSValue this_val,
 	return JS_UNDEFINED;
 }
 
+Error QuickJSBinder::define_operators(JSContext *ctx, JSValue p_prototype, JSValue *p_operators, int p_size) {
+	QuickJSBinder *binder = get_context_binder(ctx);
+	JSValue operators = JS_Call(ctx, binder->js_operators_create, binder->js_operators, p_size, p_operators);
+	if (JS_IsException(operators)) {
+		ECMAscriptScriptError error;
+		JSValue e = JS_GetException(ctx);
+		dump_exception(ctx, e, &error);
+		JS_FreeValue(ctx, e);
+		ERR_PRINTS(binder->error_to_string(error));
+		return FAILED;
+	}
+	JS_DefinePropertyValue(ctx, p_prototype, JS_ATOM_Symbol_operatorSet, operators, PROP_DEF_DEFAULT);
+	return OK;
+}
+
 JSValue QuickJSBinder::godot_set_script_meta(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"))
 	ERR_FAIL_COND_V(!JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "godot class expected for argument #0"));
@@ -1450,7 +1472,7 @@ JSValue QuickJSBinder::global_request_animation_frame(JSContext *ctx, JSValue th
 }
 
 JSValue QuickJSBinder::global_cancel_animation_frame(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
-	ERR_FAIL_COND_V(argc < 1 || !JS_IsInteger(argv[0]), JS_ThrowTypeError(ctx, "Request ID expected for argument #0"));
+	ERR_FAIL_COND_V(argc < 1 || !JS_IsNumber(argv[0]), JS_ThrowTypeError(ctx, "Request ID expected for argument #0"));
 	int32_t id = js_to_int(ctx, argv[0]);
 	QuickJSBinder *binder = get_context_binder(ctx);
 	if (ECMAScriptGCHandler *callback = binder->frame_callbacks.getptr(id)) {
@@ -1760,7 +1782,7 @@ JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, in
 }
 
 JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
-	ERR_FAIL_COND_V(argc != 1 || !JS_IsInteger(argv[0]), JS_ThrowTypeError(ctx, "value id expected"));
+	ERR_FAIL_COND_V(argc != 1 || !JS_IsNumber(argv[0]), JS_ThrowTypeError(ctx, "value id expected"));
 	int64_t id = 0;
 
 	JS_ToInt64(ctx, &id, argv[0]);

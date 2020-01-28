@@ -127,10 +127,12 @@ void QuickJSBuiltinBinder::register_property(Variant::Type p_type, const char *p
 	JS_FreeAtom(ctx, atom);
 }
 
-void QuickJSBuiltinBinder::register_operator(Variant::Type p_type, JSAtom p_operator, JSCFunction *p_func, int p_length) {
+void QuickJSBuiltinBinder::register_operators(Variant::Type p_type, Vector<JSValue> &p_operators) {
 	const BuiltinClass &cls = get_class(p_type);
-	JSValue func = JS_NewCFunction(ctx, p_func, "", p_length);
-	JS_DefinePropertyValue(ctx, cls.class_function, p_operator, func, 0);
+	QuickJSBinder::define_operators(ctx, cls.class_prototype, p_operators.ptrw(), p_operators.size());
+	for (int i = 0; i < p_operators.size(); i++) {
+		JS_FreeValue(ctx, p_operators[i]);
+	}
 }
 
 void QuickJSBuiltinBinder::register_method(Variant::Type p_type, const char *p_name, JSCFunction *p_func, int p_length) {
@@ -147,6 +149,244 @@ void QuickJSBuiltinBinder::register_constant(Variant::Type p_type, const char *p
 	JSAtom atom = JS_NewAtom(ctx, p_name);
 	JS_DefinePropertyValue(ctx, cls.class_function, atom, val, QuickJSBinder::PROP_DEF_DEFAULT);
 	JS_FreeAtom(ctx, atom);
+}
+
+void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector<JSValue> &r_operators) {
+	JSValue Number = JS_GetProperty(ctx, binder->global_object, QuickJSBinder::JS_ATOM_Number);
+
+	switch (p_type) {
+		case Variant::VECTOR2: {
+			JSValue number_left = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_left, "left", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_left);
+
+			JSValue number_right = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_right, "right", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_right);
+
+			// 2 * new godot.Vector2(2, 3)
+			JS_DefinePropertyValueStr(ctx, number_left, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								Vector2 *ptr = bind->getVector2();
+								Vector2 ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_left", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Vector2(2, 3) * 2
+			JS_DefinePropertyValueStr(ctx, number_right, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Vector2 *ptr = bind->getVector2();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Vector2 ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Vector2(2, 3) / 2
+			JS_DefinePropertyValueStr(ctx, number_right, "/",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Vector2 *ptr = bind->getVector2();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Vector2 ret = ptr->operator/(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"divide_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+		} break;
+		case Variant::VECTOR3: {
+			JSValue number_left = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_left, "left", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_left);
+
+			JSValue number_right = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_right, "right", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_right);
+
+			// 2 * new godot.Vector3(2, 3, 4)
+			JS_DefinePropertyValueStr(ctx, number_left, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								Vector3 *ptr = bind->getVector3();
+								Vector3 ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_left", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Vector3(2, 3, 4) * 2
+			JS_DefinePropertyValueStr(ctx, number_right, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Vector3 *ptr = bind->getVector3();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Vector3 ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Vector3(2, 3, 4) / 2
+			JS_DefinePropertyValueStr(ctx, number_right, "/",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Vector3 *ptr = bind->getVector3();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Vector3 ret = ptr->operator/(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"divide_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+		} break;
+		case Variant::COLOR: {
+			JSValue number_left = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_left, "left", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_left);
+
+			JSValue number_right = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_right, "right", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_right);
+
+			// 2 * new godot.Color(0.5, 0.5, 0.5)
+			JS_DefinePropertyValueStr(ctx, number_left, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								Color *ptr = bind->getColor();
+								Color ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_left", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Color(0.5, 0.5, 0.5) * 2
+			JS_DefinePropertyValueStr(ctx, number_right, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Color *ptr = bind->getColor();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Color ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Color(0.5, 0.5, 0.5) / 2
+			JS_DefinePropertyValueStr(ctx, number_right, "/",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Color *ptr = bind->getColor();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Color ret = ptr->operator/(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"divide_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+		} break;
+		case Variant::QUAT: {
+			JSValue number_left = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_left, "left", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_left);
+
+			JSValue number_right = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_right, "right", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_right);
+
+			// 2 * new godot.Quat(0.5, 0.5, 0.5, 0.5)
+			JS_DefinePropertyValueStr(ctx, number_left, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								Quat *ptr = bind->getQuat();
+								Quat ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_left", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Quat(0.5, 0.5, 0.5, 0.5) * 2
+			JS_DefinePropertyValueStr(ctx, number_right, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Quat *ptr = bind->getQuat();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Quat ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Quat(0.5, 0.5, 0.5, 0.5) / 2
+			JS_DefinePropertyValueStr(ctx, number_right, "/",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Quat *ptr = bind->getQuat();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Quat ret = ptr->operator/(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"divide_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+		} break;
+		case Variant::BASIS: {
+			JSValue number_left = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_left, "left", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_left);
+
+			JSValue number_right = JS_NewObject(ctx);
+			JS_DefinePropertyValueStr(ctx, number_right, "right", JS_DupValue(ctx, Number), QuickJSBinder::PROP_DEF_DEFAULT);
+			r_operators.push_back(number_right);
+
+			// 2 * new godot.Basis()
+			JS_DefinePropertyValueStr(ctx, number_left, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								Basis *ptr = bind->getBasis();
+								Basis ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_left", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+
+			// new godot.Basis() * 2
+			JS_DefinePropertyValueStr(ctx, number_right, "*",
+					JS_NewCFunction(
+							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
+								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								Basis *ptr = bind->getBasis();
+								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
+								Basis ret = ptr->operator*(scalar);
+								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
+							},
+							"multiply_number_right", 2),
+					QuickJSBinder::PROP_DEF_DEFAULT);
+		} break;
+		default:
+			break;
+	}
+
+	JS_FreeValue(ctx, Number);
 }
 
 void QuickJSBuiltinBinder::initialize(JSContext *p_context, QuickJSBinder *p_binder) {

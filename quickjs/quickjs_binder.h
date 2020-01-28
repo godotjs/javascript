@@ -74,6 +74,8 @@ protected:
 	JSValue global_object;
 	JSValue godot_object;
 	JSValue empty_function;
+	JSValue js_operators;
+	JSValue js_operators_create;
 	Vector<JSValue> godot_singletons;
 
 	_FORCE_INLINE_ static void *js_binder_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
@@ -164,6 +166,9 @@ protected:
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
 	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
 	static Map<String, const char *> class_remap;
+
+public:
+	static Error define_operators(JSContext *ctx, JSValue p_prototype, JSValue *p_operators, int p_size);
 
 public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);

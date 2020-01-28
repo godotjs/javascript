@@ -3,7 +3,7 @@
 
 #include "quickjs/quickjs.h"
 #include <core/variant.h>
-class ECMAScriptGCHandler;
+struct ECMAScriptGCHandler;
 class QuickJSBinder;
 
 typedef JSValue (*JSConstructorFunc)(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);
@@ -31,9 +31,10 @@ public:
 
 	void register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc);
 	void register_property(Variant::Type p_type, const char *p_name, JSCFunctionMagic *p_getter, JSCFunctionMagic *p_setter, int magic);
-	void register_operator(Variant::Type p_type, JSAtom p_operator, JSCFunction *p_func, int p_length);
+	void register_operators(Variant::Type p_type, Vector<JSValue> &p_operators);
 	void register_method(Variant::Type p_type, const char *p_name, JSCFunction *p_func, int p_length);
 	void register_constant(Variant::Type p_type, const char *p_name, const Variant &p_value);
+	void get_cross_type_operators(Variant::Type p_type, Vector<JSValue> &r_operators);
 
 public:
 	QuickJSBuiltinBinder();

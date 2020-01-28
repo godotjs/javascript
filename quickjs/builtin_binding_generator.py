@@ -167,7 +167,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ptr->b = QuickJSBinder::js_to_number(ctx, argv[2]);
 		ptr->a = (argc >= 4) ? QuickJSBinder::js_to_number(ctx, argv[3]) : 1.0f;
 	} else if (argc == 1) {
-		if (JS_IsInteger(argv[0])) {
+		if (JS_IsNumber(argv[0])) {
 			ptr->operator=(Color::hex(QuickJSBinder::js_to_uint(ctx, argv[0])));
 		} else if (JS_IsString(argv[0])) {
 			ptr->operator=(Color::html(QuickJSBinder::js_to_string(ctx, argv[0])));
@@ -521,13 +521,12 @@ ${arg_declars}
 	
 	def genertate_operators(cls):
 		OperatorMap = {
-			'operator+': 'QuickJSBinder::JS_ATOM_Symbol_operatorAdd',
-			'operator-': 'QuickJSBinder::JS_ATOM_Symbol_operatorSub',
-			'operator*': 'QuickJSBinder::JS_ATOM_Symbol_operatorMul',
-			'operator/': 'QuickJSBinder::JS_ATOM_Symbol_operatorDiv',
-			'operator==': 'QuickJSBinder::JS_ATOM_Symbol_operatorCmpEQ',
-			'operator<': 'QuickJSBinder::JS_ATOM_Symbol_operatorCmpLT',
-			'operator<=': 'QuickJSBinder::JS_ATOM_Symbol_operatorCmpLE',
+			'operator+': '+',
+			'operator-': '-',
+			'operator*': '*',
+			'operator/': '/',
+			'operator==': '==',
+			'operator<': '<'
 		}
 		TargetDeclearTemplate = '''
 #ifdef DEBUG_METHODS_ENABLED
@@ -537,20 +536,23 @@ ${arg_declars}
 			${target_class} *target = bind1->get${target_class}();\
 '''
 		OperatorTemplate = '''
-	binder->get_builtin_binder().register_operator(
-		${type},
-		${js_op},
-		[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	JS_SetPropertyStr(ctx, base_operators, "${js_op}",
+		JS_NewCFunction(ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 			${class} *ptr = bind->get${class}();\
 ${target_declear}
 			${call}
 			return ${return};
 		},
-		${argc});
-'''
+		"${name}",
+		${argc})
+	);
+	'''
 		TemplateReturnValue = '${godot_type} ret = '
-		bindings = ''
+		bindings = '''\
+	Vector<JSValue> operators;
+	JSValue base_operators = JS_NewObject(ctx);
+'''
 		for o in cls['operators']:
 			op = o['native_method']
 			if op in OperatorMap:
@@ -558,7 +560,7 @@ ${target_declear}
 				js_op = OperatorMap[op]
 				if argc <= 1:
 					if op in ['operator-']:
-						js_op = 'QuickJSBinder::JS_ATOM_Symbol_operatorNeg'
+						js_op = 'neg'
 					
 				args = ''
 				target_declear = ''
@@ -578,10 +580,16 @@ ${target_declear}
 					'class': class_name,
 					'js_op': js_op,
 					'call': call,
+					'name': o['name'],
 					'target_declear': target_declear,
 					"return": 'JS_UNDEFINED' if o['return'] == 'void' else apply_parttern(GodotToJSTemplates[o['return']], {'arg': 'ret'}),
 					'argc': str(argc)
 				})
+		bindings += apply_parttern('''
+	operators.push_back(base_operators);
+	binder->get_builtin_binder().get_cross_type_operators(${type}, operators);
+	binder->get_builtin_binder().register_operators(${type}, operators);
+''', {'type': VariantTypes[class_name]})
 		return bindings
 	
 	TemplateBindDefine = '''
