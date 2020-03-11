@@ -99,8 +99,8 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `godot.register_signal(cls, signal_name)` to register signals
   - `godot.register_property(cls, name, default_value)` to define and export properties
   - `godot.register_class(cls, name)` to register named class manually
-  - `godot.set_script_tooled(tooled)` to set `tooled` of the class
-  - `godot.set_script_icon(path)` to set icon of the class
+  - `godot.set_script_tooled(cls, tooled)` to set `tooled` of the class
+  - `godot.set_script_icon(cls, path)` to set icon of the class
   - `godot.get_type(val)` Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
   - `requestAnimationFrame(callback)` to add a callback function to be called every frame
   - `cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
