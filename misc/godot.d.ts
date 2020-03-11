@@ -163,9 +163,15 @@ declare module godot {
 	 * The meta data of an script
 	 * @param target The script class
 	 * @param tool is tooled of this class
+	 */
+	function set_script_tooled(target: GodotClass, tool: boolean);
+	
+	/**
+	 * The meta data of an script
+	 * @param target The script class
 	 * @param icon The icon of the class
 	 */
-	function set_script_meta(target: GodotClass, tool: boolean, icon?: string);
+	function set_script_icon(target: GodotClass, icon: string);
 	
 	/**
 	 * Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
