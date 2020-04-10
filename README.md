@@ -16,7 +16,7 @@ It is also possible to replace the ECMAScript engine like V8 or SpiderMonkey but
 ### Compile
 * Clone the source code of [godot](https://github.com/godotengine/godot)
 * Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
-* [Recompile godot engine](https://docs.godotengine.org/en/3.0/development/compiling/index.html)
+* [Recompile godot engine](https://docs.godotengine.org/en/3.2/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
 ### Usage
 

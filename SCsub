@@ -58,10 +58,10 @@ sources = [
 ]
 
 if env['tools']:
-	with open("tools/godot.d.ts.gen.cpp", "w") as f:
+	with open("tools/godot.d.ts.gen.cpp", "w", encoding="utf-8") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
 		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.d.ts")))
-	with open("tools/tsconfig.json.gen.cpp", "w") as f:
+	with open("tools/tsconfig.json.gen.cpp", "w", encoding="utf-8") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TSCONFIG_CONTENT = \n${source};'
 		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/tsconfig.json")))
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
