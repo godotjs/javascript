@@ -99,6 +99,7 @@ protected:
 	};
 	ClassBindData godot_origin_class;
 	const ClassBindData *godot_object_class;
+	const ClassBindData *godot_reference_class;
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
 	HashMap<String, ModuleCache> module_cache;
@@ -223,14 +224,14 @@ public:
 	}
 
 	virtual ECMAScriptBinder *get_context_binder(void *p_context) {
-		return QuickJSBinder::get_context_binder((JSContext*)p_context);
+		return QuickJSBinder::get_context_binder((JSContext *)p_context);
 	}
 
 	_FORCE_INLINE_ static QuickJSBinder *get_runtime_binder(JSRuntime *rt) {
 		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);
 	}
 
-	_FORCE_INLINE_ static ECMAScriptGCHandler *new_gc_handler(JSContext* ctx) {
+	_FORCE_INLINE_ static ECMAScriptGCHandler *new_gc_handler(JSContext *ctx) {
 		ECMAScriptGCHandler *h = memnew(ECMAScriptGCHandler);
 		h->context = ctx;
 		return h;

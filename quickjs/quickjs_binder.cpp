@@ -16,7 +16,7 @@ uint32_t QuickJSBinder::global_transfer_id = 0;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 
-_FORCE_INLINE_ static ECMAScriptGCHandler* BINDING_DATA_FROM_GD(JSContext *ctx, Object *p_object){
+_FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, Object *p_object) {
 
 	ERR_FAIL_COND_V(p_object == NULL, NULL);
 
@@ -665,6 +665,7 @@ void QuickJSBinder::add_godot_classes() {
 		id = class_bindings.next(id);
 	}
 	godot_object_class = *classname_bindings.getptr("Object");
+	godot_reference_class = *classname_bindings.getptr("Reference");
 }
 
 void QuickJSBinder::add_godot_globals() {
@@ -836,6 +837,7 @@ QuickJSBinder::QuickJSBinder() {
 	godot_allocator.js_realloc = QuickJSBinder::js_binder_realloc;
 	godot_allocator.js_malloc_usable_size = NULL;
 	godot_object_class = NULL;
+	godot_reference_class = NULL;
 
 	if (class_remap.empty()) {
 		class_remap.insert(_File::get_class_static(), "File");
@@ -904,6 +906,7 @@ void QuickJSBinder::initialize() {
 
 void QuickJSBinder::uninitialize() {
 	godot_object_class = NULL;
+	godot_reference_class = NULL;
 	builtin_binder.uninitialize();
 
 	// Free singletons
@@ -1116,7 +1119,16 @@ void QuickJSBinder::free_object_binding_data(void *p_gc_handle) {
 
 Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, Object *p_object) {
 	QuickJSBinder *binder = get_context_binder(ctx);
-	if (const ClassBindData **bind_ptr = binder->classname_bindings.getptr(p_object->get_class_name())) {
+	const ClassBindData **bind_ptr = binder->classname_bindings.getptr(p_object->get_class_name());
+	if (!bind_ptr)
+		bind_ptr = binder->classname_bindings.getptr(p_object->get_parent_class_static());
+	if (!bind_ptr) {
+		bind_ptr = Object::cast_to<Reference>(p_object) == NULL ? &binder->godot_object_class : &binder->godot_reference_class;
+#ifdef DEBUG_ENABLED
+		WARN_PRINTS("Class " + p_object->get_class_name() + " is not registed to ClassDB");
+#endif
+	}
+	if (bind_ptr) {
 		JSValue obj = JS_NewObjectProtoClass(ctx, (*bind_ptr)->prototype, binder->get_origin_class_id());
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
 		data->godot_object = p_object;
@@ -1151,7 +1163,7 @@ void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
 	if (bind->ecma_object && bind->context) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF)) {
-			JS_DupValue((JSContext*)bind->context, js_obj); // JS ref_count ++
+			JS_DupValue((JSContext *)bind->context, js_obj); // JS ref_count ++
 			bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
 		}
 	}
@@ -1164,7 +1176,7 @@ bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 		if (!(bind->flags & ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED)) {
 			if (bind->ecma_object && bind->context && !(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF)) {
 				bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF;
-				JS_FreeValue((JSContext*)bind->context, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
+				JS_FreeValue((JSContext *)bind->context, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
 			}
 			return false;
 		}
