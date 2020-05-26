@@ -56,7 +56,7 @@ public:
 #define CONFIG_ATOMICS
 #endif
 #define DEF(name, str) JS_ATOM_##name,
-#include "quickjs-atom.h"
+#include "quickjs/quickjs-atom.h"
 #undef DEF
 #ifdef CONFIG_ATOMICS
 #undef CONFIG_ATOMICS
