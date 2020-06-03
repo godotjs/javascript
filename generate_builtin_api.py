@@ -231,7 +231,7 @@ IGNORED_PROPS = {
 	"Plane": ['intersects_segment', 'intersects_ray', 'intersect_3'],
 	"AABB": ['end'],
 	"Transform": ['xform', 'xform_inv', 'IDENTITY', 'FLIP_X', 'FLIP_Y', 'FLIP_Z'],
-	"PoolByteArray": ['compress', 'decompress', 'get_string_from_ascii', 'get_string_from_utf8', 'sha256_string', 'hex_encode'],
+	"PoolByteArray": ['compress', 'decompress', 'get_string_from_ascii', 'get_string_from_utf8', 'hex_encode'],
 }
 
 PROPERTY_REMAP = {

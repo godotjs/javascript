@@ -1,5 +1,6 @@
 #include "quickjs_builtin_binder.h"
 #include "quickjs_binder.h"
+#include <core/io/compression.h>
 #include <core/os/memory.h>
 
 QuickJSBuiltinBinder::QuickJSBuiltinBinder() {
@@ -564,4 +565,103 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector3A
 }
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
+
+	{ // PoolByteArray
+		// PoolByteArray.prototype.compress
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_BYTE_ARRAY,
+				"compress",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolByteArray *ptr = bind->getPoolByteArray();
+					PoolByteArray compressed;
+					if (ptr->size() > 0) {
+#ifdef DEBUG_METHODS_ENABLED
+						ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of PoolByteArray.compress")));
+#endif
+						Compression::Mode mode = (Compression::Mode)(QuickJSBinder::js_to_int(ctx, argv[0]));
+						compressed.resize(Compression::get_max_compressed_buffer_size(ptr->size(), mode));
+						int result = Compression::compress(compressed.write().ptr(), ptr->read().ptr(), ptr->size(), mode);
+						result = result >= 0 ? result : 0;
+						compressed.resize(result);
+					}
+					return QuickJSBinder::variant_to_var(ctx, compressed);
+				},
+				1);
+		// PoolByteArray.prototype.decompress
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_BYTE_ARRAY,
+				"decompress",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolByteArray *ptr = bind->getPoolByteArray();
+					PoolByteArray decompressed;
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of PoolByteArray.decompress")));
+#endif
+					int buffer_size = QuickJSBinder::js_to_int(ctx, argv[0]);
+					ERR_FAIL_COND_V(buffer_size <= 0, (JS_ThrowTypeError(ctx, "Decompression buffer size must be greater than zero.")));
+
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 1 of PoolByteArray.decompress")));
+#endif
+					Compression::Mode mode = (Compression::Mode)(QuickJSBinder::js_to_int(ctx, argv[1]));
+					decompressed.resize(buffer_size);
+					int result = Compression::decompress(decompressed.write().ptr(), buffer_size, ptr->read().ptr(), ptr->size(), mode);
+					result = result >= 0 ? result : 0;
+					decompressed.resize(result);
+					return QuickJSBinder::variant_to_var(ctx, decompressed);
+				},
+				1);
+
+		// PoolByteArray.prototype.get_string_from_utf8
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_BYTE_ARRAY,
+				"get_string_from_utf8",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolByteArray *ptr = bind->getPoolByteArray();
+					String ret;
+					if (ptr->size() > 0) {
+						PoolByteArray::Read r = ptr->read();
+						ret.parse_utf8((const char *)r.ptr(), ptr->size());
+					}
+					return QuickJSBinder::to_js_string(ctx, ret);
+				},
+				0);
+		// PoolByteArray.prototype.get_string_from_ascii
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_BYTE_ARRAY,
+				"get_string_from_ascii",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolByteArray *ptr = bind->getPoolByteArray();
+					String ret;
+					if (ptr->size() > 0) {
+						PoolByteArray::Read r = ptr->read();
+						CharString cs;
+						cs.resize(ptr->size() + 1);
+						copymem(cs.ptrw(), r.ptr(), ptr->size());
+						cs[ptr->size()] = 0;
+						ret = cs.get_data();
+					}
+					return QuickJSBinder::to_js_string(ctx, ret);
+				},
+				0);
+		// PoolByteArray.prototype.hex_encode
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_BYTE_ARRAY,
+				"hex_encode",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolByteArray *ptr = bind->getPoolByteArray();
+					String ret;
+					if (ptr->size() > 0) {
+						PoolByteArray::Read r = ptr->read();
+						ret = String::hex_encode_buffer(&r[0], ptr->size());
+					}
+					return QuickJSBinder::to_js_string(ctx, ret);
+				},
+				0);
+	}
 }
