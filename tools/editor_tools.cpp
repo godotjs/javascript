@@ -450,7 +450,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					dict["description"] = format_doc_text(const_doc.description, "\t ");
 					dict["name"] = format_property_name(const_doc.name);
 					dict["value"] = const_doc.value;
-					if (const_doc.value == "nan" || const_doc.value == "inf") {
+					if (const_doc.name == "NAN" || const_doc.name == "INF") {
 						dict["value"] = "number";
 					}
 					constants += applay_partern(const_str, dict);
