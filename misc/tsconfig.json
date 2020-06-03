@@ -1,8 +1,9 @@
 {
 	"include": ["."],
 	"compilerOptions": {
+		"target": "ESNext",
 		"module": "ESNext",
-		"lib": ["ES2020"],
+		"lib": ["ESNext"],
 		"types": [],
 		"experimentalDecorators": true
 	}
