@@ -63,6 +63,10 @@ void QuickJSBinder::add_global_console() {
 }
 
 void QuickJSBinder::add_global_properties() {
+	// globalThis.require
+	JSValue js_func_require = JS_NewCFunction(ctx, require_function, "require", 1);
+	JS_DefinePropertyValueStr(ctx, global_object, "require", js_func_require, PROP_DEF_DEFAULT);
+
 	// globalThis.requestAnimationFrame
 	JSValue js_func_requestAnimationFrame = JS_NewCFunction(ctx, global_request_animation_frame, "requestAnimationFrame", 1);
 	JS_DefinePropertyValueStr(ctx, global_object, "requestAnimationFrame", js_func_requestAnimationFrame, PROP_DEF_DEFAULT);
@@ -456,6 +460,66 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 
 int QuickJSBinder::resource_module_initializer(JSContext *ctx, JSModuleDef *m) {
 	return JS_SetModuleExport(ctx, m, "default", JS_UNDEFINED);
+}
+
+JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+	ERR_FAIL_COND_V(argc < 1 || !validate_type(ctx, Variant::STRING, argv[0]), JS_ThrowTypeError(ctx, "A string argument expected for require"));
+	String file = js_to_string(ctx, argv[0]);
+	String extension = file.get_extension();
+	if (extension.empty()) {
+		extension = ECMAScriptLanguage::get_singleton()->get_extension();
+		file += "." + extension;
+	}
+
+	if (!FileAccess::exists(file)) {
+		JSValue func = JS_GetStackFunction(ctx, 1);
+		JSValue filename = JS_GetProperty(ctx, func, JS_ATOM_fileName);
+		String caller_path = js_to_string(ctx, filename);
+		JS_FreeValue(ctx, filename);
+		JS_FreeValue(ctx, func);
+		file = caller_path.get_base_dir() + "/" + file;
+	}
+
+	JSValue ret = JS_UNDEFINED;
+	if (extension == ECMAScriptLanguage::get_singleton()->get_extension()) {
+		Error err;
+		String text = FileAccess::get_file_as_string(file, &err);
+		ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
+
+		String md5 = text.md5_text();
+		QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+		if (CommonJSModule *ptr = binder->commonjs_module_cache.getptr(md5)) {
+			ret = JS_DupValue(ctx, ptr->exports);
+		} else {
+			String code = "(function() {"
+						  "  const module = {"
+						  "    exports: {}"
+						  "  };"
+						  "  let exports = module.exports;"
+						  "  (function(){ " +
+						  text +
+						  "    }"
+						  "  )();"
+						  "  return module.exports;"
+						  "})();";
+			CharString utf8code = code.utf8();
+			ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+
+			CommonJSModule m;
+			m.exports = JS_DupValue(ctx, ret);
+			m.code_md5 = md5;
+			binder->commonjs_module_cache.set(md5, m);
+		}
+
+	} else {
+		RES res = ResourceLoader::load(file);
+		if (!res.is_null()) {
+			ret = variant_to_var(ctx, res);
+		} else {
+			ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().ptr());
+		}
+	}
+	return ret;
 }
 
 JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -938,19 +1002,30 @@ void QuickJSBinder::uninitialize() {
 	}
 	frame_callbacks.clear();
 
-	// modules
+	{ // modules
 #if MODULE_HAS_REFCOUNT
-	const String *file = module_cache.next(NULL);
-	while (file) {
-		const ModuleCache &m = module_cache.get(*file);
-		if (m.module) {
-			JSValue val = JS_MKPTR(JS_TAG_MODULE, m.module);
-			JS_FreeValue(ctx, val);
+		const String *file = module_cache.next(NULL);
+		while (file) {
+			const ModuleCache &m = module_cache.get(*file);
+			if (m.module) {
+				JSValue val = JS_MKPTR(JS_TAG_MODULE, m.module);
+				JS_FreeValue(ctx, val);
+			}
+			file = module_cache.next(file);
 		}
-		file = module_cache.next(file);
-	}
 #endif
-	module_cache.clear();
+		module_cache.clear();
+	}
+
+	{ // commonjs modules
+		const String *file = commonjs_module_cache.next(NULL);
+		while (file) {
+			const CommonJSModule &m = commonjs_module_cache.get(*file);
+			JS_FreeValue(ctx, m.exports);
+			file = commonjs_module_cache.next(file);
+		}
+		commonjs_module_cache.clear();
+	}
 
 	JS_FreeAtom(ctx, js_key_godot_classid);
 	JS_FreeAtom(ctx, js_key_godot_tooled);

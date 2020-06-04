@@ -1002,7 +1002,7 @@ int JS_SetModuleExportList(JSContext *ctx, JSModuleDef *m,
 int JS_GetModuleExportEntriesCount(JSModuleDef *m);
 JSValue JS_GetModuleExportEntry(JSContext *ctx, JSModuleDef *m, int idx);
 JSAtom JS_GetModuleExportEntryName(JSContext *ctx, JSModuleDef *m, int idx);
-
+JSValue JS_GetStackFunction(JSContext *ctx, int back_level);
 JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val);
 const JSMallocState *JS_GetMollocState(JSRuntime *rt);
 

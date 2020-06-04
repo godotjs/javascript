@@ -2,9 +2,9 @@
 #define QUICKJS_BINDING_HELPER_H
 
 #include "../ecmascript_binder.h"
+#include "./quickjs/quickjs.h"
 #include "core/os/memory.h"
 #include "quickjs_builtin_binder.h"
-#include <quickjs.h>
 #define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
 #define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
 #define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
@@ -44,6 +44,11 @@ public:
 		JSModuleDef *module;
 		String code_md5;
 		bool evaluated;
+	};
+
+	struct CommonJSModule {
+		JSValue exports;
+		String code_md5;
 	};
 
 	enum {
@@ -87,6 +92,7 @@ protected:
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
 	ModuleCache *js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 	static int resource_module_initializer(JSContext *ctx, JSModuleDef *m);
+	static JSValue require_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv);
 
 	struct ClassBindData {
 		JSClassID class_id;
@@ -103,6 +109,7 @@ protected:
 	HashMap<JSClassID, ClassBindData> class_bindings;
 	HashMap<StringName, const ClassBindData *> classname_bindings;
 	HashMap<String, ModuleCache> module_cache;
+	HashMap<String, CommonJSModule> commonjs_module_cache;
 	ClassBindData worker_class_data;
 	List<ECMAScriptGCHandler *> workers;
 	Vector<MethodBind *> godot_methods;

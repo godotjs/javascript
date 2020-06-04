@@ -52539,3 +52539,21 @@ JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val)
 const JSMallocState* JS_GetMollocState(JSRuntime *rt) {
     return &rt->malloc_state;
 }
+
+JSValue JS_GetStackFunction(JSContext *ctx, int back_level) {
+    JSRuntime *rt = JS_GetRuntime(ctx);
+    JSValue func = JS_UNDEFINED;
+
+    JSStackFrame *frame = rt->current_stack_frame;
+    int level = 0;
+    while (frame) {
+        if (level >= back_level) {
+            func = JS_DupValue(ctx, frame->cur_func);
+            break;
+        }
+        level += 1;
+        frame = frame->prev_frame;
+    }
+
+    return func;
+}
