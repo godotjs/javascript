@@ -39,13 +39,29 @@ JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, in
 		args.write()[i].parse_utf8(utf8, size);
 		JS_FreeCString(ctx, utf8);
 	}
+	String message = args.join(" ");
+	if (magic == 3) {
+		QuickJSBinder *binder = get_context_binder(ctx);
+		JSValue error_constructor = JS_GetProperty(ctx, binder->global_object, JS_ATOM_Error);
+		JSValue error = JS_CallConstructor(ctx, error_constructor, 0, NULL);
+		JSValue stack = JS_GetProperty(ctx, error, JS_ATOM_stack);
+		String stack_text = js_to_string(ctx, stack);
+		stack_text = stack_text.substr(stack_text.find("\n"));
+		message += stack_text;
+		JS_FreeValue(ctx, stack);
+		JS_FreeValue(ctx, error);
+		JS_FreeValue(ctx, error_constructor);
+	}
+
 	switch (magic) {
 		case 2:
-			print_error(args.join(" "));
+			print_error(message);
 			break;
+		case 0:
 		case 1:
+		case 3:
 		default:
-			print_line(args.join(" "));
+			print_line(message);
 			break;
 	}
 	return JS_UNDEFINED;
@@ -55,11 +71,13 @@ void QuickJSBinder::add_global_console() {
 	JSValue console = JS_NewObject(ctx);
 	JSValue log = JS_NewCFunctionMagic(ctx, console_log_function, "log", 0, JS_CFUNC_generic_magic, 0);
 	JSValue warn = JS_NewCFunctionMagic(ctx, console_log_function, "warn", 0, JS_CFUNC_generic_magic, 1);
-	JSValue err = JS_NewCFunctionMagic(ctx, console_log_function, "warn", 0, JS_CFUNC_generic_magic, 2);
+	JSValue err = JS_NewCFunctionMagic(ctx, console_log_function, "error", 0, JS_CFUNC_generic_magic, 2);
+	JSValue trace = JS_NewCFunctionMagic(ctx, console_log_function, "trace", 0, JS_CFUNC_generic_magic, 3);
 	JS_DefinePropertyValueStr(ctx, global_object, "console", console, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "log", log, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "warn", warn, PROP_DEF_DEFAULT);
-	JS_DefinePropertyValueStr(ctx, console, "err", err, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, console, "error", err, PROP_DEF_DEFAULT);
+	JS_DefinePropertyValueStr(ctx, console, "trace", trace, PROP_DEF_DEFAULT);
 }
 
 void QuickJSBinder::add_global_properties() {
