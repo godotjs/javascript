@@ -437,7 +437,16 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			JSValue func = JS_MKPTR(JS_TAG_MODULE, m);
 			JS_DupValue(ctx, func);
 			JS_EvalFunction(ctx, func);
-			JS_SetModuleExport(ctx, m, "default", variant_to_var(ctx, res));
+			JSValue val = variant_to_var(ctx, res);
+			JS_SetModuleExport(ctx, m, "default", val);
+			JS_FreeValue(ctx, val);
+
+			ModuleCache module;
+			module.md5 = FileAccess::get_md5(file);
+			module.module = m;
+			module.flags = MODULE_FLAG_RESOURCE;
+			module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+			binder->module_cache.set(file, module);
 		}
 	}
 
@@ -481,7 +490,7 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 		ModuleCache module;
 		module.md5 = md5;
 		module.module = NULL;
-		module.evaluated = false;
+		module.flags = MODULE_FLAG_SCRIPT;
 		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
 		binder->module_cache.set(p_filename, module);
 	} else {
@@ -529,30 +538,27 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 			Error err;
 			String text = FileAccess::get_file_as_string(file, &err);
 			ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
-			QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-			if (CommonJSModule *ptr = binder->commonjs_module_cache.getptr(md5)) {
-				ret = JS_DupValue(ctx, ptr->exports);
-				m.exports = JS_DupValue(ctx, ret);
-			} else {
-				String code = "(function() {"
-							  "  const module = {"
-							  "    exports: {}"
-							  "  };"
-							  "  let exports = module.exports;"
-							  "  (function(){ " +
-							  text +
-							  "    }"
-							  "  )();"
-							  "  return module.exports;"
-							  "})();";
-				CharString utf8code = code.utf8();
-				ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
-			}
+			String code = "(function() {"
+						  "  const module = {"
+						  "    exports: {}"
+						  "  };"
+						  "  let exports = module.exports;"
+						  "  (function(){ " +
+						  text +
+						  "    }"
+						  "  )();"
+						  "  return module.exports;"
+						  "})();";
+			CharString utf8code = code.utf8();
+			ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+			m.exports = JS_DupValue(ctx, ret);
+			m.flags = MODULE_FLAG_SCRIPT;
 		} else {
 			RES res = ResourceLoader::load(file);
 			if (!res.is_null()) {
 				ret = variant_to_var(ctx, res);
 				m.exports = ret;
+				m.flags = MODULE_FLAG_RESOURCE;
 			} else {
 				ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().ptr());
 			}
@@ -1757,9 +1763,9 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 		goto fail;
 	}
 
-	if (!p_module->evaluated) {
+	if (!(p_module->flags & MODULE_FLAG_EVALUATED)) {
 		ret = JS_EvalFunction(ctx, module);
-		p_module->evaluated = true;
+		p_module->flags |= MODULE_FLAG_EVALUATED;
 		if (JS_IsException(ret)) {
 			JSValue e = JS_GetException(ctx);
 			dump_exception(ctx, e, r_error);

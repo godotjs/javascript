@@ -41,13 +41,20 @@ public:
 		}
 	};
 
+	enum ECMAScriptModuleFlags {
+		MODULE_FLAG_SCRIPT = 1,
+		MODULE_FLAG_EVALUATED = 1 << 1,
+		MODULE_FLAG_RESOURCE = 1 << 2,
+	};
+
 	struct ModuleCache {
+		int flags;
 		JSModuleDef *module;
 		String md5;
-		bool evaluated;
 	};
 
 	struct CommonJSModule {
+		int flags;
 		JSValue exports;
 		String md5;
 	};
