@@ -11,6 +11,7 @@
 #define NO_MODULE_EXPORT_SUPPORT 0
 #define MODULE_HAS_REFCOUNT 0 // module seems don't follow the refrence count rule in quickjs
 #define MAX_ARGUMENT_COUNT 50
+#define ENDL "\r\n"
 
 class QuickJSWorker;
 
@@ -42,13 +43,13 @@ public:
 
 	struct ModuleCache {
 		JSModuleDef *module;
-		String code_md5;
+		String md5;
 		bool evaluated;
 	};
 
 	struct CommonJSModule {
 		JSValue exports;
-		String code_md5;
+		String md5;
 	};
 
 	enum {
@@ -153,7 +154,7 @@ protected:
 	};
 	static JSValue godot_set_script_meta(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
-	static JSValue console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic);
+	static JSValue console_functions(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic);
 	static JSValue global_request_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue global_cancel_animation_frame(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
@@ -184,6 +185,7 @@ public:
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
 	static void dump_exception(JSContext *ctx, const JSValueConst &p_exception, ECMAscriptScriptError *r_error);
 	virtual String error_to_string(const ECMAscriptScriptError &p_error);
+	virtual String get_backtrace(int skip_level = 0);
 
 	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
 		double_t v = 0;

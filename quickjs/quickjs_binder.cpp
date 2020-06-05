@@ -30,7 +30,7 @@ _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, 
 	return bind;
 }
 
-JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
+JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	PoolStringArray args;
 	args.resize(argc);
 	for (int i = 0; i < argc; ++i) {
@@ -41,16 +41,8 @@ JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, in
 	}
 	String message = args.join(" ");
 	if (magic == 3) {
-		QuickJSBinder *binder = get_context_binder(ctx);
-		JSValue error_constructor = JS_GetProperty(ctx, binder->global_object, JS_ATOM_Error);
-		JSValue error = JS_CallConstructor(ctx, error_constructor, 0, NULL);
-		JSValue stack = JS_GetProperty(ctx, error, JS_ATOM_stack);
-		String stack_text = js_to_string(ctx, stack);
-		stack_text = stack_text.substr(stack_text.find("\n"));
-		message += stack_text;
-		JS_FreeValue(ctx, stack);
-		JS_FreeValue(ctx, error);
-		JS_FreeValue(ctx, error_constructor);
+		message += ENDL;
+		message += get_context_binder(ctx)->get_backtrace(1);
 	}
 
 	switch (magic) {
@@ -69,10 +61,10 @@ JSValue QuickJSBinder::console_log_function(JSContext *ctx, JSValue this_val, in
 
 void QuickJSBinder::add_global_console() {
 	JSValue console = JS_NewObject(ctx);
-	JSValue log = JS_NewCFunctionMagic(ctx, console_log_function, "log", 0, JS_CFUNC_generic_magic, 0);
-	JSValue warn = JS_NewCFunctionMagic(ctx, console_log_function, "warn", 0, JS_CFUNC_generic_magic, 1);
-	JSValue err = JS_NewCFunctionMagic(ctx, console_log_function, "error", 0, JS_CFUNC_generic_magic, 2);
-	JSValue trace = JS_NewCFunctionMagic(ctx, console_log_function, "trace", 0, JS_CFUNC_generic_magic, 3);
+	JSValue log = JS_NewCFunctionMagic(ctx, console_functions, "log", 0, JS_CFUNC_generic_magic, 0);
+	JSValue warn = JS_NewCFunctionMagic(ctx, console_functions, "warn", 0, JS_CFUNC_generic_magic, 1);
+	JSValue err = JS_NewCFunctionMagic(ctx, console_functions, "error", 0, JS_CFUNC_generic_magic, 2);
+	JSValue trace = JS_NewCFunctionMagic(ctx, console_functions, "trace", 0, JS_CFUNC_generic_magic, 3);
 	JS_DefinePropertyValueStr(ctx, global_object, "console", console, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "log", log, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "warn", warn, PROP_DEF_DEFAULT);
@@ -114,24 +106,30 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	Variant::CallError call_err;
 	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc, call_err);
 #ifdef DEBUG_METHODS_ENABLED
-	CharString err_message;
+	String err_message;
 	switch (call_err.error) {
-		case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT: {
-			String err = "Invalid type for argument #" + itos(call_err.argument) + ", expected '" + Variant::get_type_name(call_err.expected) + "'.";
-			err_message = err.utf8();
-		} break;
-		case Variant::CallError::CALL_ERROR_INVALID_METHOD: {
-			String err = "Invalid method '" + String(mb->get_name()) + "' for type '" + obj->get_class_name() + "'.";
-			err_message = err.utf8();
-		} break;
-		case Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS: {
-			String err = "Too many arguments for method '" + String(mb->get_name()) + "'";
-			err_message = err.utf8();
-		} break;
-		default: {
-		}
+		case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
+			err_message = "Argument of type '" + Variant::get_type_name(binder->method_call_arguments[call_err.argument].get_type()) + "' is not assignable to parameter #" + itos(call_err.argument) + " of type '" + Variant::get_type_name(call_err.expected) + "'.";
+			break;
+		case Variant::CallError::CALL_ERROR_INVALID_METHOD:
+			err_message = "Invalid method '" + String(mb->get_name()) + "' for type '" + obj->get_class_name() + "'.";
+			break;
+		case Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
+			err_message = "Too few arguments for method '" + String(mb->get_name()) + "'";
+			break;
+		case Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
+			err_message = "Too many arguments for method '" + String(mb->get_name()) + "'";
+			break;
+		case Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL:
+			err_message = "Attempt to call " + String(mb->get_name()) + " on a null instance.";
+			break;
+		default:
+			break;
 	}
-	ERR_FAIL_COND_V((call_err.error != Variant::CallError::CALL_OK), JS_ThrowTypeError(ctx, err_message.ptr()));
+	if (call_err.error != Variant::CallError::CALL_OK) {
+		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + binder->get_backtrace(1));
+	}
+	ERR_FAIL_COND_V((call_err.error != Variant::CallError::CALL_OK), JS_ThrowTypeError(ctx, err_message.utf8().ptr()));
 #endif
 	return variant_to_var(ctx, ret_val);
 }
@@ -312,6 +310,25 @@ String QuickJSBinder::error_to_string(const ECMAscriptScriptError &p_error) {
 	return message;
 }
 
+String QuickJSBinder::get_backtrace(int skip_level) {
+	JSValue error_constructor = JS_GetProperty(ctx, global_object, JS_ATOM_Error);
+	JSValue error = JS_CallConstructor(ctx, error_constructor, 0, NULL);
+	JSValue stack = JS_GetProperty(ctx, error, JS_ATOM_stack);
+
+	String stack_text = js_to_string(ctx, stack);
+	for (int i = 0; i < skip_level; i++) {
+		int idx = stack_text.find("\n");
+		if (idx < 0 && idx >= stack_text.length()) break;
+		stack_text = stack_text.substr(idx + 1);
+	}
+
+	JS_FreeValue(ctx, stack);
+	JS_FreeValue(ctx, error);
+	JS_FreeValue(ctx, error_constructor);
+
+	return stack_text;
+}
+
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	String name = p_key;
 	CharString name_str = name.ascii();
@@ -440,7 +457,7 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 	String md5 = p_code.md5_text();
 	ModuleCache *last_module = binder->module_cache.getptr(p_filename);
 	if (last_module) {
-		if (last_module->code_md5 == md5) {
+		if (last_module->md5 == md5) {
 #if MODULE_HAS_REFCOUNT
 			if (last_module->module) {
 				JSValue val = JS_MKPTR(JS_TAG_MODULE, last_module->module);
@@ -462,7 +479,7 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 	JSValue func = JS_Eval(ctx, cfilesource, code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 	if (!JS_IsException(func)) {
 		ModuleCache module;
-		module.code_md5 = md5;
+		module.md5 = md5;
 		module.module = NULL;
 		module.evaluated = false;
 		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
@@ -499,43 +516,48 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 	}
 
 	JSValue ret = JS_UNDEFINED;
-	if (extension == ECMAScriptLanguage::get_singleton()->get_extension()) {
-		Error err;
-		String text = FileAccess::get_file_as_string(file, &err);
-		ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
-
-		String md5 = text.md5_text();
-		QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-		if (CommonJSModule *ptr = binder->commonjs_module_cache.getptr(md5)) {
-			ret = JS_DupValue(ctx, ptr->exports);
-		} else {
-			String code = "(function() {"
-						  "  const module = {"
-						  "    exports: {}"
-						  "  };"
-						  "  let exports = module.exports;"
-						  "  (function(){ " +
-						  text +
-						  "    }"
-						  "  )();"
-						  "  return module.exports;"
-						  "})();";
-			CharString utf8code = code.utf8();
-			ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
-
-			CommonJSModule m;
-			m.exports = JS_DupValue(ctx, ret);
-			m.code_md5 = md5;
-			binder->commonjs_module_cache.set(md5, m);
-		}
-
+	String md5 = FileAccess::get_md5(file);
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	if (CommonJSModule *ptr = binder->commonjs_module_cache.getptr(md5)) {
+		ret = JS_DupValue(ctx, ptr->exports);
 	} else {
-		RES res = ResourceLoader::load(file);
-		if (!res.is_null()) {
-			ret = variant_to_var(ctx, res);
+		CommonJSModule m;
+		m.md5 = md5;
+		m.exports = JS_UNDEFINED;
+
+		if (extension == ECMAScriptLanguage::get_singleton()->get_extension()) {
+			Error err;
+			String text = FileAccess::get_file_as_string(file, &err);
+			ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
+			QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+			if (CommonJSModule *ptr = binder->commonjs_module_cache.getptr(md5)) {
+				ret = JS_DupValue(ctx, ptr->exports);
+				m.exports = JS_DupValue(ctx, ret);
+			} else {
+				String code = "(function() {"
+							  "  const module = {"
+							  "    exports: {}"
+							  "  };"
+							  "  let exports = module.exports;"
+							  "  (function(){ " +
+							  text +
+							  "    }"
+							  "  )();"
+							  "  return module.exports;"
+							  "})();";
+				CharString utf8code = code.utf8();
+				ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+			}
 		} else {
-			ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().ptr());
+			RES res = ResourceLoader::load(file);
+			if (!res.is_null()) {
+				ret = variant_to_var(ctx, res);
+				m.exports = ret;
+			} else {
+				ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().ptr());
+			}
 		}
+		binder->commonjs_module_cache.set(md5, m);
 	}
 	return ret;
 }
@@ -982,7 +1004,7 @@ void QuickJSBinder::initialize() {
 	// binding script
 	String script_binding_error;
 	if (OK != safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
-		CRASH_NOW_MSG("Execute script binding failed:\n" + script_binding_error);
+		CRASH_NOW_MSG("Execute script binding failed:" ENDL + script_binding_error);
 	}
 }
 
@@ -1120,7 +1142,7 @@ void QuickJSBinder::frame() {
 			JSValue e = JS_GetException(ctx);
 			ECMAscriptScriptError err;
 			dump_exception(ctx, e, &err);
-			ERR_PRINTS("Error in requestAnimationFrame:\n" + error_to_string(err));
+			ERR_PRINTS("Error in requestAnimationFrame:" ENDL + error_to_string(err));
 			JS_FreeValue(ctx, e);
 		}
 		id = frame_callbacks.next(id);
@@ -1756,7 +1778,7 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 		JS_FreeAtom(ctx, name);
 	}
 	if (!JS_IsFunction(ctx, default_entry)) {
-		String err = "Failed parse ECMAClass from script " + p_path + "\n\t" + "Default export entry must be a godot class!";
+		String err = "Failed parse ECMAClass from script " + p_path + ENDL "\t" + "Default export entry must be a godot class!";
 		ERR_PRINTS(err);
 		JS_ThrowTypeError(ctx, err.utf8().ptr());
 		goto fail;

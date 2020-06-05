@@ -45,7 +45,7 @@ public:
 	ECMAScriptBinder() {}
 	virtual ~ECMAScriptBinder(){};
 
-	virtual ECMAScriptBinder* get_context_binder(void *p_context) = 0;
+	virtual ECMAScriptBinder *get_context_binder(void *p_context) = 0;
 
 	virtual void clear_classes() { ecma_classes.clear(); }
 
@@ -63,6 +63,7 @@ public:
 	virtual Error eval_string(const String &p_source, const String &p_path) = 0;
 	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error) = 0;
 	virtual String error_to_string(const ECMAscriptScriptError &p_error) = 0;
+	virtual String get_backtrace(int skip_level = 0) = 0;
 
 	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode) = 0;
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module) = 0;
