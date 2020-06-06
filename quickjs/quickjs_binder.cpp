@@ -399,16 +399,67 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 	JS_DefinePropertyValueStr(ctx, p_obj, "__ctx__", ptrctx, PROP_DEF_DEFAULT);
 }
 
+static String resolve_module_file(const String &file, bool allow_node_module = false) {
+	String path = file;
+	if (FileAccess::exists(path)) return path;
+	// add extensions to try
+	String extension = file.get_extension();
+	List<String> extensions;
+	ECMAScriptLanguage::get_singleton()->get_recognized_extensions(&extensions);
+	if (extensions.find(extension) == NULL) {
+		for (List<String>::Element *E = extensions.front(); E; E = E->next()) {
+			path = file + "." + E->get();
+			if (FileAccess::exists(path)) {
+				return path;
+			}
+		}
+	}
+	// try index file under the folder
+	for (List<String>::Element *E = extensions.front(); E; E = E->next()) {
+		path = file + "/index." + E->get();
+		if (FileAccess::exists(path)) {
+			return path;
+		}
+	}
+
+	if (allow_node_module && !file.begins_with(".")) {
+		String package_file = "node_modules/" + file + "/package.json";
+		bool package_found = false;
+		if (FileAccess::exists("user://" + package_file)) {
+			package_file = "user://" + package_file;
+			package_found = true;
+		} else if (FileAccess::exists("res://" + package_file)) {
+			package_file = "res://" + package_file;
+			package_found = true;
+		}
+		if (package_found) {
+			Error err;
+			String package_content = FileAccess::get_file_as_string(package_file, &err);
+			ERR_FAIL_COND_V_MSG(err != OK, "", "Fail to load module package: " + package_file);
+			Variant package_parse_ret;
+			String package_parse_err;
+			int error_line;
+			if (OK != JSON::parse(package_content, package_parse_ret, package_parse_err, error_line)) {
+				ERR_FAIL_V_MSG("", "Fail to parse module package:" + package_file + ENDL + package_parse_err + ENDL + "At " + itos(error_line));
+			}
+			Dictionary dict = package_parse_ret;
+			String entry = dict.has("main") ? dict["main"] : "index.js";
+			entry = "node_modules/" + file + "/" + entry;
+			ERR_FAIL_COND_V_MSG(!FileAccess::exists(entry), "", "Module entry does not exists: " + entry);
+			return entry;
+		}
+	}
+	return "";
+}
+
 JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_name, void *opaque) {
 	JSModuleDef *m = NULL;
 	Error err;
+
 	String file;
 	file.parse_utf8(module_name);
-	String extension = file.get_extension();
-	if (extension.empty()) {
-		extension = ECMAScriptLanguage::get_singleton()->get_extension();
-		file += "." + extension;
-	}
+	file = resolve_module_file(file, false);
+	ERR_FAIL_COND_V(file.empty(), NULL);
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	if (ModuleCache *ptr = binder->module_cache.getptr(file)) {
@@ -416,7 +467,9 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	}
 
 	if (!m) {
-		if (extension == ECMAScriptLanguage::get_singleton()->get_extension()) {
+		List<String> extensions;
+		ECMAScriptLanguage::get_singleton()->get_recognized_extensions(&extensions);
+		if (extensions.find(file.get_extension()) != NULL) {
 			String code = FileAccess::get_file_as_string(file, &err);
 			if (err != OK || !code.size()) {
 				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
@@ -509,20 +562,38 @@ int QuickJSBinder::resource_module_initializer(JSContext *ctx, JSModuleDef *m) {
 JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc < 1 || !validate_type(ctx, Variant::STRING, argv[0]), JS_ThrowTypeError(ctx, "A string argument expected for require"));
 	String file = js_to_string(ctx, argv[0]);
-	String extension = file.get_extension();
-	if (extension.empty()) {
-		extension = ECMAScriptLanguage::get_singleton()->get_extension();
-		file += "." + extension;
-	}
-
-	if (!FileAccess::exists(file)) {
+	if (file.begins_with(".")) {
 		JSValue func = JS_GetStackFunction(ctx, 1);
 		JSValue filename = JS_GetProperty(ctx, func, JS_ATOM_fileName);
 		String caller_path = js_to_string(ctx, filename);
 		JS_FreeValue(ctx, filename);
 		JS_FreeValue(ctx, func);
-		file = caller_path.get_base_dir() + "/" + file;
+		String base_dir = caller_path.get_base_dir();
+		while (base_dir.ends_with(".")) {
+			if (base_dir.ends_with("..")) {
+				base_dir = base_dir.get_base_dir().get_base_dir();
+			} else {
+				base_dir = base_dir.get_base_dir();
+			}
+		}
+		String file_path = file;
+		while (file_path.begins_with(".")) {
+			if (file_path.begins_with("../")) {
+				base_dir = base_dir.get_base_dir();
+				file_path = file_path.substr(3);
+			} else if (file_path.begins_with("./")) {
+				file_path = file_path.substr(2);
+			} else {
+				file_path = file_path.get_basename();
+				break;
+			}
+		}
+		if (!base_dir.ends_with("/")) base_dir += "/";
+		file = base_dir + file_path;
 	}
+	String resolving_file = file;
+	file = resolve_module_file(file, true);
+	ERR_FAIL_COND_V_MSG(file.empty(), (JS_UNDEFINED), "Failed to resolve module: " + resolving_file);
 
 	JSValue ret = JS_UNDEFINED;
 	String md5 = FileAccess::get_md5(file);
@@ -533,8 +604,9 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 		CommonJSModule m;
 		m.md5 = md5;
 		m.exports = JS_UNDEFINED;
-
-		if (extension == ECMAScriptLanguage::get_singleton()->get_extension()) {
+		List<String> extensions;
+		ECMAScriptLanguage::get_singleton()->get_recognized_extensions(&extensions);
+		if (extensions.find(file.get_extension()) != NULL) {
 			Error err;
 			String text = FileAccess::get_file_as_string(file, &err);
 			ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
