@@ -154,7 +154,6 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			QuickJSBinder *binder = get_context_binder(ctx);
 			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
 			if (binder->lastest_allocated_object == data) {
-				data->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
 				binder->lastest_allocated_object = NULL;
 			}
 			JS_DupValue(ctx, js_obj);
@@ -441,7 +440,6 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			JS_EvalFunction(ctx, func);
 			JSValue val = variant_to_var(ctx, res);
 			JS_SetModuleExport(ctx, m, "default", val);
-			JS_FreeValue(ctx, val);
 
 			ModuleCache module;
 			module.md5 = FileAccess::get_md5(file);
@@ -1295,24 +1293,17 @@ void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(NULL, p_object);
 	if (bind->ecma_object && bind->context) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-		if (!(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF)) {
-			JS_DupValue((JSContext *)bind->context, js_obj); // JS ref_count ++
-			bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
-		}
+		JS_DupValue((JSContext *)bind->context, js_obj); // JS ref_count ++
 	}
 }
 
 bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(NULL, p_object);
-	if (bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF || bind->flags & ECMAScriptGCHandler::FLAG_FROM_NATIVE) {
-		bind->flags ^= ECMAScriptGCHandler::FLAG_HOLDING_SCRIPT_REF;
-		if (!(bind->flags & ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED)) {
-			if (bind->ecma_object && bind->context && !(bind->flags & ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF)) {
-				bind->flags |= ECMAScriptGCHandler::FLAG_HOLDING_NATIVE_REF;
-				JS_FreeValue((JSContext *)bind->context, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
-			}
-			return false;
+	if (bind->ecma_object && bind->context) {
+		if (false == bind->is_ecma_finalized()) {
+			JS_FreeValue((JSContext *)bind->context, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
 		}
+		return bind->is_ecma_finalized();
 	}
 	return true;
 }
@@ -1336,7 +1327,6 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 			bind_gc_object(ctx, bind, gd_obj);
 			js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		}
-		bind->flags |= ECMAScriptGCHandler::FLAG_FROM_SCRIPT;
 
 		if (JS_IsFunction(ctx, new_target)) {
 			JSValue prototype = JS_GetProperty(ctx, new_target, QuickJSBinder::JS_ATOM_prototype);
@@ -1658,7 +1648,6 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(ctx, p_object);
 	ERR_FAIL_NULL_V(bind, ECMAScriptGCHandler());
-	bind->flags |= ECMAScriptGCHandler::FLAG_FROM_NATIVE;
 
 	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->constructor.ecma_object);
 	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);

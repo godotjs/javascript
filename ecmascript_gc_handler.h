@@ -16,17 +16,13 @@ struct ECMAScriptGCHandler {
 		FLAG_NONE = 0,
 		FLAG_OBJECT = 1,
 		FLAG_REFERENCE = 1 << 1,
-		FLAG_FROM_SCRIPT = 1 << 2,
-		FLAG_FROM_NATIVE = 1 << 3,
-		FLAG_HOLDING_SCRIPT_REF = 1 << 4,
-		FLAG_HOLDING_NATIVE_REF = 1 << 5,
-		FLAG_SCRIPT_FINALIZED = 1 << 6,
-		FLAG_BUILTIN_CLASS = 1 << 7,
-		FLAG_ATOMIC_VALUE = 1 << 8,
-		FLAG_CONTEXT_TRANSFERABLE = 1 << 9,
+		FLAG_SCRIPT_FINALIZED = 1 << 2,
+		FLAG_BUILTIN_CLASS = 1 << 3,
+		FLAG_ATOMIC_VALUE = 1 << 4,
+		FLAG_CONTEXT_TRANSFERABLE = 1 << 5,
 	};
 	Variant::Type type;
-	uint16_t flags;
+	uint8_t flags;
 	void *context;
 	void *ecma_object;
 	union {
@@ -129,6 +125,10 @@ struct ECMAScriptGCHandler {
 
 	_FORCE_INLINE_ bool is_atomic_type() const {
 		return flags & FLAG_ATOMIC_VALUE;
+	}
+
+	_FORCE_INLINE_ bool is_ecma_finalized() const {
+		return flags & FLAG_SCRIPT_FINALIZED;
 	}
 
 	_FORCE_INLINE_ void clear() {
