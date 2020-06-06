@@ -207,6 +207,29 @@
 		configurable: true
 	});
 
+
+
+	const godot_vector2 = godot.Vector2;
+	Object.defineProperty(godot_vector2, "Axis", {
+		value: {
+			AXIS_X: 0,
+			AXIS_Y: 1,
+		},
+		writable: false,
+		configurable: false,
+	});
+
+	const godot_vector3 = godot.Vector3;
+	Object.defineProperty(godot_vector3, "Axis", {
+		value: {
+			AXIS_X: 0,
+			AXIS_Y: 1,
+			AXIS_Z: 2,
+		},
+		writable: false,
+		configurable: false,
+	});
+
 	return godot.TOOLS_ENABLED ? {
 		"removed": {
 			"Rect2": ["end", "grow_margin"],
@@ -215,9 +238,28 @@
 			"Basis": ["is_equal_approx"],
 			"Plane": ["intersects_segment", "intersects_ray", "intersect_3"],
 			"AABB": ["end"],
-			"Transform": ["xform", "xform_inv", "IDENTITY", "FLIP_X", "FLIP_Y", "FLIP_Z"],
+			"Transform": ["xform", "xform_inv"],
 		},
 		"added": {
+			"Object": [
+				"/** Connect the `method` of `target` to the `signal`*/",
+				"//@ts-ignore",
+				"connect(signal: string, target: Object, method: Function, binds: any[] = [], flags: number = 0) : number;",
+				"",
+				"/** Connect the `method` to the `signal`. The caller of the method will be `null` */",
+				"//@ts-ignore",
+				"connect(signal: string, method: Function, binds: any[] = [], flags: number = 0) : number;",
+				"",
+				"/** Returns `true` if a connection exists for a given `signal`, `target`, and `method`. */",
+				"is_connected(signal: string, target: Object, method: Function) : boolean;",
+				"/** Returns `true` if a connection exists for a given `signal` and `method`. */",
+				"is_connected(signal: string, method: Function) : boolean;",
+				"",
+				"/** Disconnects a `signal` from the `method` on the given `target`. */",
+				"disconnect(signal: string, target: Object, method: Function) : void;",
+				"/** Disconnects a `signal` from the `method` */",
+				"disconnect(signal: string, method: Function) : void;"
+			],
 			"Node": [
 				"/** Get first node with the class `cls` */",
 				"get_node<T extends godot.Node>(cls: new()=>T): T;"

@@ -145,6 +145,13 @@ static String format_property_name(const String &p_ident) {
 	return p_ident;
 }
 
+static String format_enum_name(const String &enum_name) {
+	if (enum_name.begins_with("Variant.")) {
+		return enum_name.replace(".", "");
+	}
+	return enum_name;
+}
+
 static String get_type_name(const String &p_type) {
 	if (p_type.empty())
 		return "void";
@@ -164,7 +171,50 @@ static String get_type_name(const String &p_type) {
 }
 
 String _export_method(const DocData::MethodDoc &p_method, bool is_function = false, bool is_static = false, bool ts_ignore_error = false) {
+	Dictionary dict;
+	dict["description"] = format_doc_text(p_method.description, "\t\t ");
+	dict["name"] = format_property_name(p_method.name);
+	dict["static"] = is_static ? "static " : "";
+	dict["return_type"] = get_type_name(p_method.return_type);
+	String params = "";
+	bool arg_default_value_started = false;
+	for (int i = 0; i < p_method.arguments.size(); i++) {
+		const DocData::ArgumentDoc &arg = p_method.arguments[i];
+		if (!arg_default_value_started && !arg.default_value.empty()) {
+			arg_default_value_started = true;
+		}
+		String arg_type = get_type_name(arg.type);
+		if (!arg.enumeration.empty()) {
+			arg_type = format_enum_name(arg.enumeration);
+		}
 
+		String default_value;
+		if (arg_default_value_started) {
+			default_value += " = ";
+			if (arg.default_value.empty()) {
+				if (arg.type == "string") {
+					default_value += "''";
+				} else {
+					default_value += "new " + arg.type + "()";
+				}
+			} else {
+				default_value += arg.default_value;
+			}
+		}
+
+		String arg_str = format_identifier(arg.name) + ": " + arg_type + default_value;
+		if (i < p_method.arguments.size() - 1) {
+			arg_str += ", ";
+		}
+		params += arg_str;
+	}
+
+	if (p_method.qualifiers.find("vararg") != -1) {
+		params += params.empty() ? "...args" : ", ...args";
+	}
+	dict["params"] = params;
+
+	ts_ignore_error = ts_ignore_error || arg_default_value_started;
 	String method_template = "\n"
 							 "\t\t/** ${description} */\n"
 							 "${TS_IGNORE}"
@@ -186,29 +236,6 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 			method_template = method_template.replace("${TS_IGNORE}", "");
 		}
 	}
-
-	Dictionary dict;
-	dict["description"] = format_doc_text(p_method.description, "\t\t ");
-	dict["name"] = format_property_name(p_method.name);
-	dict["static"] = is_static ? "static " : "";
-	dict["return_type"] = get_type_name(p_method.return_type);
-	String params = "";
-	bool arg_default_value_started = false;
-	for (int i = 0; i < p_method.arguments.size(); i++) {
-		const DocData::ArgumentDoc &arg = p_method.arguments[i];
-		if (!arg_default_value_started && !arg.default_value.empty()) {
-			arg_default_value_started = true;
-		}
-		String arg_str = format_identifier(arg.name) + (arg_default_value_started ? "?: " : ": ") + get_type_name(arg.type);
-		if (i < p_method.arguments.size() - 1) {
-			arg_str += ", ";
-		}
-		params += arg_str;
-	}
-	if (p_method.qualifiers.find("vararg") != -1) {
-		params += params.empty() ? "...args" : ", ...args";
-	}
-	dict["params"] = params;
 	return applay_partern(method_template, dict);
 }
 
@@ -218,12 +245,14 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 							"\t ${description} */\n"
 							"${TS_IGNORE}"
 							"\tclass ${name}${extends}${inherits} {\n"
-							"${signals}\n"
-							"${constants}\n"
-							"${enumerations}\n"
-							"${properties}\n"
-							"${methods}\n"
+							"${properties}"
+							"${methods}"
 							"${extrals}"
+							"\t}\n"
+							"\tnamespace ${name} {\n"
+							"${signals}"
+							"${enumerations}"
+							"${constants}"
 							"\t}\n";
 	class_template = class_template.replace("${TS_IGNORE}", ts_ignore_errors.has(class_doc.name) ? "\t" TS_IGNORE : "");
 	Dictionary dict;
@@ -255,29 +284,25 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		dict["name"] = format_property_name(const_doc.name);
 		dict["value"] = const_doc.value;
 		String type = "number";
-		if (const_doc.value.find("(") != -1) {
+		if (!const_doc.enumeration.empty()) {
+			type = const_doc.enumeration + "." + const_doc.name;
+		} else if (const_doc.value.find("(") != -1) {
 			type = const_doc.value.split("(")[0];
+		} else if (const_doc.value.is_valid_integer()) {
+			type = dict["value"];
 		}
 		dict["type"] = type;
-		if (const_doc.value.is_valid_integer()) {
-			String const_str = "\n"
-							   "\t\t/** ${description} */\n"
-							   "${TS_IGNORE}"
-							   "\t\tstatic readonly ${name}: ${value};\n";
-			if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(const_doc.name)) {
-				const_str = const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
-			} else {
-				const_str = const_str.replace("${TS_IGNORE}", "");
-			}
-			constants += applay_partern(const_str, dict);
+
+		String const_str = "\n"
+						   "\t\t/** ${description} */\n"
+						   "${TS_IGNORE}"
+						   "\t\tconst ${name}: ${type};\n";
+		if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(const_doc.name)) {
+			const_str = const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
 		} else {
-			String const_str = "\n"
-							   "\t\t/** ${description} \n"
-							   "\t\t * @value `${value}` */\n"
-							   "\t\tstatic readonly ${name}: ${type};\n";
-			dict["type"] = const_doc.value.split("(")[0];
-			constants += applay_partern(const_str, dict);
+			const_str = const_str.replace("${TS_IGNORE}", "");
 		}
+		constants += applay_partern(const_str, dict);
 
 		if (!const_doc.enumeration.empty()) {
 			if (!enumerations.has(const_doc.enumeration)) {
@@ -299,11 +324,11 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			continue;
 		}
 
-		String enum_str = "\t\tstatic readonly " + *enum_name + " : {\n";
+		String enum_str = "\t\tenum " + *enum_name + " {\n";
 		const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
 		for (int i = 0; i < enums.size(); i++) {
 			String const_str = "\t\t\t/** ${description} */\n"
-							   "\t\t\t${name}: ${value},\n";
+							   "\t\t\t${name} = ${value},\n";
 			Dictionary dict;
 			dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
 			dict["name"] = format_property_name(enums[i]->name);
@@ -369,7 +394,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		String signal_str = "\n"
 							"\t\t/** ${description} */\n"
 							"${TS_IGNORE}"
-							"\t\tstatic ${name}: '${name}';\n";
+							"\t\tconst ${name}: '${name}';\n";
 		if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(signal.name)) {
 			signal_str = signal_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
 		} else {
@@ -505,7 +530,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
 				String const_str = "\n"
 								   "\t/** ${description} */\n"
-								   "\tconst ${name}: ${value};\n";
+								   "\tconst ${name}: ${type};\n";
 				for (int i = 0; i < class_doc.constants.size(); i++) {
 					const DocData::ConstantDoc &const_doc = class_doc.constants[i];
 					Dictionary dict;
@@ -513,7 +538,11 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					dict["name"] = format_property_name(const_doc.name);
 					dict["value"] = const_doc.value;
 					if (const_doc.name == "NAN" || const_doc.name == "INF") {
-						dict["value"] = "number";
+						dict["type"] = "number";
+					} else if (!const_doc.enumeration.empty()) {
+						dict["type"] = format_enum_name(const_doc.enumeration) + "." + const_doc.name;
+					} else {
+						dict["type"] = dict["value"];
 					}
 					constants += applay_partern(const_str, dict);
 
@@ -530,11 +559,11 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 
 				const String *enum_name = enumerations.next(NULL);
 				while (enum_name) {
-					String enum_str = "\tconst " + (*enum_name).replace(".", "") + " : {\n";
+					String enum_str = "\tenum " + format_enum_name(*enum_name) + " {\n";
 					const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
 					for (int i = 0; i < enums.size(); i++) {
 						String const_str = "\t\t/** ${description} */\n"
-										   "\t\t${name}: ${value},\n";
+										   "\t\t${name} = ${value},\n";
 						Dictionary dict;
 						dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
 						dict["name"] = format_property_name(enums[i]->name);

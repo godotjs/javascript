@@ -222,43 +222,8 @@ declare module godot {
 	/** Vector used for 2D math.
 	 2-element structure that can be used to represent positions in 2D space or any other pair of numeric values. */
 	class Vector2 {
-		
-		constructor(x_or_pos?: number | Vector2, y?: number);
-
-		/** Enumerated value for the X axis. */
-		static readonly AXIS_X: 0;
-
-		/** Enumerated value for the Y axis. */
-		static readonly AXIS_Y: 1;
-
-		/** Zero vector. 
-		 * @value `Vector2( 0, 0 )` */
-		static readonly ZERO: Vector2;
-
-		/** One vector. 
-		 * @value `Vector2( 1, 1 )` */
-		static readonly ONE: Vector2;
-
-		/** Infinity vector. 
-		 * @value `Vector2( inf, inf )` */
-		static readonly INF: Vector2;
-
-		/** Left unit vector. 
-		 * @value `Vector2( -1, 0 )` */
-		static readonly LEFT: Vector2;
-
-		/** Right unit vector. 
-		 * @value `Vector2( 1, 0 )` */
-		static readonly RIGHT: Vector2;
-
-		/** Up unit vector. 
-		 * @value `Vector2( 0, -1 )` */
-		static readonly UP: Vector2;
-
-		/** Down unit vector. 
-		 * @value `Vector2( 0, 1 )` */
-		static readonly DOWN: Vector2;
-
+		constructor(x?: number, y?: number);
+		constructor(v: Vector2);
 
 		/** The vector's X component. Also accessible by using the index position ``0``. */
 		x: number;
@@ -371,22 +336,67 @@ declare module godot {
 		tangent() : Vector2;
 
 	}
+
+	namespace Vector2 {
+
+		enum Axis {
+			/** Enumerated value for the X axis. */
+			AXIS_X = 0,
+			/** Enumerated value for the Y axis. */
+			AXIS_Y = 1,
+		}
+
+		/** Enumerated value for the X axis. */
+		const AXIS_X: Axis.AXIS_X;
+
+		/** Enumerated value for the Y axis. */
+		const AXIS_Y: Axis.AXIS_Y;
+
+		/** Zero vector. 
+		 * @value `Vector2( 0, 0 )` */
+		const ZERO: Readonly<Vector2>;
+
+		/** One vector. 
+		 * @value `Vector2( 1, 1 )` */
+		const ONE: Readonly<Vector2>;
+
+		/** Infinity vector. 
+		 * @value `Vector2( inf, inf )` */
+		const INF: Readonly<Vector2>;
+
+		/** Left unit vector. 
+		 * @value `Vector2( -1, 0 )` */
+		const LEFT: Readonly<Vector2>;
+
+		/** Right unit vector. 
+		 * @value `Vector2( 1, 0 )` */
+		const RIGHT: Readonly<Vector2>;
+
+		/** Up unit vector. 
+		 * @value `Vector2( 0, -1 )` */
+		const UP: Readonly<Vector2>;
+
+		/** Down unit vector. 
+		 * @value `Vector2( 0, 1 )` */
+		const DOWN: Readonly<Vector2>;
+
+	}
 	
 	/** 2D axis-aligned bounding box.
 	 Rect2 consists of a position, a size, and several utility functions. It is typically used for fast overlap tests. */
 	class Rect2 {
-
-		constructor(x_or_pos_or_rect?: number | Vector2 | Rect2, y_or_size?: number | Vector2, w?: number, h?: number);
+		constructor(from: Rect2);
+		constructor(x?: number, y?: number, w?: number, h?: number);
+		constructor(pos: Vector2, size: Vector2);
 
 		/** Position (starting corner). */
 		position: Vector2;
 
 		/** Size from position to end. */
 		size: Vector2;
-
+		
 		/** Ending corner. */
-		end: Vector2;
-
+		// end: Vector2;
 
 		/** Returns a `Rect2` with equivalent position and area, modified so that the top-left corner is the origin and `width` and `height` are positive. */
 		abs() : Rect2;
@@ -410,7 +420,7 @@ declare module godot {
 		grow_individual(left: number, top: number, right: number,  bottom: number) : Rect2;
 
 		/** Returns a copy of the `Rect2` grown a given amount of units towards the `Margin` direction. */
-		grow_margin(margin: number, by: number) : Rect2;
+		// grow_margin(margin: number, by: number) : Rect2;
 
 		/** Returns `true` if the `Rect2` is flat or empty. */
 		has_no_area() : boolean;
@@ -433,53 +443,8 @@ declare module godot {
 	 3-element structure that can be used to represent positions in 3D space or any other pair of numeric values. */
 	class Vector3 {
 
-		constructor(x_or_v3?: number | Vector3, y?: number, z?: number)
-
-		/** Enumerated value for the X axis. Returned by `max_axis` and `min_axis`. */
-		static readonly AXIS_X: 0;
-
-		/** Enumerated value for the Y axis. Returned by `max_axis` and `min_axis`. */
-		static readonly AXIS_Y: 1;
-
-		/** Enumerated value for the Z axis. Returned by `max_axis` and `min_axis`. */
-		static readonly AXIS_Z: 2;
-
-		/** Zero vector. 
-		 * @value `Vector3( 0, 0, 0 )` */
-		static readonly ZERO: Vector3;
-
-		/** One vector. 
-		 * @value `Vector3( 1, 1, 1 )` */
-		static readonly ONE: Vector3;
-
-		/** Infinity vector. 
-		 * @value `Vector3( inf, inf, inf )` */
-		static readonly INF: Vector3;
-
-		/** Left unit vector. 
-		 * @value `Vector3( -1, 0, 0 )` */
-		static readonly LEFT: Vector3;
-
-		/** Right unit vector. 
-		 * @value `Vector3( 1, 0, 0 )` */
-		static readonly RIGHT: Vector3;
-
-		/** Up unit vector. 
-		 * @value `Vector3( 0, 1, 0 )` */
-		static readonly UP: Vector3;
-
-		/** Down unit vector. 
-		 * @value `Vector3( 0, -1, 0 )` */
-		static readonly DOWN: Vector3;
-
-		/** Forward unit vector. 
-		 * @value `Vector3( 0, 0, -1 )` */
-		static readonly FORWARD: Vector3;
-
-		/** Back unit vector. 
-		 * @value `Vector3( 0, 0, 1 )` */
-		static readonly BACK: Vector3;
-
+		constructor(v: Vector3);
+		constructor(x?: number, y?: number, z?: number);
 
 		/** The vector's X component. Also accessible by using the index position ``0``. */
 		x: number;
@@ -593,6 +558,53 @@ declare module godot {
 		to_diagonal_matrix() : Basis;
 
 	}
+
+	namespace Vector3 {
+		enum Axis {
+			AXIS_X = 0,
+			AXIS_Y = 1,
+			AXIS_Z = 2,
+		}
+		const AXIS_X: Axis.AXIS_X;
+		const AXIS_Y: Axis.AXIS_Y;
+		const AXIS_Z: Axis.AXIS_Z;
+
+		/** Zero vector. 
+		 * @value `Vector3( 0, 0, 0 )` */
+		const ZERO: Readonly<Vector3>;
+
+		/** One vector. 
+		 * @value `Vector3( 1, 1, 1 )` */
+		const ONE: Readonly<Vector3>;
+
+		/** Infinity vector. 
+		 * @value `Vector3( inf, inf, inf )` */
+		const INF: Readonly<Vector3>;
+
+		/** Left unit vector. 
+		 * @value `Vector3( -1, 0, 0 )` */
+		const LEFT: Readonly<Vector3>;
+
+		/** Right unit vector. 
+		 * @value `Vector3( 1, 0, 0 )` */
+		const RIGHT: Readonly<Vector3>;
+
+		/** Up unit vector. 
+		 * @value `Vector3( 0, 1, 0 )` */
+		const UP: Readonly<Vector3>;
+
+		/** Down unit vector. 
+		 * @value `Vector3( 0, -1, 0 )` */
+		const DOWN: Readonly<Vector3>;
+
+		/** Forward unit vector. 
+		 * @value `Vector3( 0, 0, -1 )` */
+		const FORWARD: Readonly<Vector3>;
+
+		/** Back unit vector. 
+		 * @value `Vector3( 0, 0, 1 )` */
+		const BACK: Readonly<Vector3>;
+	}
 	
 	/** 3×3 matrix datatype.
 	 3×3 matrix used for 3D rotation and scale. Contains 3 vector fields X, Y and Z as its columns, which can be interpreted as the local basis vectors of a transformation. Can also be accessed as array of 3D vectors. These vectors are orthogonal to each other, but are not necessarily normalized (due to scaling). Almost always used as an orthogonal basis for a `Transform`.
@@ -600,24 +612,12 @@ declare module godot {
 	 For such use, it is composed of a scaling and a rotation matrix, in that order (M = R.S). */
 	class Basis {
 
-		constructor(v0?: Basis|Vector3|Quat, v1?: number|Vector3, v2?:Vector3);
-		
-		/**  
-		 * @value `Basis( 1, 0, 0, 0, 1, 0, 0, 0, 1 )` */
-		static readonly IDENTITY: Basis;
-
-		/**  
-		 * @value `Basis( -1, 0, 0, 0, 1, 0, 0, 0, 1 )` */
-		static readonly FLIP_X: Basis;
-
-		/**  
-		 * @value `Basis( 1, 0, 0, 0, -1, 0, 0, 0, 1 )` */
-		static readonly FLIP_Y: Basis;
-
-		/**  
-		 * @value `Basis( 1, 0, 0, 0, 1, 0, 0, 0, -1 )` */
-		static readonly FLIP_Z: Basis;
-
+		constructor();
+		constructor(from: Basis);
+		constructor(from: Quat);
+		constructor(from: Vector3);
+		constructor(axis: Vector3, phi: number);
+		constructor(x_axis: Vector3, y_axis: Vector3, z_axis: Vector3);
 
 		/** The basis matrix's X vector. */
 		x: Vector3;
@@ -648,7 +648,7 @@ declare module godot {
 		inverse() : Basis;
 
 		/**  */
-		is_equal_approx(b: Basis, epsilon?: number) : boolean;
+		// is_equal_approx(b: Basis, epsilon?: number) : boolean;
 
 		/** Returns the orthonormalized version of the matrix (useful to call from time to time to avoid rounding error for orthogonal matrices). This performs a Gram-Schmidt orthonormalization on the basis of the matrix. */
 		orthonormalized() : Basis;
@@ -683,29 +683,30 @@ declare module godot {
 		xform_inv(v: Vector3) : Vector3;
 
 	}
+
+	namespace Basis {
+		/** @value `Basis( 1, 0, 0, 0, 1, 0, 0, 0, 1 )` */
+		const IDENTITY: Readonly<Basis>;
+
+		/** @value `Basis( -1, 0, 0, 0, 1, 0, 0, 0, 1 )` */
+		const FLIP_X: Readonly<Basis>;
+
+		/** @value `Basis( 1, 0, 0, 0, -1, 0, 0, 0, 1 )` */
+		const FLIP_Y: Readonly<Basis>;
+
+		/** @value `Basis( 1, 0, 0, 0, 1, 0, 0, 0, -1 )` */
+		const FLIP_Z: Readonly<Basis>;
+	}
 	
 	/** 3D transformation (3×4 matrix).
 	 Represents one or many transformations in 3D space such as translation, rotation, or scaling. It consists of a `basis` and an `origin`. It is similar to a 3×4 matrix. */
 	class Transform {
-		
-		constructor(v0?: Transform|Vector3|Basis, v1?:Vector3, v2?:Vector3, v3?:Vector3);
-
-		/** `Transform` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation. 
-		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )` */
-		static readonly IDENTITY: Transform;
-
-		/** `Transform` with mirroring applied perpendicular to the YZ plane. 
-		 * @value `Transform( -1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )` */
-		static readonly FLIP_X: Transform;
-
-		/** `Transform` with mirroring applied perpendicular to the XZ plane. 
-		 * @value `Transform( 1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0 )` */
-		static readonly FLIP_Y: Transform;
-
-		/** `Transform` with mirroring applied perpendicular to the XY plane. 
-		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0 )` */
-		static readonly FLIP_Z: Transform;
-
+		constructor(from: Transform);
+		constructor(from: Quat);
+		constructor(from: Basis);
+		constructor(from: Transform2D);
+		constructor(basis: Basis, origin: Vector3);
+		constructor(x_axis?: Vector3, y_axis?: Vector3, z_axis?: Vector3, origin?: Vector3);
 
 		/** The basis is a matrix containing 3 `Vector3` as its columns: X axis, Y axis, and Z axis. These vectors can be interpreted as the basis vectors of local coordinate system traveling with the object. */
 		basis: Basis;
@@ -746,31 +747,39 @@ declare module godot {
 		translated(ofs: Vector3) : Transform;
 
 		/** Transforms the given `Vector3`, `Plane`, `AABB`, or `PoolVector3Array` by this transform. */
-		xform(v: any) : any;
+		// xform(v: any) : any;
 
 		/** Inverse-transforms the given `Vector3`, `Plane`, `AABB`, or `PoolVector3Array` by this transform. */
-		xform_inv(v: any) : any;
+		// xform_inv(v: any) : any;
 
+	}
+
+	namespace Transform {
+		/** `Transform` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation. 
+		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )` */
+		const IDENTITY: Readonly<Transform>;
+
+		/** `Transform` with mirroring applied perpendicular to the YZ plane. 
+		 * @value `Transform( -1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )` */
+		const FLIP_X: Readonly<Transform>;
+
+		/** `Transform` with mirroring applied perpendicular to the XZ plane. 
+		 * @value `Transform( 1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0 )` */
+		const FLIP_Y: Readonly<Transform>;
+
+		/** `Transform` with mirroring applied perpendicular to the XY plane. 
+		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0 )` */
+		const FLIP_Z: Readonly<Transform>;
 	}
 
 	/** 2D transformation (3×2 matrix).
 	 Represents one or many transformations in 2D space such as translation, rotation, or scaling. It consists of two `x` and `y` `Vector2`s and an `origin`. It is similar to a 3×2 matrix. */
 	class Transform2D {
-		
-		constructor(t2_or_e0?: Transform2D|Vector2|Transform|number, v1?: Vector2, v2?: Vector2);
-
-		/** `Transform2D` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation. 
-		 * @value `Transform2D( 1, 0, 0, 1, 0, 0 )` */
-		static readonly IDENTITY: Transform2D;
-
-		/** `Transform2D` with mirroring applied parallel to the X axis. 
-		 * @value `Transform2D( -1, 0, 0, 1, 0, 0 )` */
-		static readonly FLIP_X: Transform2D;
-
-		/** `Transform2D` with mirroring applied parallel to the Y axis. 
-		 * @value `Transform2D( 1, 0, 0, -1, 0, 0 )` */
-		static readonly FLIP_Y: Transform2D;
-
+		constructor();
+		constructor(from: Transform2D);
+		constructor(from: Transform);
+		constructor(x_axis: Vector2, y_axis: Vector2, origin: Vector2);
+		constructor(rotation: number, position: Vector2);
 
 		/** The X axis of 2×2 basis matrix containing 2 `Vector2`s as its columns: X axis and Y axis. These vectors can be interpreted as the basis vectors of local coordinate system traveling with the object. */
 		x: Vector2;
@@ -822,11 +831,25 @@ declare module godot {
 		translated(offset: Vector2) : Transform2D;
 
 		/** Transforms the given `Vector2`, `Rect2`, or `PoolVector2Array` by this transform. */
-		xform(v: any) : any;
+		// xform(v: any) : any;
 
 		/** Inverse-transforms the given `Vector2`, `Rect2`, or `PoolVector2Array` by this transform. */
-		xform_inv(v: any) : any;
+		// xform_inv(v: any) : any;
 
+	}
+
+	namespace Transform2D {
+		/** `Transform2D` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation. 
+		 * @value `Transform2D( 1, 0, 0, 1, 0, 0 )` */
+		const IDENTITY: Readonly<Transform2D>;
+
+		/** `Transform2D` with mirroring applied parallel to the X axis. 
+		 * @value `Transform2D( -1, 0, 0, 1, 0, 0 )` */
+		const FLIP_X: Readonly<Transform2D>;
+
+		/** `Transform2D` with mirroring applied parallel to the Y axis. 
+		 * @value `Transform2D( 1, 0, 0, -1, 0, 0 )` */
+		const FLIP_Y: Readonly<Transform2D>;
 	}
 	
 	/** Color in RGBA format with some support for ARGB format.
@@ -834,593 +857,10 @@ declare module godot {
 
 	 You can also create a color from standardized color names by using `@GDScript.ColorN`. */
 	class Color {
-		
-		constructor(r_or_code_or_color: number| string | Color, g?: number, b?: number, a?: number);
-
-		/**  
-		 * @value `Color( 0.75, 0.75, 0.75, 1 )` */
-		static readonly gray: Color;
-
-		/**  
-		 * @value `Color( 0.94, 0.97, 1, 1 )` */
-		static readonly aliceblue: Color;
-
-		/**  
-		 * @value `Color( 0.98, 0.92, 0.84, 1 )` */
-		static readonly antiquewhite: Color;
-
-		/**  
-		 * @value `Color( 0, 1, 1, 1 )` */
-		static readonly aqua: Color;
-
-		/**  
-		 * @value `Color( 0.5, 1, 0.83, 1 )` */
-		static readonly aquamarine: Color;
-
-		/**  
-		 * @value `Color( 0.94, 1, 1, 1 )` */
-		static readonly azure: Color;
-
-		/**  
-		 * @value `Color( 0.96, 0.96, 0.86, 1 )` */
-		static readonly beige: Color;
-
-		/**  
-		 * @value `Color( 1, 0.89, 0.77, 1 )` */
-		static readonly bisque: Color;
-
-		/**  
-		 * @value `Color( 0, 0, 0, 1 )` */
-		static readonly black: Color;
-
-		/**  
-		 * @value `Color( 1, 0.92, 0.8, 1 )` */
-		static readonly blanchedalmond: Color;
-
-		/**  
-		 * @value `Color( 0, 0, 1, 1 )` */
-		static readonly blue: Color;
-
-		/**  
-		 * @value `Color( 0.54, 0.17, 0.89, 1 )` */
-		static readonly blueviolet: Color;
-
-		/**  
-		 * @value `Color( 0.65, 0.16, 0.16, 1 )` */
-		static readonly brown: Color;
-
-		/**  
-		 * @value `Color( 0.87, 0.72, 0.53, 1 )` */
-		static readonly burlywood: Color;
-
-		/**  
-		 * @value `Color( 0.37, 0.62, 0.63, 1 )` */
-		static readonly cadetblue: Color;
-
-		/**  
-		 * @value `Color( 0.5, 1, 0, 1 )` */
-		static readonly chartreuse: Color;
-
-		/**  
-		 * @value `Color( 0.82, 0.41, 0.12, 1 )` */
-		static readonly chocolate: Color;
-
-		/**  
-		 * @value `Color( 1, 0.5, 0.31, 1 )` */
-		static readonly coral: Color;
-
-		/**  
-		 * @value `Color( 0.39, 0.58, 0.93, 1 )` */
-		static readonly cornflower: Color;
-
-		/**  
-		 * @value `Color( 1, 0.97, 0.86, 1 )` */
-		static readonly cornsilk: Color;
-
-		/**  
-		 * @value `Color( 0.86, 0.08, 0.24, 1 )` */
-		static readonly crimson: Color;
-
-		/**  
-		 * @value `Color( 0, 1, 1, 1 )` */
-		static readonly cyan: Color;
-
-		/**  
-		 * @value `Color( 0, 0, 0.55, 1 )` */
-		static readonly darkblue: Color;
-
-		/**  
-		 * @value `Color( 0, 0.55, 0.55, 1 )` */
-		static readonly darkcyan: Color;
-
-		/**  
-		 * @value `Color( 0.72, 0.53, 0.04, 1 )` */
-		static readonly darkgoldenrod: Color;
-
-		/**  
-		 * @value `Color( 0.66, 0.66, 0.66, 1 )` */
-		static readonly darkgray: Color;
-
-		/**  
-		 * @value `Color( 0, 0.39, 0, 1 )` */
-		static readonly darkgreen: Color;
-
-		/**  
-		 * @value `Color( 0.74, 0.72, 0.42, 1 )` */
-		static readonly darkkhaki: Color;
-
-		/**  
-		 * @value `Color( 0.55, 0, 0.55, 1 )` */
-		static readonly darkmagenta: Color;
-
-		/**  
-		 * @value `Color( 0.33, 0.42, 0.18, 1 )` */
-		static readonly darkolivegreen: Color;
-
-		/**  
-		 * @value `Color( 1, 0.55, 0, 1 )` */
-		static readonly darkorange: Color;
-
-		/**  
-		 * @value `Color( 0.6, 0.2, 0.8, 1 )` */
-		static readonly darkorchid: Color;
-
-		/**  
-		 * @value `Color( 0.55, 0, 0, 1 )` */
-		static readonly darkred: Color;
-
-		/**  
-		 * @value `Color( 0.91, 0.59, 0.48, 1 )` */
-		static readonly darksalmon: Color;
-
-		/**  
-		 * @value `Color( 0.56, 0.74, 0.56, 1 )` */
-		static readonly darkseagreen: Color;
-
-		/**  
-		 * @value `Color( 0.28, 0.24, 0.55, 1 )` */
-		static readonly darkslateblue: Color;
-
-		/**  
-		 * @value `Color( 0.18, 0.31, 0.31, 1 )` */
-		static readonly darkslategray: Color;
-
-		/**  
-		 * @value `Color( 0, 0.81, 0.82, 1 )` */
-		static readonly darkturquoise: Color;
-
-		/**  
-		 * @value `Color( 0.58, 0, 0.83, 1 )` */
-		static readonly darkviolet: Color;
-
-		/**  
-		 * @value `Color( 1, 0.08, 0.58, 1 )` */
-		static readonly deeppink: Color;
-
-		/**  
-		 * @value `Color( 0, 0.75, 1, 1 )` */
-		static readonly deepskyblue: Color;
-
-		/**  
-		 * @value `Color( 0.41, 0.41, 0.41, 1 )` */
-		static readonly dimgray: Color;
-
-		/**  
-		 * @value `Color( 0.12, 0.56, 1, 1 )` */
-		static readonly dodgerblue: Color;
-
-		/**  
-		 * @value `Color( 0.7, 0.13, 0.13, 1 )` */
-		static readonly firebrick: Color;
-
-		/**  
-		 * @value `Color( 1, 0.98, 0.94, 1 )` */
-		static readonly floralwhite: Color;
-
-		/**  
-		 * @value `Color( 0.13, 0.55, 0.13, 1 )` */
-		static readonly forestgreen: Color;
-
-		/**  
-		 * @value `Color( 1, 0, 1, 1 )` */
-		static readonly fuchsia: Color;
-
-		/**  
-		 * @value `Color( 0.86, 0.86, 0.86, 1 )` */
-		static readonly gainsboro: Color;
-
-		/**  
-		 * @value `Color( 0.97, 0.97, 1, 1 )` */
-		static readonly ghostwhite: Color;
-
-		/**  
-		 * @value `Color( 1, 0.84, 0, 1 )` */
-		static readonly gold: Color;
-
-		/**  
-		 * @value `Color( 0.85, 0.65, 0.13, 1 )` */
-		static readonly goldenrod: Color;
-
-		/**  
-		 * @value `Color( 0, 1, 0, 1 )` */
-		static readonly green: Color;
-
-		/**  
-		 * @value `Color( 0.68, 1, 0.18, 1 )` */
-		static readonly greenyellow: Color;
-
-		/**  
-		 * @value `Color( 0.94, 1, 0.94, 1 )` */
-		static readonly honeydew: Color;
-
-		/**  
-		 * @value `Color( 1, 0.41, 0.71, 1 )` */
-		static readonly hotpink: Color;
-
-		/**  
-		 * @value `Color( 0.8, 0.36, 0.36, 1 )` */
-		static readonly indianred: Color;
-
-		/**  
-		 * @value `Color( 0.29, 0, 0.51, 1 )` */
-		static readonly indigo: Color;
-
-		/**  
-		 * @value `Color( 1, 1, 0.94, 1 )` */
-		static readonly ivory: Color;
-
-		/**  
-		 * @value `Color( 0.94, 0.9, 0.55, 1 )` */
-		static readonly khaki: Color;
-
-		/**  
-		 * @value `Color( 0.9, 0.9, 0.98, 1 )` */
-		static readonly lavender: Color;
-
-		/**  
-		 * @value `Color( 1, 0.94, 0.96, 1 )` */
-		static readonly lavenderblush: Color;
-
-		/**  
-		 * @value `Color( 0.49, 0.99, 0, 1 )` */
-		static readonly lawngreen: Color;
-
-		/**  
-		 * @value `Color( 1, 0.98, 0.8, 1 )` */
-		static readonly lemonchiffon: Color;
-
-		/**  
-		 * @value `Color( 0.68, 0.85, 0.9, 1 )` */
-		static readonly lightblue: Color;
-
-		/**  
-		 * @value `Color( 0.94, 0.5, 0.5, 1 )` */
-		static readonly lightcoral: Color;
-
-		/**  
-		 * @value `Color( 0.88, 1, 1, 1 )` */
-		static readonly lightcyan: Color;
-
-		/**  
-		 * @value `Color( 0.98, 0.98, 0.82, 1 )` */
-		static readonly lightgoldenrod: Color;
-
-		/**  
-		 * @value `Color( 0.83, 0.83, 0.83, 1 )` */
-		static readonly lightgray: Color;
-
-		/**  
-		 * @value `Color( 0.56, 0.93, 0.56, 1 )` */
-		static readonly lightgreen: Color;
-
-		/**  
-		 * @value `Color( 1, 0.71, 0.76, 1 )` */
-		static readonly lightpink: Color;
-
-		/**  
-		 * @value `Color( 1, 0.63, 0.48, 1 )` */
-		static readonly lightsalmon: Color;
-
-		/**  
-		 * @value `Color( 0.13, 0.7, 0.67, 1 )` */
-		static readonly lightseagreen: Color;
-
-		/**  
-		 * @value `Color( 0.53, 0.81, 0.98, 1 )` */
-		static readonly lightskyblue: Color;
-
-		/**  
-		 * @value `Color( 0.47, 0.53, 0.6, 1 )` */
-		static readonly lightslategray: Color;
-
-		/**  
-		 * @value `Color( 0.69, 0.77, 0.87, 1 )` */
-		static readonly lightsteelblue: Color;
-
-		/**  
-		 * @value `Color( 1, 1, 0.88, 1 )` */
-		static readonly lightyellow: Color;
-
-		/**  
-		 * @value `Color( 0, 1, 0, 1 )` */
-		static readonly lime: Color;
-
-		/**  
-		 * @value `Color( 0.2, 0.8, 0.2, 1 )` */
-		static readonly limegreen: Color;
-
-		/**  
-		 * @value `Color( 0.98, 0.94, 0.9, 1 )` */
-		static readonly linen: Color;
-
-		/**  
-		 * @value `Color( 1, 0, 1, 1 )` */
-		static readonly magenta: Color;
-
-		/**  
-		 * @value `Color( 0.69, 0.19, 0.38, 1 )` */
-		static readonly maroon: Color;
-
-		/**  
-		 * @value `Color( 0.4, 0.8, 0.67, 1 )` */
-		static readonly mediumaquamarine: Color;
-
-		/**  
-		 * @value `Color( 0, 0, 0.8, 1 )` */
-		static readonly mediumblue: Color;
-
-		/**  
-		 * @value `Color( 0.73, 0.33, 0.83, 1 )` */
-		static readonly mediumorchid: Color;
-
-		/**  
-		 * @value `Color( 0.58, 0.44, 0.86, 1 )` */
-		static readonly mediumpurple: Color;
-
-		/**  
-		 * @value `Color( 0.24, 0.7, 0.44, 1 )` */
-		static readonly mediumseagreen: Color;
-
-		/**  
-		 * @value `Color( 0.48, 0.41, 0.93, 1 )` */
-		static readonly mediumslateblue: Color;
-
-		/**  
-		 * @value `Color( 0, 0.98, 0.6, 1 )` */
-		static readonly mediumspringgreen: Color;
-
-		/**  
-		 * @value `Color( 0.28, 0.82, 0.8, 1 )` */
-		static readonly mediumturquoise: Color;
-
-		/**  
-		 * @value `Color( 0.78, 0.08, 0.52, 1 )` */
-		static readonly mediumvioletred: Color;
-
-		/**  
-		 * @value `Color( 0.1, 0.1, 0.44, 1 )` */
-		static readonly midnightblue: Color;
-
-		/**  
-		 * @value `Color( 0.96, 1, 0.98, 1 )` */
-		static readonly mintcream: Color;
-
-		/**  
-		 * @value `Color( 1, 0.89, 0.88, 1 )` */
-		static readonly mistyrose: Color;
-
-		/**  
-		 * @value `Color( 1, 0.89, 0.71, 1 )` */
-		static readonly moccasin: Color;
-
-		/**  
-		 * @value `Color( 1, 0.87, 0.68, 1 )` */
-		static readonly navajowhite: Color;
-
-		/**  
-		 * @value `Color( 0, 0, 0.5, 1 )` */
-		static readonly navyblue: Color;
-
-		/**  
-		 * @value `Color( 0.99, 0.96, 0.9, 1 )` */
-		static readonly oldlace: Color;
-
-		/**  
-		 * @value `Color( 0.5, 0.5, 0, 1 )` */
-		static readonly olive: Color;
-
-		/**  
-		 * @value `Color( 0.42, 0.56, 0.14, 1 )` */
-		static readonly olivedrab: Color;
-
-		/**  
-		 * @value `Color( 1, 0.65, 0, 1 )` */
-		static readonly orange: Color;
-
-		/**  
-		 * @value `Color( 1, 0.27, 0, 1 )` */
-		static readonly orangered: Color;
-
-		/**  
-		 * @value `Color( 0.85, 0.44, 0.84, 1 )` */
-		static readonly orchid: Color;
-
-		/**  
-		 * @value `Color( 0.93, 0.91, 0.67, 1 )` */
-		static readonly palegoldenrod: Color;
-
-		/**  
-		 * @value `Color( 0.6, 0.98, 0.6, 1 )` */
-		static readonly palegreen: Color;
-
-		/**  
-		 * @value `Color( 0.69, 0.93, 0.93, 1 )` */
-		static readonly paleturquoise: Color;
-
-		/**  
-		 * @value `Color( 0.86, 0.44, 0.58, 1 )` */
-		static readonly palevioletred: Color;
-
-		/**  
-		 * @value `Color( 1, 0.94, 0.84, 1 )` */
-		static readonly papayawhip: Color;
-
-		/**  
-		 * @value `Color( 1, 0.85, 0.73, 1 )` */
-		static readonly peachpuff: Color;
-
-		/**  
-		 * @value `Color( 0.8, 0.52, 0.25, 1 )` */
-		static readonly peru: Color;
-
-		/**  
-		 * @value `Color( 1, 0.75, 0.8, 1 )` */
-		static readonly pink: Color;
-
-		/**  
-		 * @value `Color( 0.87, 0.63, 0.87, 1 )` */
-		static readonly plum: Color;
-
-		/**  
-		 * @value `Color( 0.69, 0.88, 0.9, 1 )` */
-		static readonly powderblue: Color;
-
-		/**  
-		 * @value `Color( 0.63, 0.13, 0.94, 1 )` */
-		static readonly purple: Color;
-
-		/**  
-		 * @value `Color( 0.4, 0.2, 0.6, 1 )` */
-		static readonly rebeccapurple: Color;
-
-		/**  
-		 * @value `Color( 1, 0, 0, 1 )` */
-		static readonly red: Color;
-
-		/**  
-		 * @value `Color( 0.74, 0.56, 0.56, 1 )` */
-		static readonly rosybrown: Color;
-
-		/**  
-		 * @value `Color( 0.25, 0.41, 0.88, 1 )` */
-		static readonly royalblue: Color;
-
-		/**  
-		 * @value `Color( 0.55, 0.27, 0.07, 1 )` */
-		static readonly saddlebrown: Color;
-
-		/**  
-		 * @value `Color( 0.98, 0.5, 0.45, 1 )` */
-		static readonly salmon: Color;
-
-		/**  
-		 * @value `Color( 0.96, 0.64, 0.38, 1 )` */
-		static readonly sandybrown: Color;
-
-		/**  
-		 * @value `Color( 0.18, 0.55, 0.34, 1 )` */
-		static readonly seagreen: Color;
-
-		/**  
-		 * @value `Color( 1, 0.96, 0.93, 1 )` */
-		static readonly seashell: Color;
-
-		/**  
-		 * @value `Color( 0.63, 0.32, 0.18, 1 )` */
-		static readonly sienna: Color;
-
-		/**  
-		 * @value `Color( 0.75, 0.75, 0.75, 1 )` */
-		static readonly silver: Color;
-
-		/**  
-		 * @value `Color( 0.53, 0.81, 0.92, 1 )` */
-		static readonly skyblue: Color;
-
-		/**  
-		 * @value `Color( 0.42, 0.35, 0.8, 1 )` */
-		static readonly slateblue: Color;
-
-		/**  
-		 * @value `Color( 0.44, 0.5, 0.56, 1 )` */
-		static readonly slategray: Color;
-
-		/**  
-		 * @value `Color( 1, 0.98, 0.98, 1 )` */
-		static readonly snow: Color;
-
-		/**  
-		 * @value `Color( 0, 1, 0.5, 1 )` */
-		static readonly springgreen: Color;
-
-		/**  
-		 * @value `Color( 0.27, 0.51, 0.71, 1 )` */
-		static readonly steelblue: Color;
-
-		/**  
-		 * @value `Color( 0.82, 0.71, 0.55, 1 )` */
-		static readonly tan: Color;
-
-		/**  
-		 * @value `Color( 0, 0.5, 0.5, 1 )` */
-		static readonly teal: Color;
-
-		/**  
-		 * @value `Color( 0.85, 0.75, 0.85, 1 )` */
-		static readonly thistle: Color;
-
-		/**  
-		 * @value `Color( 1, 0.39, 0.28, 1 )` */
-		static readonly tomato: Color;
-
-		/**  
-		 * @value `Color( 1, 1, 1, 0 )` */
-		static readonly transparent: Color;
-
-		/**  
-		 * @value `Color( 0.25, 0.88, 0.82, 1 )` */
-		static readonly turquoise: Color;
-
-		/**  
-		 * @value `Color( 0.93, 0.51, 0.93, 1 )` */
-		static readonly violet: Color;
-
-		/**  
-		 * @value `Color( 0.5, 0.5, 0.5, 1 )` */
-		static readonly webgray: Color;
-
-		/**  
-		 * @value `Color( 0, 0.5, 0, 1 )` */
-		static readonly webgreen: Color;
-
-		/**  
-		 * @value `Color( 0.5, 0, 0, 1 )` */
-		static readonly webmaroon: Color;
-
-		/**  
-		 * @value `Color( 0.5, 0, 0.5, 1 )` */
-		static readonly webpurple: Color;
-
-		/**  
-		 * @value `Color( 0.96, 0.87, 0.7, 1 )` */
-		static readonly wheat: Color;
-
-		/**  
-		 * @value `Color( 1, 1, 1, 1 )` */
-		static readonly white: Color;
-
-		/**  
-		 * @value `Color( 0.96, 0.96, 0.96, 1 )` */
-		static readonly whitesmoke: Color;
-
-		/**  
-		 * @value `Color( 1, 1, 0, 1 )` */
-		static readonly yellow: Color;
-
-		/**  
-		 * @value `Color( 0.6, 0.8, 0.2, 1 )` */
-		static readonly yellowgreen: Color;
-
+		constructor(from: Color);
+		constructor(from: string);
+		constructor(from: number);
+		constructor(r?: number, g?: number, b?: number, a?: number);
 
 		/** Red value (range 0 to 1). */
 		r: number;
@@ -1435,25 +875,25 @@ declare module godot {
 		a: number;
 
 		/** HSV hue value (range 0 to 1). */
-		h: number;
+		// h: number;
 
 		/** HSV saturation value (range 0 to 1). */
-		s: number;
+		// s: number;
 
 		/** HSV value (range 0 to 1). */
-		v: number;
+		// v: number;
 
 		/** Red value (range 0 to 255). */
-		r8: number;
+		// r8: number;
 
 		/** Green value (range 0 to 255). */
-		g8: number;
+		// g8: number;
 
 		/** Blue value (range 0 to 255). */
-		b8: number;
+		// b8: number;
 
 		/** Alpha value (range 0 to 255). */
-		a8: number;
+		// a8: number;
 
 
 		/** Returns a new color resulting from blending this color over another. If the color is opaque, the result is also opaque. The second color may have a range of alpha values.
@@ -1601,37 +1041,608 @@ declare module godot {
 		to_rgba64() : number;
 
 	}
+
+	namespace Color {
+		/**  
+		 * @value `Color( 0.75, 0.75, 0.75, 1 )` */
+		const gray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.94, 0.97, 1, 1 )` */
+		const aliceblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.98, 0.92, 0.84, 1 )` */
+		const antiquewhite: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 1, 1, 1 )` */
+		const aqua: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.5, 1, 0.83, 1 )` */
+		const aquamarine: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.94, 1, 1, 1 )` */
+		const azure: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.96, 0.96, 0.86, 1 )` */
+		const beige: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.89, 0.77, 1 )` */
+		const bisque: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0, 0, 1 )` */
+		const black: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.92, 0.8, 1 )` */
+		const blanchedalmond: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0, 1, 1 )` */
+		const blue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.54, 0.17, 0.89, 1 )` */
+		const blueviolet: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.65, 0.16, 0.16, 1 )` */
+		const brown: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.87, 0.72, 0.53, 1 )` */
+		const burlywood: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.37, 0.62, 0.63, 1 )` */
+		const cadetblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.5, 1, 0, 1 )` */
+		const chartreuse: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.82, 0.41, 0.12, 1 )` */
+		const chocolate: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.5, 0.31, 1 )` */
+		const coral: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.39, 0.58, 0.93, 1 )` */
+		const cornflower: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.97, 0.86, 1 )` */
+		const cornsilk: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.86, 0.08, 0.24, 1 )` */
+		const crimson: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 1, 1, 1 )` */
+		const cyan: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0, 0.55, 1 )` */
+		const darkblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.55, 0.55, 1 )` */
+		const darkcyan: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.72, 0.53, 0.04, 1 )` */
+		const darkgoldenrod: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.66, 0.66, 0.66, 1 )` */
+		const darkgray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.39, 0, 1 )` */
+		const darkgreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.74, 0.72, 0.42, 1 )` */
+		const darkkhaki: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.55, 0, 0.55, 1 )` */
+		const darkmagenta: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.33, 0.42, 0.18, 1 )` */
+		const darkolivegreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.55, 0, 1 )` */
+		const darkorange: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.6, 0.2, 0.8, 1 )` */
+		const darkorchid: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.55, 0, 0, 1 )` */
+		const darkred: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.91, 0.59, 0.48, 1 )` */
+		const darksalmon: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.56, 0.74, 0.56, 1 )` */
+		const darkseagreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.28, 0.24, 0.55, 1 )` */
+		const darkslateblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.18, 0.31, 0.31, 1 )` */
+		const darkslategray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.81, 0.82, 1 )` */
+		const darkturquoise: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.58, 0, 0.83, 1 )` */
+		const darkviolet: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.08, 0.58, 1 )` */
+		const deeppink: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.75, 1, 1 )` */
+		const deepskyblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.41, 0.41, 0.41, 1 )` */
+		const dimgray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.12, 0.56, 1, 1 )` */
+		const dodgerblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.7, 0.13, 0.13, 1 )` */
+		const firebrick: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.98, 0.94, 1 )` */
+		const floralwhite: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.13, 0.55, 0.13, 1 )` */
+		const forestgreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0, 1, 1 )` */
+		const fuchsia: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.86, 0.86, 0.86, 1 )` */
+		const gainsboro: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.97, 0.97, 1, 1 )` */
+		const ghostwhite: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.84, 0, 1 )` */
+		const gold: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.85, 0.65, 0.13, 1 )` */
+		const goldenrod: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 1, 0, 1 )` */
+		const green: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.68, 1, 0.18, 1 )` */
+		const greenyellow: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.94, 1, 0.94, 1 )` */
+		const honeydew: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.41, 0.71, 1 )` */
+		const hotpink: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.8, 0.36, 0.36, 1 )` */
+		const indianred: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.29, 0, 0.51, 1 )` */
+		const indigo: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 1, 0.94, 1 )` */
+		const ivory: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.94, 0.9, 0.55, 1 )` */
+		const khaki: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.9, 0.9, 0.98, 1 )` */
+		const lavender: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.94, 0.96, 1 )` */
+		const lavenderblush: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.49, 0.99, 0, 1 )` */
+		const lawngreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.98, 0.8, 1 )` */
+		const lemonchiffon: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.68, 0.85, 0.9, 1 )` */
+		const lightblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.94, 0.5, 0.5, 1 )` */
+		const lightcoral: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.88, 1, 1, 1 )` */
+		const lightcyan: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.98, 0.98, 0.82, 1 )` */
+		const lightgoldenrod: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.83, 0.83, 0.83, 1 )` */
+		const lightgray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.56, 0.93, 0.56, 1 )` */
+		const lightgreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.71, 0.76, 1 )` */
+		const lightpink: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.63, 0.48, 1 )` */
+		const lightsalmon: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.13, 0.7, 0.67, 1 )` */
+		const lightseagreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.53, 0.81, 0.98, 1 )` */
+		const lightskyblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.47, 0.53, 0.6, 1 )` */
+		const lightslategray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.69, 0.77, 0.87, 1 )` */
+		const lightsteelblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 1, 0.88, 1 )` */
+		const lightyellow: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 1, 0, 1 )` */
+		const lime: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.2, 0.8, 0.2, 1 )` */
+		const limegreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.98, 0.94, 0.9, 1 )` */
+		const linen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0, 1, 1 )` */
+		const magenta: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.69, 0.19, 0.38, 1 )` */
+		const maroon: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.4, 0.8, 0.67, 1 )` */
+		const mediumaquamarine: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0, 0.8, 1 )` */
+		const mediumblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.73, 0.33, 0.83, 1 )` */
+		const mediumorchid: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.58, 0.44, 0.86, 1 )` */
+		const mediumpurple: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.24, 0.7, 0.44, 1 )` */
+		const mediumseagreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.48, 0.41, 0.93, 1 )` */
+		const mediumslateblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.98, 0.6, 1 )` */
+		const mediumspringgreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.28, 0.82, 0.8, 1 )` */
+		const mediumturquoise: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.78, 0.08, 0.52, 1 )` */
+		const mediumvioletred: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.1, 0.1, 0.44, 1 )` */
+		const midnightblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.96, 1, 0.98, 1 )` */
+		const mintcream: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.89, 0.88, 1 )` */
+		const mistyrose: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.89, 0.71, 1 )` */
+		const moccasin: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.87, 0.68, 1 )` */
+		const navajowhite: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0, 0.5, 1 )` */
+		const navyblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.99, 0.96, 0.9, 1 )` */
+		const oldlace: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.5, 0.5, 0, 1 )` */
+		const olive: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.42, 0.56, 0.14, 1 )` */
+		const olivedrab: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.65, 0, 1 )` */
+		const orange: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.27, 0, 1 )` */
+		const orangered: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.85, 0.44, 0.84, 1 )` */
+		const orchid: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.93, 0.91, 0.67, 1 )` */
+		const palegoldenrod: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.6, 0.98, 0.6, 1 )` */
+		const palegreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.69, 0.93, 0.93, 1 )` */
+		const paleturquoise: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.86, 0.44, 0.58, 1 )` */
+		const palevioletred: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.94, 0.84, 1 )` */
+		const papayawhip: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.85, 0.73, 1 )` */
+		const peachpuff: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.8, 0.52, 0.25, 1 )` */
+		const peru: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.75, 0.8, 1 )` */
+		const pink: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.87, 0.63, 0.87, 1 )` */
+		const plum: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.69, 0.88, 0.9, 1 )` */
+		const powderblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.63, 0.13, 0.94, 1 )` */
+		const purple: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.4, 0.2, 0.6, 1 )` */
+		const rebeccapurple: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0, 0, 1 )` */
+		const red: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.74, 0.56, 0.56, 1 )` */
+		const rosybrown: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.25, 0.41, 0.88, 1 )` */
+		const royalblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.55, 0.27, 0.07, 1 )` */
+		const saddlebrown: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.98, 0.5, 0.45, 1 )` */
+		const salmon: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.96, 0.64, 0.38, 1 )` */
+		const sandybrown: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.18, 0.55, 0.34, 1 )` */
+		const seagreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.96, 0.93, 1 )` */
+		const seashell: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.63, 0.32, 0.18, 1 )` */
+		const sienna: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.75, 0.75, 0.75, 1 )` */
+		const silver: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.53, 0.81, 0.92, 1 )` */
+		const skyblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.42, 0.35, 0.8, 1 )` */
+		const slateblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.44, 0.5, 0.56, 1 )` */
+		const slategray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.98, 0.98, 1 )` */
+		const snow: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 1, 0.5, 1 )` */
+		const springgreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.27, 0.51, 0.71, 1 )` */
+		const steelblue: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.82, 0.71, 0.55, 1 )` */
+		const tan: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.5, 0.5, 1 )` */
+		const teal: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.85, 0.75, 0.85, 1 )` */
+		const thistle: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 0.39, 0.28, 1 )` */
+		const tomato: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 1, 1, 0 )` */
+		const transparent: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.25, 0.88, 0.82, 1 )` */
+		const turquoise: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.93, 0.51, 0.93, 1 )` */
+		const violet: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.5, 0.5, 0.5, 1 )` */
+		const webgray: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0, 0.5, 0, 1 )` */
+		const webgreen: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.5, 0, 0, 1 )` */
+		const webmaroon: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.5, 0, 0.5, 1 )` */
+		const webpurple: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.96, 0.87, 0.7, 1 )` */
+		const wheat: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 1, 1, 1 )` */
+		const white: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.96, 0.96, 0.96, 1 )` */
+		const whitesmoke: Readonly<Color>
+
+		/**  
+		 * @value `Color( 1, 1, 0, 1 )` */
+		const yellow: Readonly<Color>
+
+		/**  
+		 * @value `Color( 0.6, 0.8, 0.2, 1 )` */
+		const yellowgreen: Readonly<Color>
+	}
 	
 	/** Handle for a `Resource`'s unique ID.
 	 The RID type is used to access the unique integer ID of a resource. They are opaque, which means they do not grant access to the associated resource by themselves. They are used by and with the low-level Server classes such as `VisualServer`. */
 	class RID {
-
-
-
-
 		/** Returns the ID of the referenced resource. */
 		get_id() : number;
-
 	}
 	
 	/** Plane in hessian form.
 	 Plane represents a normalized plane equation. Basically, "normal" is the normal of the plane (a,b,c normalized), and "d" is the distance from the origin to the plane (in the direction of "normal"). "Over" or "Above" the plane is considered the side of the plane towards where the normal is pointing. */
 	class Plane {
 
-		constructor(x_or_plane?: number| Plane | Vector3, y?: number | Vector3, z?: number | Vector3, d?: number);
-		
-		/**  
-		 * @value `Plane( 1, 0, 0, 0 )` */
-		static readonly PLANE_YZ: Plane;
-
-		/**  
-		 * @value `Plane( 0, 1, 0, 0 )` */
-		static readonly PLANE_XZ: Plane;
-
-		/**  
-		 * @value `Plane( 0, 0, 1, 0 )` */
-		static readonly PLANE_XY: Plane;
-
+		constructor(from: Plane);
+		constructor(v1: Vector3, d: number);
+		constructor(v1: Vector3, v2: Vector3, v3: Vector3);
+		constructor(a?: number, b?: number, c?: number, d?: number);
 
 		/**  */
 		normal: Vector3;
@@ -1662,13 +1673,13 @@ declare module godot {
 		has_point(point: Vector3, epsilon?: number) : boolean;
 
 		/** Returns the intersection point of the three planes `b`, `c` and this plane. If no intersection is found, `null` is returned. */
-		intersect_3(b: Plane, c: Plane) : Vector3;
+		// intersect_3(b: Plane, c: Plane) : Vector3;
 
 		/** Returns the intersection point of a ray consisting of the position `from` and the direction normal `dir` with this plane. If no intersection is found, `null` is returned. */
-		intersects_ray(p_from: Vector3, dir: Vector3) : Vector3;
+		// intersects_ray(p_from: Vector3, dir: Vector3) : Vector3;
 
 		/** Returns the intersection point of a segment from position `begin` to position `end` with this plane. If no intersection is found, `null` is returned. */
-		intersects_segment(begin: Vector3, end: Vector3) : Vector3;
+		// intersects_segment(begin: Vector3, end: Vector3) : Vector3;
 
 		/**  */
 		is_equal_approx(plane: Plane) : boolean;
@@ -1683,6 +1694,17 @@ declare module godot {
 		project(point: Vector3) : Vector3;
 
 	}
+
+	namespace Plane {
+		/** @value `Plane( 1, 0, 0, 0 )` */
+		const PLANE_YZ: Plane;
+
+		/** @value `Plane( 0, 1, 0, 0 )` */
+		const PLANE_XZ: Plane;
+
+		/** @value `Plane( 0, 0, 1, 0 )` */
+		const PLANE_XY: Plane;
+	}
 	
 	/** Quaternion.
 	 A unit quaternion used for representing 3D rotations.
@@ -1691,13 +1713,11 @@ declare module godot {
 
 	 Quaternions need to be (re)normalized. */
 	class Quat {
-
-		constructor(x_or_quat_or_dir_basis?: number|Quat|Vector3|Basis, y_or_w?: number, z?: number, w?: number);
-
-		/**  
-		 * @value `Quat( 0, 0, 0, 1 )` */
-		static readonly IDENTITY: Quat;
-
+		constructor(from: Quat);
+		constructor(from: Basis);
+		constructor(euler: Vector3);
+		constructor(axis: Vector3, angle: number);
+		constructor(x?: number, y?: number, z?: number, w?: number);
 
 		/** X component of the quaternion. */
 		x: number;
@@ -1755,13 +1775,18 @@ declare module godot {
 		xform(v: Vector3) : Vector3;
 
 	}
+
+	namespace Quat {
+		/** @value `Quat( 0, 0, 0, 1 )` */
+		const IDENTITY: Readonly<Quat>;
+	}
 	
 	/** Axis-Aligned Bounding Box.
 	 AABB consists of a position, a size, and several utility functions. It is typically used for fast overlap tests. */
 	class AABB {
-		
-		constructor(position_or_aabb?: Vector3 | AABB, size?: Vector3);
 
+		constructor(from: AABB);
+		constructor(position?: Vector3, size?: Vector3);
 
 		/** Beginning corner. */
 		position: Vector3;
@@ -1770,7 +1795,7 @@ declare module godot {
 		size: Vector3;
 
 		/** Ending corner. */
-		end: Vector3;
+		// end: Vector3;
 
 
 		/** Returns `true` if this `AABB` completely encloses another one. */
@@ -1846,6 +1871,7 @@ declare module godot {
 	class PoolByteArray {
 		
 		constructor(source?: number[]);
+		constructor(from: PoolByteArray);
 		
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(byte: number) : void;
@@ -1908,6 +1934,8 @@ declare module godot {
 
 
 		constructor(source?: Color[]);
+		constructor(from: PoolColorArray);
+		
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(color: Color) : void;
@@ -1954,6 +1982,7 @@ declare module godot {
 
 
 		constructor(source?: number[]);
+		constructor(from: PoolIntArray);
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(integer: number) : void;
@@ -1997,6 +2026,8 @@ declare module godot {
 	class PoolRealArray {
 
 		constructor(source?: number[]);
+		constructor(from: PoolRealArray);
+
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(value: number) : void;
@@ -2041,6 +2072,7 @@ declare module godot {
 
 
 		constructor(source?: string[]);
+		constructor(from: PoolStringArray);
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(p_string: string) : void;
@@ -2086,8 +2118,8 @@ declare module godot {
 	 **Note:** This type is passed by value and not by reference. */
 	class PoolVector2Array {
 
-
 		constructor(source?: Vector2[]);
+		constructor(from: PoolVector2Array);
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(vector2: Vector2) : void;
@@ -2130,8 +2162,8 @@ declare module godot {
 	 **Note:** This type is passed by value and not by reference. */
 	class PoolVector3Array {
 
-
 		constructor(source?: Vector3[]);
+		constructor(from: PoolVector3Array);
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(vector3: Vector3) : void;
