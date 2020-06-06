@@ -12,7 +12,8 @@ void QuickJSWorker::thread_main(void *p_this) {
 
 	if (err == OK) {
 		String err_text;
-		err = self->safe_eval_text(text, self->entry_script, err_text);
+		ECMAScriptGCHandler eval_ret;
+		err = self->safe_eval_text(text, self->entry_script, err_text, eval_ret);
 		if (err == OK) {
 			JSValue onmessage_callback = JS_GetPropertyStr(self->ctx, self->global_object, "onmessage");
 			bool onmessage_valid = JS_IsFunction(self->ctx, onmessage_callback);
@@ -72,7 +73,8 @@ JSValue QuickJSWorker::global_import_scripts(JSContext *ctx, JSValue this_val, i
 			String path = js_to_string(ctx, argv[0]);
 			String source = FileAccess::get_file_as_string(path, &err);
 			QuickJSBinder *bind = get_context_binder(ctx);
-			bind->eval_string(source, path);
+			ECMAScriptGCHandler eval_ret;
+			bind->eval_string(source, path, eval_ret);
 		}
 	}
 	return JS_UNDEFINED;

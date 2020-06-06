@@ -13,6 +13,7 @@ class ECMAScriptPlugin : public EditorPlugin {
 	};
 
 	EditorFileDialog *declaration_file_dialog;
+	const Dictionary *modified_api;
 
 protected:
 	static String BUILTIN_DECLEARATION_TEXT;

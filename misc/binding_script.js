@@ -128,7 +128,6 @@
 	});
 	
 	const godot_object_is_connected = godot.Object.prototype.is_connected;
-	
 	Object.defineProperty(godot.Object.prototype, 'is_connected', {
 		// Object.prototype.is_connected(signal_name, target, method)
 		value: function godot_is_connected_override(...args) {
@@ -188,5 +187,41 @@
 		writable: false,
 		configurable: true
 	});
-	
+
+
+	const godot_node_get_node = godot.Node.prototype.get_node;
+	Object.defineProperty(godot.Node.prototype, 'get_node', {
+		value: function(arg) {
+			if (typeof arg === 'string') {
+				return godot_node_get_node.call(this, arg);
+			} else if (typeof arg === 'function') {
+				for (let n of this.get_children()) {
+					if (n instanceof arg) {
+						return n;
+					}
+				}
+			}
+			return null;
+		},
+		writable: false,
+		configurable: true
+	});
+
+	return godot.TOOLS_ENABLED ? {
+		"removed": {
+			"Rect2": ["end", "grow_margin"],
+			"Color": ["h", "s", "v", "r8", "g8", "b8", "a8"],
+			"Transform2D": ["xform", "xform_inv"],
+			"Basis": ["is_equal_approx"],
+			"Plane": ["intersects_segment", "intersects_ray", "intersect_3"],
+			"AABB": ["end"],
+			"Transform": ["xform", "xform_inv", "IDENTITY", "FLIP_X", "FLIP_Y", "FLIP_Z"],
+		},
+		"added": {
+			"Node": [
+				"/** Get first node with the class `cls` */",
+				"get_node<T extends godot.Node>(cls: new()=>T): T;"
+			]
+		},
+	} : undefined;
 })();

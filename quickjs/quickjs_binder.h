@@ -182,7 +182,9 @@ protected:
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
 	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
 	static Map<String, const char *> class_remap;
-
+#ifdef TOOLS_ENABLED
+	Dictionary modified_api;
+#endif
 public:
 	static Error define_operators(JSContext *ctx, JSValue p_prototype, JSValue *p_operators, int p_size);
 
@@ -271,8 +273,8 @@ public:
 	virtual void godot_refcount_incremented(Reference *p_object);
 	virtual bool godot_refcount_decremented(Reference *p_object);
 
-	virtual Error eval_string(const String &p_source, const String &p_path);
-	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error);
+	virtual Error eval_string(const String &p_source, const String &p_path, ECMAScriptGCHandler &r_ret);
+	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);
 
 	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode);
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module);
@@ -288,6 +290,10 @@ public:
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
 	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal);
 	virtual bool validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
+
+#ifdef TOOLS_ENABLED
+	virtual const Dictionary &get_modified_api() const { return modified_api; }
+#endif
 };
 
 #endif // QUICKJS_BINDING_HELPER_H

@@ -5,6 +5,8 @@
 
 #define TS_IGNORE "//@ts-ignore\n"
 static Map<String, Set<String> > ts_ignore_errors;
+static Map<String, Set<String> > removed_members;
+static Map<String, List<String> > added_apis;
 
 struct ECMAScriptAlphCompare {
 	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
@@ -221,6 +223,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 							"${enumerations}\n"
 							"${properties}\n"
 							"${methods}\n"
+							"${extrals}"
 							"\t}\n";
 	class_template = class_template.replace("${TS_IGNORE}", ts_ignore_errors.has(class_doc.name) ? "\t" TS_IGNORE : "");
 	Dictionary dict;
@@ -236,10 +239,17 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		dict["description"] = description;
 	}
 
+	Set<String> ignore_members;
+	if (removed_members.has(class_doc.name)) {
+		ignore_members = removed_members[class_doc.name];
+	}
+
 	String constants = "";
 	HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
 	for (int i = 0; i < class_doc.constants.size(); i++) {
 		const DocData::ConstantDoc &const_doc = class_doc.constants[i];
+		if (ignore_members.has(const_doc.name)) continue;
+
 		Dictionary dict;
 		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
 		dict["name"] = format_property_name(const_doc.name);
@@ -284,6 +294,11 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String enumerations_str = "";
 	const String *enum_name = enumerations.next(NULL);
 	while (enum_name) {
+		if (ignore_members.has(*enum_name)) {
+			enum_name = enumerations.next(enum_name);
+			continue;
+		}
+
 		String enum_str = "\t\tstatic readonly " + *enum_name + " : {\n";
 		const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
 		for (int i = 0; i < enums.size(); i++) {
@@ -305,6 +320,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String properties = "";
 	for (int i = 0; i < class_doc.properties.size(); i++) {
 		const DocData::PropertyDoc &prop_doc = class_doc.properties[i];
+		if (ignore_members.has(prop_doc.name)) continue;
 
 		String prop_str = "\n"
 						  "\t\t/** ${description} */\n"
@@ -348,6 +364,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String signals = "";
 	for (int i = 0; i < class_doc.signals.size(); ++i) {
 		const DocData::MethodDoc &signal = class_doc.signals[i];
+		if (ignore_members.has(signal.name)) continue;
+
 		String signal_str = "\n"
 							"\t\t/** ${description} */\n"
 							"${TS_IGNORE}"
@@ -368,6 +386,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String methods = "";
 	for (int i = 0; i < method_list.size(); i++) {
 		const DocData::MethodDoc &method_doc = method_list[i];
+		if (ignore_members.has(method_doc.name)) continue;
+
 		if (method_doc.name == class_doc.name) {
 			continue;
 		}
@@ -375,10 +395,52 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	}
 	dict["methods"] = methods;
 
+	String extrals;
+	if (added_apis.has(class_doc.name)) {
+		const List<String> &lines = added_apis[class_doc.name];
+		for (const List<String>::Element *E = lines.front(); E; E = E->next()) {
+			extrals += "\t\t" + E->get() + "\n";
+		}
+	}
+	dict["extrals"] = extrals;
+
 	return applay_partern(class_template, dict);
 }
 
 void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
+	modified_api = &ECMAScriptLanguage::get_singleton()->get_binder()->get_modified_api();
+
+	removed_members.clear();
+	if (modified_api->has("removed")) {
+		Dictionary removed = modified_api->operator[]("removed");
+		const Variant *class_key = removed.next();
+		while (class_key) {
+			String class_name = *class_key;
+			Array arr = removed[*class_key];
+			Set<String> members;
+			for (int i = 0; i < arr.size(); i++) {
+				members.insert(arr[i]);
+			}
+			removed_members.insert(class_name, members);
+			class_key = removed.next(class_key);
+		}
+	}
+	added_apis.clear();
+	if (modified_api->has("added")) {
+		Dictionary added = modified_api->operator[]("added");
+		const Variant *class_key = added.next();
+		while (class_key) {
+			String class_name = *class_key;
+			Array arr = added[*class_key];
+			List<String> lines;
+			for (int i = 0; i < arr.size(); i++) {
+				lines.push_back(arr[i]);
+			}
+			added_apis.insert(class_name, lines);
+			class_key = added.next(class_key);
+		}
+	}
+
 	DocData *doc = EditorHelp::get_doc_data();
 	Dictionary dict;
 

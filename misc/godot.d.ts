@@ -20,6 +20,8 @@ declare module globalThis {
 	 */
 	function cancelAnimationFrame(request_id: FrameRequetID): void;
 	
+	/** Used to import CommonJS modules or load resources */
+	function require(path: string): any;
 	
 	/**
 	 * The Console API provides functionality to allow developers to perform debugging tasks, such as logging messages or the values of variables at set points in your code, or timing how long an operation takes to complete.
@@ -43,6 +45,11 @@ declare module globalThis {
 		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
 		 */
 		error(...message): void;
+		
+		/** Outputs a stack trace to the console.
+		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
+		*/
+		trace(...message): void;
 	}
 
 	/**

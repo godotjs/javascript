@@ -197,10 +197,12 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 			return Variant(bool(JS_VALUE_GET_INT(p_val)));
 		case JS_TAG_FLOAT64:
 			return Variant(real_t(JS_VALUE_GET_FLOAT64(p_val)));
-		case JS_TAG_STRING: {
+		case JS_TAG_STRING:
 			return js_to_string(ctx, p_val);
-		}
 		case JS_TAG_OBJECT: {
+			if (JS_VALUE_GET_PTR(p_val) == NULL) {
+				return Variant();
+			}
 			int length = get_js_array_length(ctx, p_val);
 			if (length != -1) { // Array
 				Array arr;
@@ -226,7 +228,7 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 				}
 				return dict;
 			}
-		}
+		} break;
 		default:
 			return Variant();
 	}
@@ -1009,7 +1011,15 @@ void QuickJSBinder::initialize() {
 	add_global_console();
 	// binding script
 	String script_binding_error;
-	if (OK != safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "", script_binding_error)) {
+
+	ECMAScriptGCHandler eval_ret;
+	if (OK == safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
+#ifdef TOOLS_ENABLED
+		JSValue ret = JS_MKPTR(JS_TAG_OBJECT, eval_ret.ecma_object);
+		modified_api = var_to_variant(ctx, ret);
+		JS_FreeValue(ctx, ret);
+#endif
+	} else {
 		CRASH_NOW_MSG("Execute script binding failed:" ENDL + script_binding_error);
 	}
 }
@@ -1155,16 +1165,16 @@ void QuickJSBinder::frame() {
 	}
 }
 
-Error QuickJSBinder::eval_string(const String &p_source, const String &p_path) {
+Error QuickJSBinder::eval_string(const String &p_source, const String &p_path, ECMAScriptGCHandler &r_ret) {
 	String error;
-	Error err = safe_eval_text(p_source, p_path, error);
+	Error err = safe_eval_text(p_source, p_path, error, r_ret);
 	if (err != OK && !error.empty()) {
 		ERR_PRINTS(error);
 	}
 	return err;
 }
 
-Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path, String &r_error) {
+Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) {
 	ERR_FAIL_COND_V(p_source.empty(), FAILED);
 
 	CharString utf8_str = p_source.utf8();
@@ -1172,7 +1182,9 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path
 	const char *code = utf8_str.ptr();
 	if (!filename) filename = "";
 	if (!code) code = "";
-	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_STRICT);
+	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+	r_ret.context = ctx;
+	r_ret.ecma_object = JS_VALUE_GET_PTR(ret);
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
 		ECMAscriptScriptError err;

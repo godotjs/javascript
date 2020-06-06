@@ -60,8 +60,8 @@ public:
 	virtual void godot_refcount_incremented(Reference *p_object) = 0;
 	virtual bool godot_refcount_decremented(Reference *p_object) = 0;
 
-	virtual Error eval_string(const String &p_source, const String &p_path) = 0;
-	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error) = 0;
+	virtual Error eval_string(const String &p_source, const String &p_path, ECMAScriptGCHandler &r_ret) = 0;
+	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) = 0;
 	virtual String error_to_string(const ECMAscriptScriptError &p_error) = 0;
 	virtual String get_backtrace(int skip_level = 0) = 0;
 
@@ -77,6 +77,9 @@ public:
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) = 0;
 	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal) = 0;
 	virtual bool validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) = 0;
+#ifdef TOOLS_ENABLED
+	virtual const Dictionary &get_modified_api() const = 0;
+#endif
 };
 
 #endif

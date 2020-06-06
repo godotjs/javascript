@@ -19,7 +19,8 @@ Error ECMAScriptLanguage::execute_file(const String &p_path) {
 	Error err;
 	String code = FileAccess::get_file_as_string(p_path, &err);
 	if (err == OK) {
-		err = binding->eval_string(code, p_path);
+		ECMAScriptGCHandler eval_ret;
+		err = binding->eval_string(code, p_path, eval_ret);
 	}
 	return err;
 }
