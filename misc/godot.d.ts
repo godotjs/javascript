@@ -22,6 +22,8 @@ declare module globalThis {
 	
 	/** Used to import CommonJS modules or load resources */
 	function require(path: string): any;
+	const module: { exports: any };
+	const exports: any;
 	
 	/**
 	 * The Console API provides functionality to allow developers to perform debugging tasks, such as logging messages or the values of variables at set points in your code, or timing how long an operation takes to complete.
