@@ -5,6 +5,7 @@
 #include "core/io/resource_saver.h"
 #include "core/script_language.h"
 #include "ecmascript_binder.h"
+#include "scene/resources/text_file.h"
 
 #define EXT_JSCLASS "jsx"
 #define EXT_JSCLASS_BYTECODE "jsxb"
@@ -98,6 +99,43 @@ public:
 
 class ResourceFormatSaverECMAScript : public ResourceFormatSaver {
 	GDCLASS(ResourceFormatSaverECMAScript, ResourceFormatSaver)
+public:
+	virtual Error save(const String &p_path, const RES &p_resource, uint32_t p_flags = 0);
+	virtual void get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const;
+	virtual bool recognize(const RES &p_resource) const;
+};
+
+class ECMAScriptModule : public TextFile {
+	GDCLASS(ECMAScriptModule, Resource)
+protected:
+	static void _bind_methods();
+	String script_path;
+	Vector<uint8_t> bytecode;
+
+public:
+	_FORCE_INLINE_ void set_source_code(String p_source_code) { TextFile::set_text(p_source_code); }
+	_FORCE_INLINE_ String get_source_code() const { return TextFile::get_text(); }
+	_FORCE_INLINE_ void set_bytecode(Vector<uint8_t> p_bytecode) { bytecode = p_bytecode; }
+	_FORCE_INLINE_ Vector<uint8_t> get_bytecode() const { return bytecode; }
+	_FORCE_INLINE_ void set_script_path(String p_script_path) { script_path = p_script_path; }
+	_FORCE_INLINE_ String get_script_path() const { return script_path; }
+	ECMAScriptModule();
+};
+
+class ResourceFormatLoaderECMAScriptModule : public ResourceFormatLoader {
+	GDCLASS(ResourceFormatLoaderECMAScriptModule, ResourceFormatLoader)
+public:
+	virtual RES load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
+	virtual void get_recognized_extensions(List<String> *p_extensions) const;
+	virtual void get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const;
+	virtual bool handles_type(const String &p_type) const;
+	virtual String get_resource_type(const String &p_path) const;
+
+	static RES load_static(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
+};
+
+class ResourceFormatSaverECMAScriptModule : public ResourceFormatSaver {
+	GDCLASS(ResourceFormatSaverECMAScriptModule, ResourceFormatSaver)
 public:
 	virtual Error save(const String &p_path, const RES &p_resource, uint32_t p_flags = 0);
 	virtual void get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const;

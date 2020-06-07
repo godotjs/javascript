@@ -119,17 +119,24 @@ public:
 
 Ref<ResourceFormatLoaderECMAScript> resource_loader_ecmascript;
 Ref<ResourceFormatSaverECMAScript> resource_saver_ecmascript;
-
+Ref<ResourceFormatLoaderECMAScriptModule> resource_loader_ecmascript_module;
+Ref<ResourceFormatSaverECMAScriptModule> resource_saver_ecmascript_module;
 static ECMAScriptLanguage *script_language_js = NULL;
 
 void register_ECMAScript_types() {
 
 	ClassDB::register_class<ECMAScript>();
+	ClassDB::register_class<ECMAScriptModule>();
 
 	resource_loader_ecmascript.instance();
 	resource_saver_ecmascript.instance();
 	ResourceLoader::add_resource_format_loader(resource_loader_ecmascript, true);
 	ResourceSaver::add_resource_format_saver(resource_saver_ecmascript, true);
+
+	resource_loader_ecmascript_module.instance();
+	resource_saver_ecmascript_module.instance();
+	ResourceLoader::add_resource_format_loader(resource_loader_ecmascript_module, true);
+	ResourceSaver::add_resource_format_saver(resource_saver_ecmascript_module, true);
 
 	script_language_js = memnew(ECMAScriptLanguage);
 	script_language_js->set_language_index(ScriptServer::get_language_count());
@@ -148,6 +155,11 @@ void unregister_ECMAScript_types() {
 	ResourceSaver::remove_resource_format_saver(resource_saver_ecmascript);
 	resource_loader_ecmascript.unref();
 	resource_saver_ecmascript.unref();
+
+	ResourceLoader::remove_resource_format_loader(resource_loader_ecmascript_module);
+	ResourceSaver::remove_resource_format_saver(resource_saver_ecmascript_module);
+	resource_loader_ecmascript_module.unref();
+	resource_saver_ecmascript_module.unref();
 }
 
 #ifdef TOOLS_ENABLED

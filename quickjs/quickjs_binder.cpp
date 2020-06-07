@@ -399,7 +399,12 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 	JS_DefinePropertyValueStr(ctx, p_obj, "__ctx__", ptrctx, PROP_DEF_DEFAULT);
 }
 
+static HashMap<String, String> resolve_path_cache;
+
 static String resolve_module_file(const String &file, bool allow_node_module = false) {
+	if (const String *ptr = resolve_path_cache.getptr(file)) {
+		return *ptr;
+	}
 	String path = file;
 	if (FileAccess::exists(path)) return path;
 	// add extensions to try
@@ -456,10 +461,12 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	JSModuleDef *m = NULL;
 	Error err;
 
-	String file;
-	file.parse_utf8(module_name);
-	file = resolve_module_file(file, false);
-	ERR_FAIL_COND_V(file.empty(), NULL);
+	String resolving_file;
+	resolving_file.parse_utf8(module_name);
+
+	String file = resolve_module_file(resolving_file, false);
+	ERR_FAIL_COND_V_MSG(file.empty(), NULL, "Failed to resolve module: '" + resolving_file + "'.");
+	resolve_path_cache.set(resolving_file, file);
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	if (ModuleCache *ptr = binder->module_cache.getptr(file)) {
@@ -493,6 +500,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			JS_EvalFunction(ctx, func);
 			JSValue val = variant_to_var(ctx, res);
 			JS_SetModuleExport(ctx, m, "default", val);
+			JS_FreeValue(ctx, val);
 
 			ModuleCache module;
 			module.md5 = FileAccess::get_md5(file);
@@ -593,7 +601,8 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 	}
 	String resolving_file = file;
 	file = resolve_module_file(file, true);
-	ERR_FAIL_COND_V_MSG(file.empty(), (JS_UNDEFINED), "Failed to resolve module: " + resolving_file);
+	ERR_FAIL_COND_V_MSG(file.empty(), (JS_UNDEFINED), "Failed to resolve module '" + resolving_file + "'.");
+	resolve_path_cache.set(resolving_file, file);
 
 	JSValue ret = JS_UNDEFINED;
 	String md5 = FileAccess::get_md5(file);
@@ -1392,7 +1401,8 @@ bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 }
 
 JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv, int class_id) {
-	const ClassBindData &cls = QuickJSBinder::get_context_binder(ctx)->class_bindings.get(class_id);
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	const ClassBindData &cls = binder->class_bindings.get(class_id);
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, new_target);
 	JSValue js_obj;
 	if (bind) {
@@ -1419,6 +1429,7 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 
 		ECMAScriptInstance *si = memnew(ECMAScriptInstance);
 		si->ecma_object = *bind;
+		si->binder = binder;
 		gd_obj->set_script_instance(si);
 
 		if (bind->is_reference()) {

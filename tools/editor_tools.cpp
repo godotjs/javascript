@@ -606,9 +606,14 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 
 void ECMAScriptPlugin::_generate_typescript_project() {
 	_export_typescript_declare_file("res://godot.d.ts");
-	FileAccessRef f = FileAccess::open("res://tsconfig.json", FileAccess::WRITE);
-	if (f.f && f->is_open()) {
-		f->store_string(TSCONFIG_CONTENT);
-		f->close();
+	FileAccessRef tsconfig = FileAccess::open("res://tsconfig.json", FileAccess::WRITE);
+	if (tsconfig.f && tsconfig->is_open()) {
+		tsconfig->store_string(TSCONFIG_CONTENT);
+		tsconfig->close();
+	}
+	FileAccessRef decorators = FileAccess::open("res://decorators.ts", FileAccess::WRITE);
+	if (decorators.f && decorators->is_open()) {
+		decorators->store_string(TS_DECORATORS_CONTENT);
+		decorators->close();
 	}
 }

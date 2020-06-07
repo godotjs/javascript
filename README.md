@@ -18,6 +18,7 @@ It is also possible to replace the ECMAScript engine like V8 or SpiderMonkey but
 * Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
 * [Recompile godot engine](https://docs.godotengine.org/en/3.2/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
+
 ### Usage
 
 ##### How to export script class to godot
@@ -40,8 +41,8 @@ export default class MySprite extends godot.Sprite {
 	}
 }
 ```
-
-2. Attach the script file to the node or resource object like you did with GDScript
+2. Save the script with extension `.jsx`
+3. Attach the script file to the node or resource object like you did with GDScript
 
 ##### How to export signals
 
@@ -102,8 +103,10 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `godot.set_script_tooled(cls, tooled)` to set `tooled` of the class
   - `godot.set_script_icon(cls, path)` to set icon of the class
   - `godot.get_type(val)` Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
+  - `godot.yield(target, signal)` Returns a Promise which will be resolved when the signal emitted
   - `requestAnimationFrame(callback)` to add a callback function to be called every frame
   - `cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
+  - `require(module_id)` to load a CommonJS module or load a resource file
 - Using signals in the ECMAScript way
   - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect` and `godot.Object.is_connected`
 	```js
@@ -120,7 +123,7 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 	```js
 	import ICON from 'res://icon.png';
 	```
-- Multi-threading with minimal [Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Worker)
+- Multi-threading with minimal [Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Worker) (**This is an expiremental feature**)
 	- Start a new thread with Worker
 		```js
 		const worker = new Worker('worker.js'); // Run worker.js in a new thread context
@@ -143,10 +146,75 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 		}
 		```
 	
-- TypeScript support
-	- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Declaration` from godot editor to dump the api declearations
-	- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from godot editor to generate a TypeScript project
+### TypeScript support
+- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from godot editor to generate a TypeScript project
+- Run `tsc -w -p .` under your project folder in the terminal to compile scripts
+
+#### Here is an example for using TypesSript
+Make sure the file with extension '.tsx' so it can be compiled to a `.jsx` file so we can attach it to a node in godot eidot.
+
+```ts
+import { signal, property, tool } from "./decorators";
+
+export const Signal = {
+	OnTextChanged: 'OnTextChanged'
+};
+
+@tool // make the script runnable in godot editor
+@signal(Signal.OnTextChanged) // register signal to class InputLine
+export default class InputLine extends godot.HBoxContainer {
+
+	static readonly Signal = Signal;
 	
+	// register properties for godot editor inspector
+	@property("Title")
+	get title() { return this._title; }
+	set title(v: string) {
+		this._title = v;
+		if (this._label) {
+			this._label.text = v;
+		}
+	}
+	private _title: string;
+
+	@property("Input text here")
+	get hint() { return this._hint; }
+	set hint(v: string) {
+		this._hint = v;
+		if (this._edit) {
+			this._edit.hint_tooltip = v;
+			this._edit.placeholder_text = v;
+		}
+	}
+	private _hint: string;
+
+
+	get label(): godot.Label { return this.label; }
+	protected _label: godot.Label;
+
+	get edit(): godot.LineEdit { return this._edit; }
+	protected _edit: godot.LineEdit;
+
+	get text(): string {
+		return this._edit?.text;
+	}
+
+	_ready() {
+		// get child node in the traditionnal way
+		this._edit = this.get_node("LineEdit") as godot.LineEdit;
+		// get first child with the
+		this._label = this.get_node(Label);
+		
+		// there is no onready keywords so we have to do this mannually :(
+		this.title = this.title;
+		this.hint = this.hint;
+
+		this._edit.connect(godot.LineEdit.text_changed, (text: string)=>{
+			this.emit_signal(Signal.OnTextChanged, text);
+		});
+	}
+}
+```
 
 ## Demo
 You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos)

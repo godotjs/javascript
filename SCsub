@@ -64,6 +64,9 @@ if env['tools']:
 	with open("tools/tsconfig.json.gen.cpp", "w", encoding="utf-8") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TSCONFIG_CONTENT = \n${source};'
 		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/tsconfig.json")))
+	with open("tools/decorators.ts.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TS_DECORATORS_CONTENT = \n${source};'
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/decorators.ts")))
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
