@@ -109,7 +109,7 @@ public:
 			ERR_FAIL_COND(err != OK);
 
 			Vector<uint8_t> file;
-			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_binder()->compile_to_bytecode(code, file) != OK);
+			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_main_binder()->compile_to_bytecode(code, file) != OK);
 			add_file(p_path.get_basename() + ".jsc", file, true);
 		}
 	}
@@ -120,7 +120,7 @@ public:
 Ref<ResourceFormatLoaderECMAScript> resource_loader_ecmascript;
 Ref<ResourceFormatSaverECMAScript> resource_saver_ecmascript;
 
-static ECMAScriptLanguage *script_language_es = NULL;
+static ECMAScriptLanguage *script_language_js = NULL;
 
 void register_ECMAScript_types() {
 
@@ -131,9 +131,9 @@ void register_ECMAScript_types() {
 	ResourceLoader::add_resource_format_loader(resource_loader_ecmascript, true);
 	ResourceSaver::add_resource_format_saver(resource_saver_ecmascript, true);
 
-	script_language_es = memnew(ECMAScriptLanguage);
-	script_language_es->set_language_index(ScriptServer::get_language_count());
-	ScriptServer::register_language(script_language_es);
+	script_language_js = memnew(ECMAScriptLanguage);
+	script_language_js->set_language_index(ScriptServer::get_language_count());
+	ScriptServer::register_language(script_language_js);
 
 #ifdef TOOLS_ENABLED
 	EditorNode::add_init_callback(editor_init_callback);
@@ -141,8 +141,8 @@ void register_ECMAScript_types() {
 }
 
 void unregister_ECMAScript_types() {
-	ScriptServer::unregister_language(script_language_es);
-	memdelete(script_language_es);
+	ScriptServer::unregister_language(script_language_js);
+	memdelete(script_language_js);
 
 	ResourceLoader::remove_resource_format_loader(resource_loader_ecmascript);
 	ResourceSaver::remove_resource_format_saver(resource_saver_ecmascript);

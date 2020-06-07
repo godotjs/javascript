@@ -5,8 +5,6 @@
 #include "ecmascript.h"
 #include "quickjs/quickjs_binder.h"
 
-#define GET_BINDER(ecma_object) ECMAScriptLanguage::get_singleton()->binding->get_context_binder((ecma_object).context)
-
 /*********************** ECMAScriptLanguage ***********************/
 class ECMAScriptBinder;
 class ECMAScriptLanguage : public ScriptLanguage {
@@ -19,21 +17,29 @@ class ECMAScriptLanguage : public ScriptLanguage {
 
 private:
 	static ECMAScriptLanguage *singleton;
-	ECMAScriptBinder *binding;
+	ECMAScriptBinder *main_binder;
 	int language_index;
+
+	HashMap<Thread::ID, ECMAScriptBinder *> thread_binder_map;
 
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
-	_FORCE_INLINE_ static ECMAScriptBinder *get_binder() { return singleton->binding; }
+	_FORCE_INLINE_ static ECMAScriptBinder *get_main_binder() { return singleton->main_binder; }
+	_FORCE_INLINE_ static ECMAScriptBinder *get_thread_binder(Thread::ID p_id) {
+		if (ECMAScriptBinder **ptr = singleton->thread_binder_map.getptr(p_id)) {
+			return *ptr;
+		}
+		return NULL;
+	}
 
-	_FORCE_INLINE_ virtual String get_name() const { return "ECMAScript"; }
+	_FORCE_INLINE_ virtual String get_name() const { return "JavaScript"; }
 	_FORCE_INLINE_ int get_language_index() const { return language_index; }
 	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
 
 	/* LANGUAGE FUNCTIONS */
 
-	_FORCE_INLINE_ virtual String get_type() const { return "ECMAScript"; }
-	_FORCE_INLINE_ virtual String get_extension() const { return "js"; }
+	_FORCE_INLINE_ virtual String get_type() const { return "JavaScript"; }
+	_FORCE_INLINE_ virtual String get_extension() const { return EXT_JSCLASS; }
 	_FORCE_INLINE_ virtual bool has_named_classes() const { return true; }
 	_FORCE_INLINE_ virtual bool supports_builtin_mode() const { return false; }
 	_FORCE_INLINE_ virtual bool can_inherit_from_file() { return false; }

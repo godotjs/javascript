@@ -4,6 +4,7 @@
 #include "../ecmascript_binder.h"
 #include "./quickjs/quickjs.h"
 #include "core/os/memory.h"
+#include "core/os/thread.h"
 #include "quickjs_builtin_binder.h"
 #define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
 #define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
@@ -28,6 +29,7 @@ protected:
 	JSContext *ctx;
 	JSMallocFunctions godot_allocator;
 	uint32_t context_id;
+	Thread::ID thread_id;
 
 public:
 	struct PtrHasher {
@@ -244,6 +246,8 @@ public:
 	virtual ECMAScriptBinder *get_context_binder(void *p_context) {
 		return QuickJSBinder::get_context_binder((JSContext *)p_context);
 	}
+
+	virtual Thread::ID get_thread_id() const { return thread_id; }
 
 	_FORCE_INLINE_ static QuickJSBinder *get_runtime_binder(JSRuntime *rt) {
 		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);

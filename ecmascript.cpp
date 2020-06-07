@@ -5,14 +5,13 @@
 #include "ecmascript_language.h"
 #include "scene/resources/resource_format_text.h"
 
-#define GET_CLASS_BINDER(cls) ECMAScriptLanguage::get_singleton()->binding->get_context_binder(cls->constructor.context)
-
 ScriptLanguage *ECMAScript::get_language() const {
 	return ECMAScriptLanguage::get_singleton();
 }
 
 ECMAScript::ECMAScript() {
 	ecma_class = NULL;
+	binder = NULL;
 }
 
 ECMAScript::~ECMAScript() {
@@ -40,6 +39,7 @@ StringName ECMAScript::get_instance_base_type() const {
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 
 	const ECMAClassInfo *cls = get_ecma_class();
+	ERR_FAIL_NULL_V(binder, NULL);
 	ERR_FAIL_NULL_V(cls, NULL);
 
 	if (!ClassDB::is_parent_class(p_this->get_class_name(), cls->native_class->name)) {
@@ -48,12 +48,13 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	}
 
 	Variant::CallError unchecked_error;
-	ECMAScriptGCHandler ecma_instance = GET_CLASS_BINDER(cls)->create_ecma_instance_for_godot_object(cls, p_this);
+	ECMAScriptGCHandler ecma_instance = binder->create_ecma_instance_for_godot_object(cls, p_this);
 	ERR_FAIL_NULL_V(ecma_instance.ecma_object, NULL);
 
 	ECMAScriptInstance *instance = memnew(ECMAScriptInstance);
 	instance->script = Ref<ECMAScript>(this);
 	instance->owner = p_this;
+	instance->binder = binder;
 	instance->ecma_object = ecma_instance;
 	instance->owner->set_script_instance(instance);
 
@@ -81,16 +82,19 @@ bool ECMAScript::is_placeholder_fallback_enabled() const {
 
 Error ECMAScript::reload(bool p_keep_state) {
 	Error err = OK;
+	ECMAScriptBinder *binder = ECMAScriptLanguage::get_thread_binder(Thread::get_caller_id());
+	ERR_FAIL_COND_V_MSG(binder == NULL, ERR_INVALID_DATA, "Cannot load script in this thread");
 	ECMAscriptScriptError ecma_err;
 	if (!bytecode.empty()) {
-		ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(bytecode, get_script_path(), &ecma_err);
+		ecma_class = binder->parse_ecma_class(bytecode, get_script_path(), &ecma_err);
 	} else {
-		ecma_class = ECMAScriptLanguage::get_singleton()->binding->parse_ecma_class(code, get_script_path(), &ecma_err);
+		ecma_class = binder->parse_ecma_class(code, get_script_path(), &ecma_err);
 	}
 	if (!ecma_class) {
 		err = ERR_PARSE_ERROR;
-		ERR_PRINTS(ECMAScriptLanguage::get_singleton()->binding->error_to_string(ecma_err));
+		ERR_PRINTS(binder->error_to_string(ecma_err));
 	}
+	this->binder = binder;
 	return err;
 }
 
@@ -106,8 +110,8 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 
 bool ECMAScript::has_method(const StringName &p_method) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls) return false;
-	return GET_CLASS_BINDER(cls)->has_method(cls->prototype, p_method);
+	if (!binder || !cls) return false;
+	return binder->has_method(cls->prototype, p_method);
 }
 
 MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
@@ -125,12 +129,11 @@ MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 
 bool ECMAScript::is_tool() const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls) return false;
+	if (!binder || !cls) return false;
 	return cls->tool;
 }
 
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
-	const ECMAClassInfo *cls = get_ecma_class();
 	// TODO
 }
 
@@ -184,14 +187,8 @@ void ECMAScript::update_exports() {
 
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls) return false;
-	bool found = false;
-	if (cls->signals.has(p_signal)) {
-		found = true;
-	} else if (GET_CLASS_BINDER(cls)->has_signal(cls, p_signal)) {
-		found = true;
-	}
-	return found;
+	if (!binder || !cls) return false;
+	return cls->signals.has(p_signal) || binder->has_signal(cls, p_signal);
 }
 
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
@@ -219,15 +216,15 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 	script.instance();
 	script->set_script_path(p_path);
 
-	if (p_path.ends_with(".js")) {
+	if (p_path.ends_with("." EXT_JSCLASS)) {
 		String code = FileAccess::get_file_as_string(p_path, &err);
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load source code from file '" + p_path + "'.");
 		script->set_source_code(code);
-	} else if (p_path.ends_with(".jsc")) {
+	} else if (p_path.ends_with("." EXT_JSCLASS_BYTECODE)) {
 		Error err;
 		script->bytecode = FileAccess::get_file_as_array(p_path, &err);
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load bytecode from file '" + p_path + "'.");
-	} else if (p_path.ends_with(".jse")) {
+	} else if (p_path.ends_with("." EXT_JSCLASS_ENCRYPTED)) {
 		FileAccess *fa = FileAccess::open(p_path, FileAccess::READ);
 		if (fa->is_open()) {
 			FileAccessEncrypted *fae = memnew(FileAccessEncrypted);
@@ -273,9 +270,9 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 }
 
 void ResourceFormatLoaderECMAScript::get_recognized_extensions(List<String> *p_extensions) const {
-	p_extensions->push_front("js");
-	p_extensions->push_back("jsc");
-	p_extensions->push_back("jse");
+	p_extensions->push_front(EXT_JSCLASS);
+	p_extensions->push_front(EXT_JSCLASS_BYTECODE);
+	p_extensions->push_front(EXT_JSCLASS_ENCRYPTED);
 }
 
 void ResourceFormatLoaderECMAScript::get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const {
@@ -288,8 +285,7 @@ bool ResourceFormatLoaderECMAScript::handles_type(const String &p_type) const {
 
 String ResourceFormatLoaderECMAScript::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == "js" || el == "jsc" || el == "jse")
-		return "ECMAScript";
+	if (el == EXT_JSCLASS || el == EXT_JSCLASS_BYTECODE || el == EXT_JSCLASS_ENCRYPTED) return "ECMAScript";
 	return "";
 }
 
@@ -323,7 +319,7 @@ Error ResourceFormatSaverECMAScript::save(const String &p_path, const RES &p_res
 void ResourceFormatSaverECMAScript::get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const {
 
 	if (Object::cast_to<ECMAScript>(*p_resource)) {
-		p_extensions->push_back("js");
+		p_extensions->push_back("jsx");
 	}
 }
 

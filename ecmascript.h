@@ -6,6 +6,13 @@
 #include "core/script_language.h"
 #include "ecmascript_binder.h"
 
+#define EXT_JSCLASS "jsx"
+#define EXT_JSCLASS_BYTECODE "jsxb"
+#define EXT_JSCLASS_ENCRYPTED "jsxe"
+#define EXT_JSMODULE "js"
+#define EXT_JSMODULE_BYTECODE "jsb"
+#define EXT_JSMODULE_ENCRYPTED "jse"
+
 class ECMAScript : public Script {
 	GDCLASS(ECMAScript, Script);
 
@@ -20,6 +27,7 @@ private:
 	String code;
 	String script_path;
 	Vector<uint8_t> bytecode;
+	ECMAScriptBinder *binder;
 
 #ifdef TOOLS_ENABLED
 	Set<PlaceHolderScriptInstance *> placeholders;

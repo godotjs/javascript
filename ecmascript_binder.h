@@ -1,6 +1,7 @@
 #ifndef ECMASCRIPT_BINDING_HELPER_H
 #define ECMASCRIPT_BINDING_HELPER_H
 
+#include "core/os/thread.h"
 #include "ecmascript_gc_handler.h"
 
 typedef ECMAScriptGCHandler ECMAMethodInfo;
@@ -46,6 +47,7 @@ public:
 	virtual ~ECMAScriptBinder(){};
 
 	virtual ECMAScriptBinder *get_context_binder(void *p_context) = 0;
+	virtual Thread::ID get_thread_id() const = 0;
 
 	virtual void clear_classes() { ecma_classes.clear(); }
 

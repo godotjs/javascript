@@ -433,7 +433,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 }
 
 void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
-	modified_api = &ECMAScriptLanguage::get_singleton()->get_binder()->get_modified_api();
+	modified_api = &ECMAScriptLanguage::get_singleton()->get_main_binder()->get_modified_api();
 
 	removed_members.clear();
 	if (modified_api->has("removed")) {

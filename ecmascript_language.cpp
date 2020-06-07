@@ -4,23 +4,23 @@
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
 void ECMAScriptLanguage::init() {
-	ERR_FAIL_NULL(binding);
-
-	binding->initialize();
+	ERR_FAIL_NULL(main_binder);
+	main_binder->initialize();
 }
 
 void ECMAScriptLanguage::finish() {
-	binding->uninitialize();
-	binding->language_finalize();
+	ERR_FAIL_NULL(main_binder);
+	main_binder->uninitialize();
+	main_binder->language_finalize();
 }
 
 Error ECMAScriptLanguage::execute_file(const String &p_path) {
-	ERR_FAIL_NULL_V(binding, ERR_BUG);
+	ERR_FAIL_NULL_V(main_binder, ERR_BUG);
 	Error err;
 	String code = FileAccess::get_file_as_string(p_path, &err);
 	if (err == OK) {
 		ECMAScriptGCHandler eval_ret;
-		err = binding->eval_string(code, p_path, eval_ret);
+		err = main_binder->eval_string(code, p_path, eval_ret);
 	}
 	return err;
 }
@@ -200,9 +200,9 @@ void ECMAScriptLanguage::make_template(const String &p_class_name, const String 
 
 bool ECMAScriptLanguage::validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path, List<String> *r_functions, List<ScriptLanguage::Warning> *r_warnings, Set<int> *r_safe_lines) const {
 	ECMAscriptScriptError script_error;
-	bool ret = binding->validate(p_script, p_path, &script_error);
+	bool ret = main_binder->validate(p_script, p_path, &script_error);
 	if (!ret) {
-		r_test_error = binding->error_to_string(script_error);
+		r_test_error = main_binder->error_to_string(script_error);
 		r_line_error = script_error.line;
 		r_col_error = script_error.column;
 	}
@@ -214,36 +214,51 @@ Script *ECMAScriptLanguage::create_script() const {
 }
 
 void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
-	p_extensions->push_back("js");
+	p_extensions->push_back(EXT_JSMODULE);
+	p_extensions->push_back(EXT_JSCLASS);
+	p_extensions->push_back(EXT_JSMODULE_ENCRYPTED);
+	p_extensions->push_back(EXT_JSMODULE_BYTECODE);
+	p_extensions->push_back(EXT_JSCLASS_ENCRYPTED);
+	p_extensions->push_back(EXT_JSCLASS_BYTECODE);
 }
 
 void *ECMAScriptLanguage::alloc_instance_binding_data(Object *p_object) {
-	return binding->alloc_object_binding_data(p_object);
+	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
+		return binder->alloc_object_binding_data(p_object);
+	}
+	return NULL;
 }
 
 void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
-	binding->free_object_binding_data(p_data);
+	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
+		return binder->free_object_binding_data(p_data);
+	}
 }
 
 void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {
-	binding->godot_refcount_incremented(static_cast<Reference *>(p_object));
+	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
+		binder->godot_refcount_incremented(static_cast<Reference *>(p_object));
+	}
 }
 
 bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object) {
-	return binding->godot_refcount_decremented(static_cast<Reference *>(p_object));
+	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
+		return binder->godot_refcount_decremented(static_cast<Reference *>(p_object));
+	}
+	return true;
 }
 
 void ECMAScriptLanguage::frame() {
-	binding->frame();
+	main_binder->frame();
 }
 
 ECMAScriptLanguage::ECMAScriptLanguage() {
 
 	ERR_FAIL_COND(singleton);
 	singleton = this;
-	binding = memnew(QuickJSBinder);
+	main_binder = memnew(QuickJSBinder);
 }
 
 ECMAScriptLanguage::~ECMAScriptLanguage() {
-	memdelete(binding);
+	memdelete(main_binder);
 }

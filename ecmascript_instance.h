@@ -13,6 +13,7 @@ class ECMAScriptInstance : public ScriptInstance {
 	Object *owner;
 	Ref<ECMAScript> script;
 	ECMAScriptGCHandler ecma_object;
+	ECMAScriptBinder *binder;
 
 public:
 	virtual bool set(const StringName &p_name, const Variant &p_value);

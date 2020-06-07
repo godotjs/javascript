@@ -1043,6 +1043,12 @@ QuickJSBinder::~QuickJSBinder() {
 
 void QuickJSBinder::initialize() {
 
+	thread_id = Thread::get_caller_id();
+	{
+		GLOBAL_LOCK_FUNCTION
+		ECMAScriptLanguage::get_singleton()->thread_binder_map.set(thread_id, this);
+	}
+
 	// create runtime and context for the binder
 	runtime = JS_NewRuntime2(&godot_allocator, this);
 	ctx = JS_NewContext(runtime);
@@ -1169,6 +1175,11 @@ void QuickJSBinder::uninitialize() {
 
 	ctx = NULL;
 	runtime = NULL;
+
+	{
+		GLOBAL_LOCK_FUNCTION
+		ECMAScriptLanguage::get_singleton()->thread_binder_map.erase(thread_id);
+	}
 }
 
 void QuickJSBinder::language_finalize() {

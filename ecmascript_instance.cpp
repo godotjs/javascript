@@ -12,21 +12,18 @@ void ECMAScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
 }
 
 bool ECMAScriptInstance::has_method(const StringName &p_method) const {
-	return GET_BINDER(ecma_object)->has_method(ecma_object, p_method);
+	if (!binder || !ecma_object.ecma_object) return false;
+	return binder->has_method(ecma_object, p_method);
 }
 
 bool ECMAScriptInstance::set(const StringName &p_name, const Variant &p_value) {
-	if (this->ecma_object.ecma_object) {
-		return GET_BINDER(ecma_object)->set_instance_property(ecma_object, p_name, p_value);
-	}
-	return false;
+	if (!binder || !ecma_object.ecma_object) return false;
+	return binder->set_instance_property(ecma_object, p_name, p_value);
 }
 
 bool ECMAScriptInstance::get(const StringName &p_name, Variant &r_ret) const {
-	if (this->ecma_object.ecma_object) {
-		return GET_BINDER(ecma_object)->get_instance_property(this->ecma_object, p_name, r_ret);
-	}
-	return false;
+	if (!binder || !ecma_object.ecma_object) return false;
+	return binder->get_instance_property(this->ecma_object, p_name, r_ret);
 }
 
 void ECMAScriptInstance::get_property_list(List<PropertyInfo> *p_properties) const {
@@ -48,21 +45,9 @@ Variant::Type ECMAScriptInstance::get_property_type(const StringName &p_name, bo
 }
 
 Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
-
-	ERR_FAIL_COND_V(!ecma_object.ecma_object, Variant());
-
-	//	ECMAClassInfo *cls = script->get_ecma_class();
-	//	if (cls == NULL) {
-	//		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
-	//		return Variant();
-	//	}
-
-	//	ECMAMethodInfo *method = cls->methods.getptr(p_method);
-	//	if (method == NULL) {
-	//		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
-	//		return Variant();
-	//	}
-	return GET_BINDER(ecma_object)->call_method(ecma_object, p_method, p_args, p_argcount, r_error);
+	ERR_FAIL_COND_V(binder == NULL, Variant());
+	ERR_FAIL_COND_V(ecma_object.ecma_object == NULL, Variant());
+	return binder->call_method(ecma_object, p_method, p_args, p_argcount, r_error);
 }
 
 ScriptLanguage *ECMAScriptInstance::get_language() {
@@ -71,6 +56,7 @@ ScriptLanguage *ECMAScriptInstance::get_language() {
 
 ECMAScriptInstance::ECMAScriptInstance() {
 	owner = NULL;
+	binder = NULL;
 	ecma_object.clear();
 }
 
