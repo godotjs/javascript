@@ -52,6 +52,7 @@ public:
 	struct ModuleCache {
 		int flags;
 		JSModuleDef *module;
+		JSValue res_value;
 		String md5;
 	};
 

@@ -500,11 +500,11 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			JS_EvalFunction(ctx, func);
 			JSValue val = variant_to_var(ctx, res);
 			JS_SetModuleExport(ctx, m, "default", val);
-			JS_FreeValue(ctx, val);
 
 			ModuleCache module;
 			module.md5 = FileAccess::get_md5(file);
 			module.module = m;
+			module.res_value = val;
 			module.flags = MODULE_FLAG_RESOURCE;
 			module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
 			binder->module_cache.set(file, module);
@@ -553,6 +553,7 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_module(JSContext *ctx, con
 		module.module = NULL;
 		module.flags = MODULE_FLAG_SCRIPT;
 		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+		module.res_value = JS_UNDEFINED;
 		binder->module_cache.set(p_filename, module);
 	} else {
 		JSValue e = JS_GetException(ctx);
@@ -1144,17 +1145,20 @@ void QuickJSBinder::uninitialize() {
 	frame_callbacks.clear();
 
 	{ // modules
-#if MODULE_HAS_REFCOUNT
+
 		const String *file = module_cache.next(NULL);
 		while (file) {
 			const ModuleCache &m = module_cache.get(*file);
+#if MODULE_HAS_REFCOUNT
 			if (m.module) {
 				JSValue val = JS_MKPTR(JS_TAG_MODULE, m.module);
 				JS_FreeValue(ctx, val);
 			}
+#endif
+			JS_FreeValue(ctx, m.res_value);
 			file = module_cache.next(file);
 		}
-#endif
+
 		module_cache.clear();
 	}
 
