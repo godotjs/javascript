@@ -151,17 +151,17 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 - Run `tsc -w -p .` under your project folder in the terminal to compile scripts
 
 #### Here is an example for using TypesSript
-Make sure the file with extension '.tsx' so it can be compiled to a `.jsx` file so we can attach it to a node in godot eidot.
+Make sure the file with extension '.tsx' so it can be compiled to a `.jsx` file then we can attach it to a node in godot editor.
 
 ```ts
-import { signal, property, tool } from "./decorators";
+import { signal, property, tool, onready } from "./decorators";
 
 export const Signal = {
 	OnTextChanged: 'OnTextChanged'
 };
 
 @tool // make the script runnable in godot editor
-@signal(Signal.OnTextChanged) // register signal to class InputLine
+@signals(Signal.OnTextChanged) // register signal to class InputLine
 export default class InputLine extends godot.HBoxContainer {
 
 	static readonly Signal = Signal;
@@ -192,24 +192,23 @@ export default class InputLine extends godot.HBoxContainer {
 	get label(): godot.Label { return this.label; }
 	protected _label: godot.Label;
 
-	get edit(): godot.LineEdit { return this._edit; }
-	protected _edit: godot.LineEdit;
+	// call get_node('LineEdit') and assign the returen value to 'edit' automatically when the node is ready
+	@onready('LineEdit')
+	get edit(): godot.LineEdit { return null; }
 
 	get text(): string {
-		return this._edit?.text;
+		return this.edit?.text;
 	}
 
 	_ready() {
-		// get child node in the traditionnal way
-		this._edit = this.get_node("LineEdit") as godot.LineEdit;
-		// get first child with the
-		this._label = this.get_node(Label);
+		// get first child with the type of godot.Lable
+		this._label = this.get_node(godot.Label);
 		
-		// there is no onready keywords so we have to do this mannually :(
+		// Apply the inspector filled values with property setters
 		this.title = this.title;
 		this.hint = this.hint;
 
-		this._edit.connect(godot.LineEdit.text_changed, (text: string)=>{
+		this.edit.connect(godot.LineEdit.text_changed, (text: string)=>{
 			this.emit_signal(Signal.OnTextChanged, text);
 		});
 	}
