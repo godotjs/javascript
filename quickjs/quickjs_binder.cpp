@@ -33,25 +33,39 @@ _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, 
 JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	PoolStringArray args;
 	args.resize(argc);
+
+	QuickJSBinder *binder = get_context_binder(ctx);
+	JSValue object_to_json = JS_GetPropertyStr(ctx, binder->console_object, PROP_NAME_CONSOLE_LOG_OBJECT_TO_JSON);
+	bool to_json = js_to_bool(ctx, object_to_json);
+	JS_FreeValue(ctx, object_to_json);
+
 	for (int i = 0; i < argc; ++i) {
-		size_t size;
-		const char *utf8 = JS_ToCStringLen(ctx, &size, *(argv + i));
-		args.write()[i].parse_utf8(utf8, size);
-		JS_FreeCString(ctx, utf8);
+		int32_t tag = JS_VALUE_GET_TAG(argv[i]);
+		if (to_json && tag == JS_TAG_OBJECT && NULL == BINDING_DATA_FROM_JS(ctx, argv[i])) {
+			JSValue str = JS_JSONStringify(ctx, argv[i], JS_UNDEFINED, JS_UNDEFINED);
+			args.write()[i] = js_to_string(ctx, str);
+			JS_FreeValue(ctx, str);
+		} else {
+			size_t size;
+			const char *utf8 = JS_ToCStringLen(ctx, &size, argv[i]);
+			args.write()[i].parse_utf8(utf8, size);
+			JS_FreeCString(ctx, utf8);
+		}
 	}
+
 	String message = args.join(" ");
-	if (magic == 3) {
+	if (magic == CONSOLE_ERROR || magic == CONSOLE_TRACE) {
 		message += ENDL;
 		message += get_context_binder(ctx)->get_backtrace(1);
 	}
 
 	switch (magic) {
-		case 2:
+		case CONSOLE_ERROR:
 			print_error(message);
 			break;
-		case 0:
-		case 1:
-		case 3:
+		case CONSOLE_LOG:
+		case CONSOLE_WARN:
+		case CONSOLE_TRACE:
 		default:
 			print_line(message);
 			break;
@@ -61,15 +75,16 @@ JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int a
 
 void QuickJSBinder::add_global_console() {
 	JSValue console = JS_NewObject(ctx);
-	JSValue log = JS_NewCFunctionMagic(ctx, console_functions, "log", 0, JS_CFUNC_generic_magic, 0);
-	JSValue warn = JS_NewCFunctionMagic(ctx, console_functions, "warn", 0, JS_CFUNC_generic_magic, 1);
-	JSValue err = JS_NewCFunctionMagic(ctx, console_functions, "error", 0, JS_CFUNC_generic_magic, 2);
-	JSValue trace = JS_NewCFunctionMagic(ctx, console_functions, "trace", 0, JS_CFUNC_generic_magic, 3);
+	JSValue log = JS_NewCFunctionMagic(ctx, console_functions, "log", 0, JS_CFUNC_generic_magic, CONSOLE_LOG);
+	JSValue warn = JS_NewCFunctionMagic(ctx, console_functions, "warn", 0, JS_CFUNC_generic_magic, CONSOLE_WARN);
+	JSValue err = JS_NewCFunctionMagic(ctx, console_functions, "error", 0, JS_CFUNC_generic_magic, CONSOLE_ERROR);
+	JSValue trace = JS_NewCFunctionMagic(ctx, console_functions, "trace", 0, JS_CFUNC_generic_magic, CONSOLE_TRACE);
 	JS_DefinePropertyValueStr(ctx, global_object, "console", console, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "log", log, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "warn", warn, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "error", err, PROP_DEF_DEFAULT);
 	JS_DefinePropertyValueStr(ctx, console, "trace", trace, PROP_DEF_DEFAULT);
+	console_object = JS_DupValue(ctx, console);
 }
 
 void QuickJSBinder::add_global_properties() {
@@ -1180,6 +1195,7 @@ void QuickJSBinder::uninitialize() {
 	JS_FreeValue(ctx, js_operators);
 	JS_FreeValue(ctx, js_operators_create);
 	JS_FreeValue(ctx, empty_function);
+	JS_FreeValue(ctx, console_object);
 	JS_FreeValue(ctx, global_object);
 
 	JS_SetContextOpaque(ctx, NULL);

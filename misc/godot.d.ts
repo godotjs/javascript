@@ -52,6 +52,9 @@ declare module globalThis {
 		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
 		*/
 		trace(...message): void;
+
+		/** Log JavaScript Objects as JSON format */
+		LOG_OBJECT_TO_JSON: boolean;
 	}
 
 	/**

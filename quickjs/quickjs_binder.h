@@ -12,6 +12,7 @@
 #define NO_MODULE_EXPORT_SUPPORT 0
 #define MODULE_HAS_REFCOUNT 0 // module seems don't follow the refrence count rule in quickjs
 #define MAX_ARGUMENT_COUNT 50
+#define PROP_NAME_CONSOLE_LOG_OBJECT_TO_JSON "LOG_OBJECT_TO_JSON"
 #define ENDL "\r\n"
 
 class QuickJSWorker;
@@ -80,6 +81,13 @@ public:
 		JS_ATOM_END,
 	};
 
+	enum ConsoleLogType {
+		CONSOLE_LOG,
+		CONSOLE_WARN,
+		CONSOLE_ERROR,
+		CONSOLE_TRACE,
+	};
+
 protected:
 	JSAtom js_key_godot_classid;
 	JSAtom js_key_godot_tooled;
@@ -89,6 +97,7 @@ protected:
 
 	JSValue global_object;
 	JSValue godot_object;
+	JSValue console_object;
 	JSValue empty_function;
 	JSValue js_operators;
 	JSValue js_operators_create;
