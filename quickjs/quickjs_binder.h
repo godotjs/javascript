@@ -134,6 +134,8 @@ protected:
 	List<ECMAScriptGCHandler *> workers;
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
+	Vector<const ClassDB::PropertySetGet *> godot_object_indexed_properties;
+	int internal_godot_indexed_property_id;
 	const ECMAScriptGCHandler *lastest_allocated_object = NULL;
 	Variant *method_call_arguments;
 	const Variant **method_call_argument_ptrs;
@@ -155,7 +157,8 @@ protected:
 	static void origin_finalizer(JSRuntime *rt, JSValue val);
 
 	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
+	static JSValue object_method(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int method_id);
+	static JSValue object_indexed_property(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int property_id);
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_get_type(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_load(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);

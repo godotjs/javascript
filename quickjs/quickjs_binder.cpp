@@ -106,14 +106,14 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	ERR_FAIL_NULL_V(bind, JS_ThrowReferenceError(ctx, "Call native method without native binding data"));
 	ERR_FAIL_NULL_V(bind->godot_object, JS_ThrowReferenceError(ctx, "Call native method without native object caller"));
 
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	Object *obj = bind->get_godot_object();
-	MethodBind *mb = get_context_binder(ctx)->godot_methods[method_id];
+	MethodBind *mb = binder->godot_methods[method_id];
 
 	if (!mb->is_vararg()) {
 		argc = MIN(argc, mb->get_argument_count());
 	}
 
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
 	for (int i = 0; i < argc; ++i) {
 		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
 	}
@@ -146,6 +146,28 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	}
 	ERR_FAIL_COND_V((call_err.error != Variant::CallError::CALL_OK), JS_ThrowTypeError(ctx, err_message.utf8().ptr()));
 #endif
+	return variant_to_var(ctx, ret_val);
+}
+
+JSValue QuickJSBinder::object_indexed_property(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int property_id) {
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+	ERR_FAIL_NULL_V(bind, JS_ThrowReferenceError(ctx, "Using indexed property without native binding data"));
+	ERR_FAIL_NULL_V(bind->godot_object, JS_ThrowReferenceError(ctx, "Using indexed property without native object caller"));
+
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	bool is_setter = argc > 0;
+
+	Object *obj = bind->get_godot_object();
+	const ClassDB::PropertySetGet *prop = binder->godot_object_indexed_properties[property_id];
+	MethodBind *mb = is_setter ? prop->_setptr : prop->_getptr;
+
+	binder->method_call_arguments[0] = prop->index;
+	if (is_setter) {
+		binder->method_call_arguments[1] = var_to_variant(ctx, argv[0]);
+	}
+
+	Variant::CallError call_err;
+	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc + 1, call_err);
 	return variant_to_var(ctx, ret_val);
 }
 
@@ -725,19 +747,33 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 		while (key) {
 			const StringName &prop_name = *key;
 			const ClassDB::PropertySetGet &prop = p_cls->property_setget[prop_name];
-			JSValue *setter = NULL;
-			JSValue *getter = NULL;
 
-			if (Map<StringName, JSValue>::Element *E = methods.find(prop.setter)) {
-				setter = &(E->get());
-				JS_DupValue(ctx, *setter);
+			JSValue setter = JS_UNDEFINED;
+			JSValue getter = JS_UNDEFINED;
+
+			if (prop.index >= 0) {
+				int size = godot_object_indexed_properties.size();
+				if (size <= internal_godot_indexed_property_id) {
+					godot_object_indexed_properties.resize(size + 128);
+				}
+				godot_object_indexed_properties.write[internal_godot_indexed_property_id] = &prop;
+				CharString name = String(*key).ascii();
+				getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.ptr(), 0, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
+				setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.ptr(), 1, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
+				++internal_godot_indexed_property_id;
+			} else {
+				if (Map<StringName, JSValue>::Element *E = methods.find(prop.setter)) {
+					setter = E->get();
+					JS_DupValue(ctx, setter);
+				}
+				if (Map<StringName, JSValue>::Element *E = methods.find(prop.getter)) {
+					getter = E->get();
+					JS_DupValue(ctx, getter);
+				}
 			}
-			if (Map<StringName, JSValue>::Element *E = methods.find(prop.getter)) {
-				getter = &(E->get());
-				JS_DupValue(ctx, *getter);
-			}
+
 			JSAtom atom = get_atom(ctx, prop_name);
-			JS_DefinePropertyGetSet(ctx, data.prototype, atom, getter ? *getter : JS_UNDEFINED, setter ? *setter : JS_UNDEFINED, PROP_DEF_DEFAULT);
+			JS_DefinePropertyGetSet(ctx, data.prototype, atom, getter, setter, PROP_DEF_DEFAULT);
 			JS_FreeAtom(ctx, atom);
 			key = p_cls->property_setget.next(key);
 		}
@@ -1039,6 +1075,7 @@ void QuickJSBinder::add_godot_globals() {
 QuickJSBinder::QuickJSBinder() {
 	context_id = global_context_id++;
 	internal_godot_method_id = 0;
+	internal_godot_indexed_property_id = 0;
 	godot_allocator.js_malloc = QuickJSBinder::js_binder_malloc;
 	godot_allocator.js_free = QuickJSBinder::js_binder_free;
 	godot_allocator.js_realloc = QuickJSBinder::js_binder_realloc;
