@@ -7,6 +7,8 @@
 static Map<String, Set<String> > ts_ignore_errors;
 static Map<String, Set<String> > removed_members;
 static Map<String, List<String> > added_apis;
+typedef Map<String, Vector<const DocData::ConstantDoc *> > ClassEnumerations;
+static Map<String, ClassEnumerations> class_enumerations;
 
 struct ECMAScriptAlphCompare {
 	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
@@ -17,6 +19,7 @@ struct ECMAScriptAlphCompare {
 void ECMAScriptPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &ECMAScriptPlugin::_on_menu_item_pressed);
 	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &ECMAScriptPlugin::_export_typescript_declare_file);
+	ClassDB::bind_method(D_METHOD("_export_enumeration_binding_file"), &ECMAScriptPlugin::_export_enumeration_binding_file);
 }
 
 void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
@@ -27,6 +30,9 @@ void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
 		case MenuItem::ITEM_GEN_TYPESCRIPT_PROJECT:
 			_generate_typescript_project();
 			break;
+		case MenuItem::ITEM_GEN_ENUM_BINDING_SCRIPT:
+			enumberation_file_dialog->popup_centered_ratio();
+			break;
 	}
 }
 
@@ -35,6 +41,7 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	PopupMenu *menu = memnew(PopupMenu);
 	add_tool_submenu_item(TTR("ECMAScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLAR_FILE);
+	menu->add_item(TTR("Generate Enumeration Binding Script"), ITEM_GEN_ENUM_BINDING_SCRIPT);
 	menu->add_item(TTR("Generate TypeScript Project"), ITEM_GEN_TYPESCRIPT_PROJECT);
 	menu->connect("id_pressed", this, "_on_menu_item_pressed");
 
@@ -46,6 +53,15 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	declaration_file_dialog->set_current_file("godot.d.ts");
 	declaration_file_dialog->connect("file_selected", this, "_export_typescript_declare_file");
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
+
+	enumberation_file_dialog = memnew(EditorFileDialog);
+	enumberation_file_dialog->set_title(TTR("Generate Enumeration Binding Script"));
+	enumberation_file_dialog->set_mode(EditorFileDialog::MODE_SAVE_FILE);
+	enumberation_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
+	enumberation_file_dialog->add_filter(TTR("*.jsx;JavaScript file"));
+	enumberation_file_dialog->set_current_file("enumerations.jsx");
+	enumberation_file_dialog->connect("file_selected", this, "_export_enumeration_binding_file");
+	EditorNode::get_singleton()->get_gui_base()->add_child(enumberation_file_dialog);
 
 	ts_ignore_errors.clear();
 	Set<String> ts_ignore_error_members;
@@ -274,7 +290,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	}
 
 	String constants = "";
-	HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
+	Map<String, Vector<const DocData::ConstantDoc *> > enumerations;
 	for (int i = 0; i < class_doc.constants.size(); i++) {
 		const DocData::ConstantDoc &const_doc = class_doc.constants[i];
 		if (ignore_members.has(const_doc.name)) continue;
@@ -308,24 +324,22 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			if (!enumerations.has(const_doc.enumeration)) {
 				Vector<const DocData::ConstantDoc *> e;
 				e.push_back(&const_doc);
-				enumerations.set(const_doc.enumeration, e);
+				enumerations.insert(const_doc.enumeration, e);
 			} else {
-				enumerations.get(const_doc.enumeration).push_back(&const_doc);
+				enumerations[const_doc.enumeration].push_back(&const_doc);
 			}
 		}
 	}
-	dict["constants"] = constants;
+	class_enumerations.insert(class_doc.name, enumerations);
 
+	dict["constants"] = constants;
 	String enumerations_str = "";
-	const String *enum_name = enumerations.next(NULL);
-	while (enum_name) {
-		if (ignore_members.has(*enum_name)) {
-			enum_name = enumerations.next(enum_name);
+	for (auto E = enumerations.front(); E; E = E->next()) {
+		if (ignore_members.has(E->key())) {
 			continue;
 		}
-
-		String enum_str = "\t\tenum " + *enum_name + " {\n";
-		const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
+		String enum_str = "\t\tenum " + E->key() + " {\n";
+		const Vector<const DocData::ConstantDoc *> &enums = E->get();
 		for (int i = 0; i < enums.size(); i++) {
 			String const_str = "\t\t\t/** ${description} */\n"
 							   "\t\t\t${name} = ${value},\n";
@@ -337,7 +351,6 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		}
 		enum_str += "\t\t}\n";
 		enumerations_str += enum_str;
-		enum_name = enumerations.next(enum_name);
 	}
 	dict["enumerations"] = enumerations_str;
 
@@ -526,7 +539,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		}
 		class_doc.name = get_type_name(class_doc.name);
 		if (class_doc.name.begins_with("@")) {
-			HashMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
+			Map<String, Vector<const DocData::ConstantDoc *> > enumerations;
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
 				String const_str = "\n"
 								   "\t/** ${description} */\n"
@@ -550,17 +563,17 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 						if (!enumerations.has(const_doc.enumeration)) {
 							Vector<const DocData::ConstantDoc *> e;
 							e.push_back(&const_doc);
-							enumerations.set(const_doc.enumeration, e);
+							enumerations.insert(const_doc.enumeration, e);
 						} else {
-							enumerations.get(const_doc.enumeration).push_back(&const_doc);
+							enumerations[const_doc.enumeration].push_back(&const_doc);
 						}
 					}
 				}
+				class_enumerations.insert(GODOT_OBJECT_NAME, enumerations);
 
-				const String *enum_name = enumerations.next(NULL);
-				while (enum_name) {
-					String enum_str = "\tenum " + format_enum_name(*enum_name) + " {\n";
-					const Vector<const DocData::ConstantDoc *> enums = enumerations.get(*enum_name);
+				for (auto E = enumerations.front(); E; E = E->next()) {
+					String enum_str = "\tenum " + format_enum_name(E->key()) + " {\n";
+					const Vector<const DocData::ConstantDoc *> &enums = E->value();
 					for (int i = 0; i < enums.size(); i++) {
 						String const_str = "\t\t/** ${description} */\n"
 										   "\t\t${name} = ${value},\n";
@@ -572,7 +585,6 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					}
 					enum_str += "\t}\n";
 					enumerations_str += enum_str;
-					enum_name = enumerations.next(enum_name);
 				}
 
 				for (int i = 0; i < class_doc.methods.size(); i++) {
@@ -600,6 +612,67 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
 	if (f.f && f->is_open()) {
 		f->store_string(text);
+		f->close();
+	}
+}
+
+void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
+	_export_typescript_declare_file("");
+	String file_content = "// Tool generated file DO NOT modify mannually\n"
+						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
+						  "\n"
+						  "if (!godot.DEBUG_ENABLED) {\n"
+						  "\tfunction bind(cls, enumerations) {\n"
+						  "\t\tif (cls) Object.defineProperties(cls, enumerations);\n"
+						  "\t};\n"
+						  "\n"
+						  "${enumerations}"
+						  "}\n"
+						  "export default class extends godot.Node {};\n";
+
+	String enumerations = "";
+	for (auto cls = class_enumerations.front(); cls; cls = cls->next()) {
+		const ClassEnumerations &enumeration = cls->value();
+		const String &name = cls->key();
+		String class_name = name;
+		if (class_name != "godot") {
+			class_name = "godot." + class_name;
+		}
+		String class_enums = "";
+		for (auto E = enumeration.front(); E; E = E->next()) {
+			String enum_items_text = "{";
+			const Vector<const DocData::ConstantDoc *> &consts = E->value();
+			for (int i = 0; i < consts.size(); ++i) {
+				const DocData::ConstantDoc *c = consts[i];
+				enum_items_text += c->name + ": " + c->value;
+				if (i < consts.size() - 1) {
+					enum_items_text += ", ";
+				}
+			}
+			enum_items_text += " }";
+			Dictionary dict;
+			dict["name"] = format_enum_name(E->key());
+			dict["values"] = enum_items_text;
+			class_enums += applay_partern("\n\t\t${name}: { value: ${values} }", dict);
+			if (E->next()) {
+				class_enums += ", ";
+			} else {
+				class_enums += "\n\t";
+			}
+		}
+		static String class_template = "\tbind(${class}, {${enumerations}});\n";
+		Dictionary dict;
+		dict["class"] = class_name;
+		dict["enumerations"] = class_enums;
+		enumerations += applay_partern(class_template, dict);
+	}
+	Dictionary dict;
+	dict["enumerations"] = enumerations;
+	file_content = applay_partern(file_content, dict);
+
+	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
+	if (f.f && f->is_open()) {
+		f->store_string(file_content);
 		f->close();
 	}
 }

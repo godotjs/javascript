@@ -10,9 +10,11 @@ class ECMAScriptPlugin : public EditorPlugin {
 	enum MenuItem {
 		ITEM_GEN_DECLAR_FILE,
 		ITEM_GEN_TYPESCRIPT_PROJECT,
+		ITEM_GEN_ENUM_BINDING_SCRIPT,
 	};
 
 	EditorFileDialog *declaration_file_dialog;
+	EditorFileDialog *enumberation_file_dialog;
 	const Dictionary *modified_api;
 
 protected:
@@ -22,6 +24,7 @@ protected:
 	static void _bind_methods();
 	void _on_menu_item_pressed(int item);
 	void _export_typescript_declare_file(const String &p_path);
+	void _export_enumeration_binding_file(const String &p_path);
 	void _generate_typescript_project();
 
 public:
