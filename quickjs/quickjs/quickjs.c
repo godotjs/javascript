@@ -52557,3 +52557,11 @@ JSValue JS_GetStackFunction(JSContext *ctx, int back_level) {
 
     return func;
 }
+
+int JS_GetRefCount(JSValue v) {
+	if (JS_VALUE_HAS_REF_COUNT(v)) {
+        JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(v);
+        return p->ref_count;
+    }
+    return 0;
+}

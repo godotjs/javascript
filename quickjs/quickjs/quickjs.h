@@ -1005,6 +1005,7 @@ JSAtom JS_GetModuleExportEntryName(JSContext *ctx, JSModuleDef *m, int idx);
 JSValue JS_GetStackFunction(JSContext *ctx, int back_level);
 JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val);
 const JSMallocState *JS_GetMollocState(JSRuntime *rt);
+int JS_GetRefCount(JSValue val);
 
 #undef js_unlikely
 #undef js_force_inline
