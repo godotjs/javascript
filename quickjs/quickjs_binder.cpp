@@ -16,16 +16,20 @@ uint32_t QuickJSBinder::global_transfer_id = 0;
 HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 
-_FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, Object *p_object) {
-
+_FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(Object *p_object) {
 	ERR_FAIL_COND_V(p_object == NULL, NULL);
+	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index());
+	return bind;
+}
 
-	ECMAScriptGCHandler *bind = p_object ? (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index()) : NULL;
-	if (ctx) {
+_FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, Object *p_object) {
+	ERR_FAIL_COND_V(p_object == NULL || ctx == NULL, NULL);
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
+	if (bind) {
+		ERR_FAIL_COND_V_MSG(bind->context && bind->context != ctx, NULL, "The object is not belong to this context");
 		if (!bind->context) {
 			QuickJSBinder::bind_gc_object(ctx, bind, p_object);
 		}
-		ERR_FAIL_COND_V(bind->context && bind->context != ctx, NULL);
 	}
 	return bind;
 }
@@ -541,6 +545,8 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			ModuleCache module;
 			module.md5 = FileAccess::get_md5(file);
 			module.module = m;
+			module.res = res;
+			module.res->reference(); // Avoid auto release as module don't release automaticly
 			module.res_value = val;
 			module.flags = MODULE_FLAG_RESOURCE;
 			module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
@@ -678,6 +684,7 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 				ret = variant_to_var(ctx, res);
 				m.exports = ret;
 				m.flags = MODULE_FLAG_RESOURCE;
+				m.res = res;
 			} else {
 				ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().ptr());
 			}
@@ -1196,29 +1203,33 @@ void QuickJSBinder::uninitialize() {
 	}
 	frame_callbacks.clear();
 
+	List<RES> module_resources;
 	{ // modules
-
 		const String *file = module_cache.next(NULL);
 		while (file) {
-			const ModuleCache &m = module_cache.get(*file);
+			ModuleCache &m = module_cache.get(*file);
 #if MODULE_HAS_REFCOUNT
 			if (m.module) {
 				JSValue val = JS_MKPTR(JS_TAG_MODULE, m.module);
 				JS_FreeValue(ctx, val);
 			}
 #endif
-			JS_FreeValue(ctx, m.res_value);
+			if (m.res.is_valid()) {
+				JS_FreeValue(ctx, m.res_value);
+				module_resources.push_back(m.res);
+				m.res = RES();
+			}
 			file = module_cache.next(file);
 		}
-
 		module_cache.clear();
 	}
 
 	{ // commonjs modules
 		const String *file = commonjs_module_cache.next(NULL);
 		while (file) {
-			const CommonJSModule &m = commonjs_module_cache.get(*file);
+			CommonJSModule &m = commonjs_module_cache.get(*file);
 			JS_FreeValue(ctx, m.exports);
+			m.res = RES();
 			file = commonjs_module_cache.next(file);
 		}
 		commonjs_module_cache.clear();
@@ -1238,6 +1249,10 @@ void QuickJSBinder::uninitialize() {
 	JS_SetContextOpaque(ctx, NULL);
 	JS_FreeContext(ctx);
 	JS_FreeRuntime(runtime);
+
+	for (List<RES>::Element *E = module_resources.front(); E; E = E->next()) {
+		E->get()->unreference(); // Avoid imported resource leaking
+	}
 
 	ctx = NULL;
 	runtime = NULL;
@@ -1382,7 +1397,7 @@ Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScript
 /************************* Memory Management ******************************/
 
 void *QuickJSBinder::alloc_object_binding_data(Object *p_object) {
-	ECMAScriptGCHandler *data = new_gc_handler(NULL);
+	ECMAScriptGCHandler *data = new_gc_handler(NULL); // pasa null context as all thread allocate from here
 	lastest_allocated_object = data;
 	return data;
 }
@@ -1411,13 +1426,13 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 	if (bind_ptr) {
 		JSValue obj = JS_NewObjectProtoClass(ctx, (*bind_ptr)->prototype, binder->get_origin_class_id());
 		data->ecma_object = JS_VALUE_GET_PTR(obj);
-		data->godot_object = p_object;
 		data->context = ctx;
+		data->godot_object = p_object;
 		data->type = Variant::OBJECT;
 		data->flags = ECMAScriptGCHandler::FLAG_OBJECT;
 		if (Reference *ref = Object::cast_to<Reference>(p_object)) {
 			data->flags |= ECMAScriptGCHandler::FLAG_REFERENCE;
-			ref->reference();
+			ref->reference(); // This will call godot_refcount_incremented when the object is created form js
 			union {
 				REF *ref;
 				struct {
@@ -1439,22 +1454,22 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 }
 
 void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(NULL, p_object);
-	if (bind->ecma_object && bind->context) {
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
+	if (bind->is_valid_ecma_object()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		JS_DupValue((JSContext *)bind->context, js_obj); // JS ref_count ++
 	}
 }
 
 bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
-	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(NULL, p_object);
-	if (bind->ecma_object && bind->context) {
-		if (false == bind->is_ecma_finalized()) {
-			JS_FreeValue((JSContext *)bind->context, JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object));
-		}
-		return bind->is_ecma_finalized();
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
+	if (bind->is_valid_ecma_object()) {
+		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+		JS_FreeValue((JSContext *)bind->context, js_obj); // JS ref_count --
+		return bind->is_finalized();
+	} else {
+		return true;
 	}
-	return true;
 }
 
 JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv, int class_id) {
@@ -1468,6 +1483,7 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		Object *gd_obj = cls.gdclass->creation_func();
 		bind = BINDING_DATA_FROM_GD(ctx, gd_obj);
 		js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+#if 0
 		if (bind->context != ctx) {
 			JS_SetOpaque(js_obj, NULL);
 			JS_FreeValue((JSContext *)bind->context, js_obj);
@@ -1477,6 +1493,7 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 			bind_gc_object(ctx, bind, gd_obj);
 			js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		}
+#endif
 
 		if (JS_IsFunction(ctx, new_target)) {
 			JSValue prototype = JS_GetProperty(ctx, new_target, QuickJSBinder::JS_ATOM_prototype);
@@ -1502,9 +1519,9 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
 	if (p_bind->is_reference()) {
 		memdelete(p_bind->godot_reference);
-		p_bind->flags ^= (ECMAScriptGCHandler::FLAG_OBJECT | ECMAScriptGCHandler::FLAG_REFERENCE);
-		p_bind->clear();
+		p_bind->flags ^= ECMAScriptGCHandler::FLAG_REFERENCE;
 	}
+	p_bind->flags ^= ECMAScriptGCHandler::FLAG_OBJECT;
 }
 
 void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
@@ -1517,6 +1534,7 @@ void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
 		} else {
 			binder->builtin_binder.builtin_finalizer(bind);
 		}
+		bind->clear();
 		JS_SetOpaque(val, NULL);
 	}
 }

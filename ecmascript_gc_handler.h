@@ -14,12 +14,12 @@
 struct ECMAScriptGCHandler {
 	enum {
 		FLAG_NONE = 0,
-		FLAG_OBJECT = 1,
-		FLAG_REFERENCE = 1 << 1,
-		FLAG_SCRIPT_FINALIZED = 1 << 2,
-		FLAG_BUILTIN_CLASS = 1 << 3,
-		FLAG_ATOMIC_VALUE = 1 << 4,
-		FLAG_CONTEXT_TRANSFERABLE = 1 << 5,
+		FLAG_ATOMIC_VALUE = 1 << 1,
+		FLAG_BUILTIN_CLASS = 1 << 2,
+		FLAG_OBJECT = 1 << 3,
+		FLAG_REFERENCE = 1 << 4,
+		FLAG_SCRIPT_FINALIZED = 1 << 5,
+		FLAG_CONTEXT_TRANSFERABLE = 1 << 6,
 	};
 	Variant::Type type;
 	uint8_t flags;
@@ -127,9 +127,13 @@ struct ECMAScriptGCHandler {
 		return flags & FLAG_ATOMIC_VALUE;
 	}
 
-	_FORCE_INLINE_ bool is_ecma_finalized() const {
+	_FORCE_INLINE_ bool is_finalized() const {
 		return flags & FLAG_SCRIPT_FINALIZED;
 	}
+	_FORCE_INLINE_ bool is_valid_ecma_object() const {
+		return context != NULL && ecma_object != NULL && !is_finalized();
+	}
+
 
 	_FORCE_INLINE_ void clear() {
 		type = Variant::NIL;
