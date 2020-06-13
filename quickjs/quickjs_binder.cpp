@@ -124,6 +124,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 
 	Variant::CallError call_err;
 	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc, call_err);
+	JSValue ret = variant_to_var(ctx, ret_val);
 #ifdef DEBUG_METHODS_ENABLED
 	String err_message;
 	switch (call_err.error) {
@@ -147,10 +148,16 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	}
 	if (call_err.error != Variant::CallError::CALL_OK) {
 		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + binder->get_backtrace(1));
+		JS_FreeValue(ctx, ret);
+		ret = JS_ThrowTypeError(ctx, err_message.utf8().ptr());
 	}
-	ERR_FAIL_COND_V((call_err.error != Variant::CallError::CALL_OK), JS_ThrowTypeError(ctx, err_message.utf8().ptr()));
 #endif
-	return variant_to_var(ctx, ret_val);
+
+	for (int i = 0; i < argc; ++i) {
+		binder->method_call_arguments[i] = Variant();
+	}
+
+	return ret;
 }
 
 JSValue QuickJSBinder::object_indexed_property(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int property_id) {
@@ -292,6 +299,9 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
 	}
 	Expression::exec_func(func, binder->method_call_argument_ptrs, &ret, err, err_msg);
+	for (int i = 0; i < argc; ++i) {
+		binder->method_call_arguments[i] = Variant();
+	}
 
 	if (err.error != Variant::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
