@@ -293,8 +293,8 @@ public:
 	virtual void godot_refcount_incremented(Reference *p_object);
 	virtual bool godot_refcount_decremented(Reference *p_object);
 
-	virtual Error eval_string(const String &p_source, const String &p_path, ECMAScriptGCHandler &r_ret);
-	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);
+	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret);
+	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);
 
 	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode);
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module);

@@ -43,6 +43,11 @@ protected:
 	static String BINDING_SCRIPT_CONTENT;
 
 public:
+	enum EvalType {
+		EVAL_TYPE_MODULE,
+		EVAL_TYPE_GLOBAL,
+	};
+
 	ECMAScriptBinder() {}
 	virtual ~ECMAScriptBinder(){};
 
@@ -62,8 +67,8 @@ public:
 	virtual void godot_refcount_incremented(Reference *p_object) = 0;
 	virtual bool godot_refcount_decremented(Reference *p_object) = 0;
 
-	virtual Error eval_string(const String &p_source, const String &p_path, ECMAScriptGCHandler &r_ret) = 0;
-	virtual Error safe_eval_text(const String &p_source, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) = 0;
+	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret) = 0;
+	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) = 0;
 	virtual String error_to_string(const ECMAscriptScriptError &p_error) = 0;
 	virtual String get_backtrace(int skip_level = 0) = 0;
 

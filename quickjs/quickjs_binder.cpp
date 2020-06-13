@@ -1158,7 +1158,7 @@ void QuickJSBinder::initialize() {
 	String script_binding_error;
 
 	ECMAScriptGCHandler eval_ret;
-	if (OK == safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
+	if (OK == safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, ECMAScriptBinder::EVAL_TYPE_GLOBAL, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
 #ifdef TOOLS_ENABLED
 		JSValue ret = JS_MKPTR(JS_TAG_OBJECT, eval_ret.ecma_object);
 		modified_api = var_to_variant(ctx, ret);
@@ -1327,24 +1327,29 @@ void QuickJSBinder::frame() {
 	}
 }
 
-Error QuickJSBinder::eval_string(const String &p_source, const String &p_path, ECMAScriptGCHandler &r_ret) {
+Error QuickJSBinder::eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret) {
 	String error;
-	Error err = safe_eval_text(p_source, p_path, error, r_ret);
+	Error err = safe_eval_text(p_source, type, p_path, error, r_ret);
 	if (err != OK && !error.empty()) {
 		ERR_PRINTS(error);
 	}
 	return err;
 }
 
-Error QuickJSBinder::safe_eval_text(const String &p_source, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) {
+Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) {
 	ERR_FAIL_COND_V(p_source.empty(), FAILED);
-
 	CharString utf8_str = p_source.utf8();
 	const char *filename = p_path.utf8().ptr();
 	const char *code = utf8_str.ptr();
 	if (!filename) filename = "";
 	if (!code) code = "";
-	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+	int flags = JS_EVAL_FLAG_STRICT;
+	if (type == ECMAScriptBinder::EVAL_TYPE_MODULE) {
+		flags |= JS_EVAL_TYPE_MODULE;
+	} else {
+		flags |= JS_EVAL_TYPE_GLOBAL;
+	}
+	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, flags);
 	r_ret.context = ctx;
 	r_ret.ecma_object = JS_VALUE_GET_PTR(ret);
 	if (JS_IsException(ret)) {

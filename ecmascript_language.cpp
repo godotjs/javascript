@@ -20,7 +20,7 @@ Error ECMAScriptLanguage::execute_file(const String &p_path) {
 	String code = FileAccess::get_file_as_string(p_path, &err);
 	if (err == OK) {
 		ECMAScriptGCHandler eval_ret;
-		err = main_binder->eval_string(code, p_path, eval_ret);
+		err = main_binder->eval_string(code, ECMAScriptBinder::EVAL_TYPE_GLOBAL, p_path, eval_ret);
 	}
 	return err;
 }
