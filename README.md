@@ -57,7 +57,7 @@ godot.register_signal(MySprite, 'game_over');
 export default class MySprite extends godot.Sprite {
 	_process(delta) {
 		// Yes! We can use operators in JavaScript like GDScript
-		this.position += this.direction * new godot.Vector2(delta, delta);
+		this.position += this.direction * delta;
 	}
 };
 // export 'direction' properties to MySprite godot inspector
@@ -107,6 +107,7 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `requestAnimationFrame(callback)` to add a callback function to be called every frame
   - `cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
   - `require(module_id)` to load a CommonJS module or load a resource file
+  - `$` is the alia of `Node.get_node`
 - Using signals in the ECMAScript way
   - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect` and `godot.Object.is_connected`
 	```js
@@ -161,7 +162,7 @@ export const Signal = {
 };
 
 @tool // make the script runnable in godot editor
-@signals(Signal.OnTextChanged) // register signal to class InputLine
+@signal(Signal.OnTextChanged) // register signal to class InputLine
 export default class InputLine extends godot.HBoxContainer {
 
 	static readonly Signal = Signal;

@@ -207,7 +207,11 @@
 		configurable: true
 	});
 
-
+	Object.defineProperty(godot.Node.prototype, '$', {
+		value: godot.Node.prototype.get_node,
+		writable: false,
+		configurable: true
+	});
 
 	const godot_vector2 = godot.Vector2;
 	Object.defineProperty(godot_vector2, "Axis", {
@@ -262,7 +266,12 @@
 			],
 			"Node": [
 				"/** Get first node with the class `cls` */",
-				"get_node<T extends godot.Node>(cls: new()=>T): T;"
+				"get_node<T extends godot.Node>(cls: new()=>T): T;",
+				"",
+				"/** Get node with the path */",
+				"$(path: string): godot.Node;",
+				"/** Get first node with the class `cls` */",
+				"$<T extends godot.Node>(cls: new()=>T): T;",
 			]
 		},
 	} : undefined;
