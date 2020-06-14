@@ -1373,34 +1373,29 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const
 	}
 	return OK;
 }
-
 Error QuickJSBinder::compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode) {
-	Error err;
-	if (err == OK) {
-		ECMAscriptScriptError script_err;
-		if (ModuleCache *mc = js_compile_module(ctx, p_code, "", &script_err)) {
-			JSValue module = JS_MKPTR(JS_TAG_MODULE, mc->module);
-			if (JS_IsException(module)) {
-				JSValue e = JS_GetException(ctx);
-				dump_exception(ctx, e, &script_err);
-				JS_FreeValue(ctx, e);
-				ERR_PRINTS(error_to_string(script_err));
-				return ERR_PARSE_ERROR;
-			}
-			size_t size;
-			if (uint8_t *buf = JS_WriteObject(ctx, &size, module, JS_WRITE_OBJ_BYTECODE)) {
-				r_bytecode.resize(size);
-				copymem(r_bytecode.ptrw(), buf, size);
-				js_free(ctx, buf);
-				err = OK;
-			} else {
-				return ERR_PARSE_ERROR;
-			}
+	ECMAscriptScriptError script_err;
+	if (ModuleCache *mc = js_compile_module(ctx, p_code, "", &script_err)) {
+		JSValue module = JS_MKPTR(JS_TAG_MODULE, mc->module);
+		if (JS_IsException(module)) {
+			JSValue e = JS_GetException(ctx);
+			dump_exception(ctx, e, &script_err);
+			JS_FreeValue(ctx, e);
+			ERR_PRINTS(error_to_string(script_err));
+			return ERR_PARSE_ERROR;
+		}
+		size_t size;
+		if (uint8_t *buf = JS_WriteObject(ctx, &size, module, JS_WRITE_OBJ_BYTECODE)) {
+			r_bytecode.resize(size);
+			copymem(r_bytecode.ptrw(), buf, size);
+			js_free(ctx, buf);
 		} else {
 			return ERR_PARSE_ERROR;
 		}
+	} else {
+		return ERR_PARSE_ERROR;
 	}
-	return err;
+	return OK;
 }
 
 Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module) {
