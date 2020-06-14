@@ -147,6 +147,18 @@ declare module globalThis {
 declare module godot {
 	
 	type GodotClass = new() => godot.Object;
+
+	interface PropertyInfo {
+		type?: VariantType;
+		name?: string;
+		hint?: PropertyHint;
+		/**@see PropertyHint */
+		hint_string?: string;
+		/** @see PropertyUsageFlags */
+		usage?: number;
+		/** Default value of the property */
+		default?: any;
+	}
 	
 	/**
 	 * Export class to godot

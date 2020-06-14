@@ -1657,19 +1657,64 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 			get_own_property_names(ctx, props, &keys);
 			for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
 
-				JSAtom pname = get_atom(ctx, E->get());
-				JSValue val = JS_GetProperty(ctx, props, pname);
-
-				JS_DupValue(ctx, val);
-				JS_SetProperty(ctx, prototype, pname, val);
-
 				ECMAProperyInfo ei;
-				ei.default_value = QuickJSBinder::var_to_variant(ctx, val);
-				ei.type = ei.default_value.get_type();
-				ecma_class.properties.set(E->get(), ei);
+				ei.name = E->get();
+				ei.type = Variant::NIL;
+				ei.hint = PropertyHint::PROPERTY_HINT_NONE;
+				ei.usage = PropertyUsageFlags::PROPERTY_USAGE_DEFAULT;
 
-				JS_FreeValue(ctx, val);
+				JSAtom pname = get_atom(ctx, E->get());
+				JSValue value = JS_NULL;
+				JSValue js_prop = JS_GetProperty(ctx, props, pname);
+				Variant prop = var_to_variant(ctx, js_prop);
+
+				int found_entry = 0;
+				if (prop.get_type() == Variant::DICTIONARY) {
+					Dictionary prop_info = prop;
+					if (const Variant *ptr = prop_info.getptr("type")) {
+						Variant::Type type = Variant::Type(int(*ptr));
+						if (type > Variant::NIL && type < Variant::VARIANT_MAX) {
+							ei.type = type;
+							found_entry++;
+						}
+					}
+					if (const Variant *ptr = prop_info.getptr("hint")) {
+						PropertyHint hint = PropertyHint(int(*ptr));
+						if (hint > PropertyHint::PROPERTY_HINT_NONE && hint < PropertyHint::PROPERTY_HINT_MAX) {
+							ei.hint = hint;
+							found_entry++;
+						}
+					}
+					if (const Variant *ptr = prop_info.getptr("usage")) {
+						ei.usage = *ptr;
+						found_entry++;
+					}
+					if (const Variant *ptr = prop_info.getptr("hint_string")) {
+						ei.hint_string = *ptr;
+						found_entry++;
+					}
+					if (const Variant *ptr = prop_info.getptr("class_name")) {
+						ei.class_name = *ptr;
+						found_entry++;
+					}
+					if (const Variant *ptr = prop_info.getptr("default")) {
+						ei.default_value = *ptr;
+						value = variant_to_var(ctx, *ptr);
+						found_entry++;
+					}
+				}
+
+				if (found_entry <= 0) {
+					value = JS_DupValue(ctx, js_prop);
+					ei.default_value = prop;
+				}
+				if (ei.type == Variant::NIL) {
+					ei.type = ei.default_value.get_type();
+				}
+				JS_SetProperty(ctx, prototype, pname, value);
 				JS_FreeAtom(ctx, pname);
+				ecma_class.properties.set(E->get(), ei);
+				JS_FreeValue(ctx, js_prop);
 			}
 		}
 		JS_FreeValue(ctx, props);
@@ -1724,7 +1769,6 @@ JSValue QuickJSBinder::godot_register_property(JSContext *ctx, JSValue this_val,
 	ERR_FAIL_COND_V(argc < 3, JS_ThrowTypeError(ctx, "Three or more arguments expected"));
 	ERR_FAIL_COND_V(!JS_IsObject(argv[0]), JS_ThrowTypeError(ctx, "protorype of ECMAClass function expected for agurment 0"));
 	ERR_FAIL_COND_V(!JS_IsString(argv[1]), JS_ThrowTypeError(ctx, "string expected for agurment 1"));
-	ERR_FAIL_COND_V(JS_IsUndefined(argv[2]) || JS_IsNull(argv[2]), JS_ThrowTypeError(ctx, "Truthy value expected for agurment 2"));
 
 	QuickJSBinder *binder = get_context_binder(ctx);
 	JSValue prototype = JS_UNDEFINED;

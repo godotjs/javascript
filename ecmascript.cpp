@@ -141,10 +141,7 @@ void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
 	const ECMAClassInfo *cls = get_ecma_class();
 	if (!cls) return;
 	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
-		const ECMAProperyInfo &prop = cls->properties.get(*name);
-		PropertyInfo pi;
-		pi.name = *name;
-		pi.type = prop.type;
+		const ECMAProperyInfo &pi = cls->properties.get(*name);
 		p_list->push_back(pi);
 	}
 }
@@ -171,12 +168,9 @@ void ECMAScript::update_exports() {
 	List<PropertyInfo> props;
 	Map<StringName, Variant> values;
 	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
-		const ECMAProperyInfo epi = cls->properties.get(*name);
-		PropertyInfo pi;
-		pi.name = *name;
-		pi.type = epi.type;
+		const ECMAProperyInfo pi = cls->properties.get(*name);
 		props.push_back(pi);
-		values[*name] = epi.default_value;
+		values[*name] = pi.default_value;
 	}
 
 	for (Set<PlaceHolderScriptInstance *>::Element *E = placeholders.front(); E; E = E->next()) {

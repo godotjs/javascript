@@ -6,8 +6,7 @@
 
 typedef ECMAScriptGCHandler ECMAMethodInfo;
 
-struct ECMAProperyInfo {
-	Variant::Type type;
+struct ECMAProperyInfo : public PropertyInfo {
 	Variant default_value;
 };
 
