@@ -118,6 +118,8 @@ public:
 	/* TODO */ virtual bool handles_global_class_type(const String &p_type) const { return false; }
 	/* TODO */ virtual String get_global_class_name(const String &p_path, String *r_base_type = NULL, String *r_icon_path = NULL) const { return String(); }
 
+	static String globalize_relative_path(const String &p_relative, const String &p_base_dir);
+
 	ECMAScriptLanguage();
 	virtual ~ECMAScriptLanguage();
 };

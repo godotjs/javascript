@@ -216,6 +216,7 @@ Script *ECMAScriptLanguage::create_script() const {
 void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back(EXT_JSMODULE);
 	p_extensions->push_back(EXT_JSCLASS);
+	p_extensions->push_back(EXT_JSON);
 	p_extensions->push_back(EXT_JSMODULE_ENCRYPTED);
 	p_extensions->push_back(EXT_JSMODULE_BYTECODE);
 	p_extensions->push_back(EXT_JSCLASS_ENCRYPTED);
@@ -250,6 +251,35 @@ bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object)
 
 void ECMAScriptLanguage::frame() {
 	main_binder->frame();
+}
+
+String ECMAScriptLanguage::globalize_relative_path(const String &p_relative, const String &p_base_dir) {
+	String file = p_relative;
+	if (file.begins_with(".")) {
+		String base_dir = p_base_dir;
+		while (base_dir.ends_with(".")) {
+			if (base_dir.ends_with("..")) {
+				base_dir = base_dir.get_base_dir().get_base_dir();
+			} else {
+				base_dir = base_dir.get_base_dir();
+			}
+		}
+		String file_path = file;
+		while (file_path.begins_with(".")) {
+			if (file_path.begins_with("../")) {
+				base_dir = base_dir.get_base_dir();
+				file_path = file_path.substr(3);
+			} else if (file_path.begins_with("./")) {
+				file_path = file_path.substr(2);
+			} else {
+				file_path = file_path.get_basename();
+				break;
+			}
+		}
+		if (!base_dir.ends_with("/")) base_dir += "/";
+		file = base_dir + file_path;
+	}
+	return file;
 }
 
 ECMAScriptLanguage::ECMAScriptLanguage() {

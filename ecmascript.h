@@ -13,6 +13,7 @@
 #define EXT_JSMODULE "js"
 #define EXT_JSMODULE_BYTECODE "jsb"
 #define EXT_JSMODULE_ENCRYPTED "jse"
+#define EXT_JSON "json"
 
 class ECMAScript : public Script {
 	GDCLASS(ECMAScript, Script);

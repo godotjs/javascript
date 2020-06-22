@@ -453,7 +453,7 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 
 static HashMap<String, String> resolve_path_cache;
 
-static String resolve_module_file(const String &file, bool allow_node_module = false) {
+static String resolve_commanjs_module_file(const String &file, bool allow_node_module = false) {
 	if (const String *ptr = resolve_path_cache.getptr(file)) {
 		return *ptr;
 	}
@@ -516,7 +516,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	String resolving_file;
 	resolving_file.parse_utf8(module_name);
 
-	String file = resolve_module_file(resolving_file, false);
+	String file = resolve_commanjs_module_file(resolving_file, false);
 	ERR_FAIL_COND_V_MSG(file.empty(), NULL, "Failed to resolve module: '" + resolving_file + "'.");
 	resolve_path_cache.set(resolving_file, file);
 
@@ -535,6 +535,9 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 				return NULL;
 			}
 			ECMAscriptScriptError err;
+			if (file.ends_with(EXT_JSON)) {
+				code = "export default " + code;
+			}
 			if (ModuleCache *module = binder->js_compile_module(ctx, code, file, &err)) {
 				m = module->module;
 			}
@@ -631,31 +634,10 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 		String caller_path = js_to_string(ctx, filename);
 		JS_FreeValue(ctx, filename);
 		JS_FreeValue(ctx, func);
-		String base_dir = caller_path.get_base_dir();
-		while (base_dir.ends_with(".")) {
-			if (base_dir.ends_with("..")) {
-				base_dir = base_dir.get_base_dir().get_base_dir();
-			} else {
-				base_dir = base_dir.get_base_dir();
-			}
-		}
-		String file_path = file;
-		while (file_path.begins_with(".")) {
-			if (file_path.begins_with("../")) {
-				base_dir = base_dir.get_base_dir();
-				file_path = file_path.substr(3);
-			} else if (file_path.begins_with("./")) {
-				file_path = file_path.substr(2);
-			} else {
-				file_path = file_path.get_basename();
-				break;
-			}
-		}
-		if (!base_dir.ends_with("/")) base_dir += "/";
-		file = base_dir + file_path;
+		file = ECMAScriptLanguage::globalize_relative_path(file, caller_path.get_base_dir());
 	}
 	String resolving_file = file;
-	file = resolve_module_file(file, true);
+	file = resolve_commanjs_module_file(file, true);
 	ERR_FAIL_COND_V_MSG(file.empty(), (JS_UNDEFINED), "Failed to resolve module '" + resolving_file + "'.");
 	resolve_path_cache.set(resolving_file, file);
 
@@ -674,17 +656,23 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 			Error err;
 			String text = FileAccess::get_file_as_string(file, &err);
 			ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
-			String code = "(function() {"
-						  "  const module = {"
-						  "    exports: {}"
-						  "  };"
-						  "  let exports = module.exports;"
-						  "  (function(){ " +
-						  text +
-						  "    }"
-						  "  )();"
-						  "  return module.exports;"
-						  "})();";
+			String code;
+			if (file.ends_with(EXT_JSON)) {
+				code = text;
+			} else {
+				code = "(function() {"
+					   "  const module = {"
+					   "    exports: {}"
+					   "  };"
+					   "  let exports = module.exports;"
+					   "  (function(){ " +
+					   text +
+					   "    }"
+					   "  )();"
+					   "  return module.exports;"
+					   "})();";
+			}
+
 			CharString utf8code = code.utf8();
 			ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
 			m.exports = JS_DupValue(ctx, ret);
