@@ -656,25 +656,24 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 			Error err;
 			String text = FileAccess::get_file_as_string(file, &err);
 			ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
-			String code;
 			if (file.ends_with(EXT_JSON)) {
-				code = text;
+				CharString utf8code = text.utf8();
+				ret = JS_ParseJSON(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr());
 			} else {
-				code = "(function() {"
-					   "  const module = {"
-					   "    exports: {}"
-					   "  };"
-					   "  let exports = module.exports;"
-					   "  (function(){ " +
-					   text +
-					   "    }"
-					   "  )();"
-					   "  return module.exports;"
-					   "})();";
+				String code = "(function() {"
+							  "  const module = {"
+							  "    exports: {}"
+							  "  };"
+							  "  let exports = module.exports;"
+							  "  (function(){ " +
+							  text +
+							  "    }"
+							  "  )();"
+							  "  return module.exports;"
+							  "})();";
+				CharString utf8code = code.utf8();
+				ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
 			}
-
-			CharString utf8code = code.utf8();
-			ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
 			m.exports = JS_DupValue(ctx, ret);
 			m.flags = MODULE_FLAG_SCRIPT;
 		} else {
