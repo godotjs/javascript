@@ -1646,7 +1646,6 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 				ei.usage = PropertyUsageFlags::PROPERTY_USAGE_DEFAULT;
 
 				JSAtom pname = get_atom(ctx, E->get());
-				JSValue value = JS_NULL;
 				JSValue js_prop = JS_GetProperty(ctx, props, pname);
 				Variant prop = var_to_variant(ctx, js_prop);
 
@@ -1681,19 +1680,16 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 					}
 					if (const Variant *ptr = prop_info.getptr("default")) {
 						ei.default_value = *ptr;
-						value = variant_to_var(ctx, *ptr);
 						found_entry++;
 					}
 				}
 
 				if (found_entry <= 0) {
-					value = JS_DupValue(ctx, js_prop);
 					ei.default_value = prop;
 				}
 				if (ei.type == Variant::NIL) {
 					ei.type = ei.default_value.get_type();
 				}
-				JS_SetProperty(ctx, prototype, pname, value);
 				JS_FreeAtom(ctx, pname);
 				ecma_class.properties.set(E->get(), ei);
 				JS_FreeValue(ctx, js_prop);
@@ -1864,6 +1860,15 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 	JS_CallConstructor2(ctx, constructor, object, 0, NULL);
 	JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object));
+
+	// Initialize properties with default value
+	const StringName *prop_name = p_class->properties.next(NULL);
+	while (prop_name) {
+		JSAtom pname = get_atom(ctx, *prop_name);
+		JS_SetProperty(ctx, object, pname, variant_to_var(ctx, p_class->properties.getptr(*prop_name)->default_value));
+		JS_FreeAtom(ctx, pname);
+		prop_name = p_class->properties.next(prop_name);
+	}
 
 	return *bind;
 }
