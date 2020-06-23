@@ -45,6 +45,30 @@ export function property<T extends godot.Object>(value) {
 }
 
 /**
+ * Register an enumeration property
+ * @param enumeration Enumeration name list
+ * @param default_value The default value of the property
+ */
+export function enum_property<T extends godot.Object>(enumeration: string[], default_value?: string|number) {
+	return function (target: T, property: string, descriptor) {
+		const pi: godot.PropertyInfo = {
+			hint: godot.PropertyHint.PROPERTY_HINT_ENUM,
+			type: typeof(default_value) === 'string' ? godot.TYPE_STRING : godot.TYPE_INT,
+			hint_string: '',
+			default: typeof(default_value) === 'string' ? default_value : 0
+		};
+		for (let i = 0; i < enumeration.length; i++) {
+			pi.hint_string += enumeration[i];
+			if (i < enumeration.length - 1) {
+				pi.hint_string += ',';
+			}
+		}
+		godot.register_property(target, property, pi);
+		return descriptor;
+	}
+}
+
+/**
  * Return the node with `path` if the `_onready` is called
  * @param path The path or the type to get the node
  */
