@@ -1865,7 +1865,14 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 	const StringName *prop_name = p_class->properties.next(NULL);
 	while (prop_name) {
 		JSAtom pname = get_atom(ctx, *prop_name);
-		JS_SetProperty(ctx, object, pname, variant_to_var(ctx, p_class->properties.getptr(*prop_name)->default_value));
+		int ret = JS_SetProperty(ctx, object, pname, variant_to_var(ctx, p_class->properties.getptr(*prop_name)->default_value));
+		if (ret < 0) {
+			JSValue e = JS_GetException(ctx);
+			ECMAscriptScriptError error;
+			dump_exception(ctx, e, &error);
+			JS_FreeValue(ctx, e);
+			ERR_PRINTS(error_to_string(error));
+		}
 		JS_FreeAtom(ctx, pname);
 		prop_name = p_class->properties.next(prop_name);
 	}
