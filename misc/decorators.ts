@@ -23,10 +23,7 @@ export function signal<T extends godot.Object>(name: string) {
  */
 export function signals<T extends godot.Object>(signals: {[key: string]: any} | string[]) {
 	return function (target: new() => T) {
-		let keys: string[] = [];
-		if (!Array.isArray) {
-			keys = Object.getOwnPropertyNames(signals);
-		}
+		let keys: string[] = Array.isArray(signals) ? signals : Object.getOwnPropertyNames(signals);
 		for (const signal of keys) {
 			godot.register_signal(target, signal);
 		}
@@ -38,7 +35,7 @@ export function signals<T extends godot.Object>(signals: {[key: string]: any} | 
  * @param value The default value of the property
  */
 export function property<T extends godot.Object>(value) {
-	return function (target: T, property: string, descriptor) {
+	return function (target: T, property: string, descriptor?: any) {
 		godot.register_property(target, property, value);
 		return descriptor;
 	}
@@ -50,7 +47,7 @@ export function property<T extends godot.Object>(value) {
  * @param default_value The default value of the property
  */
 export function enum_property<T extends godot.Object>(enumeration: string[], default_value?: string|number) {
-	return function (target: T, property: string, descriptor) {
+	return function (target: T, property: string, descriptor?: any) {
 		const pi: godot.PropertyInfo = {
 			hint: godot.PropertyHint.PROPERTY_HINT_ENUM,
 			type: typeof(default_value) === 'string' ? godot.TYPE_STRING : godot.TYPE_INT,
@@ -73,13 +70,17 @@ export function enum_property<T extends godot.Object>(enumeration: string[], def
  * @param path The path or the type to get the node
  */
 export function onready<T extends godot.Node>(path: string | (new()=>godot.Node)) {
-	return function (target: T, property: string, descriptor) {
+	return function (target: T, property: string, descriptor?: any) {
+		const key = `__on_ready_value:${property}`;
+		descriptor = descriptor || {};
+		descriptor.set = function(v) { this[key] = v; };
 		descriptor.get = function() {
-			const key = `__on_ready_value:${property}`;
-			if (!this[key]) {
-				this[key] = (this as godot.Node).get_node(path as (new()=>godot.Node));
+			let v = this[key];
+			if (!v) {
+				v = (this as godot.Node).get_node(path as (new()=>godot.Node));
+				this[key] = v;
 			}
-			return this[key];
+			return v;
 		};
 		return descriptor;
 	}

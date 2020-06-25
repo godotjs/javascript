@@ -167,6 +167,10 @@ export default class InputLine extends godot.HBoxContainer {
 
 	static readonly Signal = Signal;
 	
+	// register offset property to godot inspector with default value Vector2(0, 0)
+	@property(godot.Vector2.ZERO)
+	offset: Vector2;
+	
 	// register properties for godot editor inspector
 	@property("Title")
 	get title() { return this._title; }
@@ -189,13 +193,12 @@ export default class InputLine extends godot.HBoxContainer {
 	}
 	private _hint: string;
 
-
-	get label(): godot.Label { return this.label; }
+	get label(): godot.Label { return this._label; }
 	protected _label: godot.Label;
 
-	// call get_node('LineEdit') and assign the returen value to 'edit' automatically when the node is ready
+	// call get_node('LineEdit') and assign the returen value to 'this.edit' automatically when the node is ready
 	@onready('LineEdit')
-	get edit(): godot.LineEdit { return null; }
+	edit: godot.LineEdit;
 
 	get text(): string {
 		return this.edit?.text;
