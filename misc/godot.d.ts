@@ -1940,7 +1940,9 @@ declare module godot {
 
 		/** Returns the slice of the `PoolByteArray` between indices (inclusive) as a new `PoolByteArray`. Any negative index is considered to be from the end of the array. */
 		subarray(p_from: number, to: number) : PoolByteArray;
-
+		
+		/** Returns the content of the array as an `ArrayBuffer` */
+		get_buffer() : ArrayBuffer;
 	}
 
 	/** A pooled `Array` of `Color`.
@@ -1987,6 +1989,8 @@ declare module godot {
 		/** Returns the size of the array. */
 		size() : number;
 
+		/** Returns the content of the array as an `ArrayBuffer` */
+		get_buffer() : ArrayBuffer;
 	}
 
 	/** A pooled `Array` of integers (`int`).
@@ -2034,6 +2038,8 @@ declare module godot {
 		/** Returns the array size. */
 		size() : number;
 
+		/** Returns the content of the array as an `ArrayBuffer` */
+		get_buffer() : ArrayBuffer;
 	}
 
 	/** A pooled `Array` of reals (`float`).
@@ -2079,6 +2085,8 @@ declare module godot {
 		/** Returns the size of the array. */
 		size() : number;
 
+		/** Returns the content of the array as an `ArrayBuffer` */
+		get_buffer() : ArrayBuffer;
 	}
 
 	/** A pooled `Array` of `String`.
@@ -2126,7 +2134,6 @@ declare module godot {
 
 		/** Returns the size of the array. */
 		size() : number;
-
 	}
 
 	/** A pooled `Array` of `Vector2`.
@@ -2170,7 +2177,9 @@ declare module godot {
 
 		/** Returns the size of the array. */
 		size() : number;
-
+		
+		/** Returns the content of the array as an `ArrayBuffer` */
+		get_buffer() : ArrayBuffer;
 	}
 
 	/** A pooled `Array` of `Vector3`.
@@ -2214,6 +2223,8 @@ declare module godot {
 
 		/** Returns the size of the array. */
 		size() : number;
-
+		
+		/** Returns the content of the array as an `ArrayBuffer` */
+		get_buffer() : ArrayBuffer;
 	}
 }

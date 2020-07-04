@@ -1,4 +1,7 @@
 #include "quickjs_builtin_binder.h"
+#include "core/color.h"
+#include "core/math/vector3.h"
+#include "core/variant.h"
 #include "quickjs_binder.h"
 #include <core/io/compression.h>
 #include <core/os/memory.h>
@@ -661,6 +664,108 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 						ret = String::hex_encode_buffer(&r[0], ptr->size());
 					}
 					return QuickJSBinder::to_js_string(ctx, ret);
+				},
+				0);
+		// PoolByteArray.prototype.get_buffer
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_BYTE_ARRAY,
+				"get_buffer",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolByteArray *array = memnew(PoolByteArray(*bind->getPoolByteArray()));
+					JSValue ret = JS_NewArrayBuffer(
+							ctx, const_cast<uint8_t *>(array->read().ptr()), array->size(), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PoolByteArray *>(opaque));
+							},
+							array, false);
+					return ret;
+				},
+				0);
+	}
+	{
+		// PoolIntArray.prototype.get_buffer
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_INT_ARRAY,
+				"get_buffer",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolIntArray *array = memnew(PoolIntArray(*bind->getPoolIntArray()));
+					JSValue ret = JS_NewArrayBuffer(
+							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(int), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PoolIntArray *>(opaque));
+							},
+							array, false);
+					return ret;
+				},
+				0);
+	}
+	{
+		// PoolRealArray.prototype.get_buffer
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_REAL_ARRAY,
+				"get_buffer",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolRealArray *array = memnew(PoolRealArray(*bind->getPoolRealArray()));
+					JSValue ret = JS_NewArrayBuffer(
+							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(real_t), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PoolRealArray *>(opaque));
+							},
+							array, false);
+					return ret;
+				},
+				0);
+	}
+	{
+		// PoolVector2Array.prototype.get_buffer
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_VECTOR2_ARRAY,
+				"get_buffer",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolVector2Array *array = memnew(PoolVector2Array(*bind->getPoolVector2Array()));
+					JSValue ret = JS_NewArrayBuffer(
+							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(Vector2), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PoolVector2Array *>(opaque));
+							},
+							array, false);
+					return ret;
+				},
+				0);
+	}
+
+	{
+		// PoolVector3Array.prototype.get_buffer
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_VECTOR3_ARRAY,
+				"get_buffer",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolVector3Array *array = memnew(PoolVector3Array(*bind->getPoolVector3Array()));
+					JSValue ret = JS_NewArrayBuffer(
+							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(Vector3), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PoolVector3Array *>(opaque));
+							},
+							array, false);
+					return ret;
+				},
+				0);
+	}
+
+	{
+		// PoolColorArray.prototype.get_buffer
+		binder->get_builtin_binder().register_method(
+				Variant::POOL_COLOR_ARRAY,
+				"get_buffer",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					PoolColorArray *array = memnew(PoolColorArray(*bind->getPoolColorArray()));
+					JSValue ret = JS_NewArrayBuffer(
+							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(Color), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PoolColorArray *>(opaque));
+							},
+							array, false);
+					return ret;
 				},
 				0);
 	}
