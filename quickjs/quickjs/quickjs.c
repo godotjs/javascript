@@ -52565,3 +52565,14 @@ int JS_GetRefCount(JSValue v) {
     }
     return 0;
 }
+
+/* return -1 if exception (proxy case) or TRUE/FALSE */
+JS_BOOL JS_IsArrayBuffer(JSValueConst val) {
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
+        p = JS_VALUE_GET_OBJ(val);
+        return p->class_id == JS_CLASS_ARRAY_BUFFER;
+    } else {
+        return FALSE;
+    }
+}

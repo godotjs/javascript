@@ -120,13 +120,36 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 	return QuickJSBuiltinBinder::bind_builtin_object_static(ctx, ${type}, ptr);
 }
 '''
-	TemplatePoolArrays = '''
+	TemplateSimplePoolArrays = '''
 	if (argc == 1) {
 #ifdef DEBUG_METHODS_ENABLED
-		ERR_FAIL_COND_V(!JS_IsArray(ctx, argv[0]), (JS_ThrowTypeError(ctx, "Array expected for argument 0 of Pool*Array(from)")));
+		ERR_FAIL_COND_V(!JS_IsArray(ctx, argv[0]), (JS_ThrowTypeError(ctx, "Array expected for argument #0 of ${class}(from)")));
 #endif
 		Variant arr = QuickJSBinder::var_to_variant(ctx, argv[0]);
 		ptr->operator=(arr);
+	}
+	'''
+	TemplatePoolArrays = '''
+	if (argc == 1) {
+		if (JS_IsArray(ctx, argv[0])) {
+			Variant arr = QuickJSBinder::var_to_variant(ctx, argv[0]);
+			ptr->operator=(arr);
+		} else if (JS_IsArrayBuffer(argv[0])) {
+			size_t size;
+			uint8_t *buffer = JS_GetArrayBuffer(ctx, &size, argv[0]);
+			if (size) {
+				if (size % sizeof(${element}) != 0) {
+					ERR_PRINTS("Length of the ArrayBuffer does not match for ${class}");
+				}
+				ptr->resize(size / sizeof(${element}));
+				copymem(ptr->write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
+			}
+		} else {
+			memdelete(ptr);
+#ifdef DEBUG_METHODS_ENABLED
+			ERR_FAIL_COND_V(false, (JS_ThrowTypeError(ctx, "Array or ArrayBuffer expected for argument #0 of ${class}(from)")));
+#endif
+		}
 	}
 	'''
 	ConstructorInitializers = {
@@ -367,13 +390,13 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		}
 	}
 ''',
-		"PoolByteArray": TemplatePoolArrays,
-		"PoolIntArray": TemplatePoolArrays,
-		"PoolRealArray": TemplatePoolArrays,
-		"PoolStringArray": TemplatePoolArrays,
-		"PoolVector2Array": TemplatePoolArrays,
-		"PoolVector3Array": TemplatePoolArrays,
-		"PoolColorArray": TemplatePoolArrays,
+		"PoolByteArray": apply_parttern(TemplatePoolArrays, {"class": "PoolByteArray", "type": "Variant::POOL_BYTE_ARRAY", "element": "uint8_t"}),
+		"PoolIntArray": apply_parttern(TemplatePoolArrays, {"class": "PoolIntArray", "type": "Variant::POOL_INT_ARRAY", "element": "int"}),
+		"PoolRealArray": apply_parttern(TemplatePoolArrays, {"class": "PoolRealArray", "type": "Variant::POOL_REAL_ARRAY", "element": "real_t"}),
+		"PoolVector2Array": apply_parttern(TemplatePoolArrays, {"class": "PoolVector2Array", "type": "Variant::POOL_VECTOR2_ARRAY", "element": "Vector2"}),
+		"PoolVector3Array": apply_parttern(TemplatePoolArrays, {"class": "PoolVector3Array", "type": "Variant::POOL_VECTOR3_ARRAY", "element": "Vector3"}),
+		"PoolColorArray": apply_parttern(TemplatePoolArrays, {"class": "PoolColorArray", "type": "Variant::POOL_COLOR_ARRAY", "element": "Color"}),
+		"PoolStringArray": apply_parttern(TemplateSimplePoolArrays,{"class": "PoolStringArray", "type": "Variant::POOL_STRING_ARRAY", "element": "String"}),
 	}
 	class_name = cls['name']
 	constructor_name = apply_parttern(TemplateConstructorName, {"class": class_name})
