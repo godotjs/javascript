@@ -4,26 +4,7 @@ import platform, os, sys
 Import('env')
 Import('env_modules')
 env_module = env_modules.Clone()
-
-def quickjs():
-	if platform.python_version() > '3':
-		import generate_builtin_api
-		generate_builtin_api.generate_api_json()
-		import quickjs.builtin_binding_generator
-		quickjs.builtin_binding_generator.generate_builtin_bindings()
-	else:
-		doc_path = os.path.abspath(os.path.join(Dir('.').srcnode().abspath, "../../doc/classes"))
-		os.system('python generate_builtin_api.py ' + doc_path)
-		os.system('python quickjs/builtin_binding_generator.py')
-	
-	version = open('quickjs/quickjs/VERSION', 'r').read().split('\n')[0]
-	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
-	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
-	if env_module['target'] == 'debug':
-		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
-	env_module.Append(CPPPATH=["quickjs/quickjs"])
-	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
-	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
+JS_ENGINE = 'quickjs'
 
 def dump_text_file_to_cpp(file):
 	source = ""
@@ -42,12 +23,26 @@ def dump_text_file_to_cpp(file):
 		source += line
 	return source
 
-jsengine = 'quickjs'
-if jsengine == 'quickjs':
-	quickjs()
+if JS_ENGINE == 'quickjs':
+	# generate builtin binding code
+	import generate_builtin_api
+	generate_builtin_api.generate_api_json(os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd())))
+	import quickjs.builtin_binding_generator
+	quickjs.builtin_binding_generator.generate_builtin_bindings()
+	# build quickjs source
+	version = open('quickjs/quickjs/VERSION', 'r').read().split('\n')[0]
+	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
+	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
+	if env_module['target'] == 'debug':
+		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
+	env_module.Append(CPPPATH=["quickjs/quickjs"])
+	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
+	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
+
+# Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
+	text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
+	f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
 
 sources = [
 	'register_types.cpp',

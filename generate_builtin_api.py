@@ -2,12 +2,6 @@
 import json, os, sys
 import xml.etree.ElementTree as ET
 
-MODULE_DIR = os.getcwd()
-DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
-if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
-	DOCS_DIR = sys.argv[-1]
-OUTPUT_FILE = os.path.join(MODULE_DIR, "buitin_api.gen.json");
-
 BUILTIN_CLASSES = [
 	'Vector2',
 	'Rect2',
@@ -415,7 +409,12 @@ def parse_class(cls):
 		'class_name': class_name,
 	}))
 
-def generate_api_json():
+def generate_api_json(MODULE_DIR):
+	DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
+	if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
+		DOCS_DIR = sys.argv[-1]
+	OUTPUT_FILE = os.path.join(MODULE_DIR, "buitin_api.gen.json");
+
 	classes = []
 	for cls in BUILTIN_CLASSES:
 		tree = ET.parse(open(os.path.join(DOCS_DIR, cls + '.xml'), 'r'))
