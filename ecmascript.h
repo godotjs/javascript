@@ -56,7 +56,7 @@ public:
 	virtual String get_source_code() const { return code; }
 
 	virtual void set_source_code(const String &p_code) { code = p_code; }
-	virtual Error reload(bool p_keep_state = false);
+	virtual Error reload(bool p_keep_state = true);
 
 	virtual bool has_method(const StringName &p_method) const;
 	virtual MethodInfo get_method_info(const StringName &p_method) const;

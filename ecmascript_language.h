@@ -19,8 +19,10 @@ private:
 	static ECMAScriptLanguage *singleton;
 	ECMAScriptBinder *main_binder;
 	int language_index;
-
 	HashMap<Thread::ID, ECMAScriptBinder *> thread_binder_map;
+#ifdef TOOLS_ENABLED
+	Set<Ref<ECMAScript> > scripts;
+#endif
 
 public:
 	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
@@ -35,6 +37,8 @@ public:
 	_FORCE_INLINE_ virtual String get_name() const { return "JavaScript"; }
 	_FORCE_INLINE_ int get_language_index() const { return language_index; }
 	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
+
+	_FORCE_INLINE_ Set<Ref<ECMAScript> > &get_scripts() { return scripts; }
 
 	/* LANGUAGE FUNCTIONS */
 
@@ -94,8 +98,9 @@ public:
 	/* TODO */ virtual String debug_parse_stack_level_expression(int p_level, const String &p_expression, int p_max_subitems, int p_max_depth) { return ""; }
 	/* TODO */ virtual Vector<StackInfo> debug_get_current_stack_info() { return Vector<StackInfo>(); }
 
-	/* TODO */ virtual void reload_all_scripts(){};
-	/* TODO */ virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload){};
+	void reload_script(const Ref<Script> &p_script, bool p_soft_reload);
+	virtual void reload_all_scripts();
+	virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) { reload_script(p_script, p_soft_reload); }
 
 	/* LOADER FUNCTIONS */
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;

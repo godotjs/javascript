@@ -57,13 +57,14 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	instance->binder = binder;
 	instance->ecma_object = ecma_instance;
 	instance->owner->set_script_instance(instance);
-
+	instances.insert(p_this);
 	return instance;
 }
 
 PlaceHolderScriptInstance *ECMAScript::placeholder_instance_create(Object *p_this) {
 #ifdef TOOLS_ENABLED
 	PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(ECMAScriptLanguage::get_singleton(), Ref<Script>(this), p_this));
+	instances.insert(p_this);
 	placeholders.insert(si);
 	update_exports();
 	return si;
@@ -86,13 +87,54 @@ Error ECMAScript::reload(bool p_keep_state) {
 	ERR_FAIL_COND_V_MSG(binder == NULL, ERR_INVALID_DATA, "Cannot load script in this thread");
 	ECMAscriptScriptError ecma_err;
 	if (!bytecode.empty()) {
-		ecma_class = binder->parse_ecma_class(bytecode, get_script_path(), &ecma_err);
+		ecma_class = binder->parse_ecma_class(bytecode, script_path, &ecma_err);
 	} else {
-		ecma_class = binder->parse_ecma_class(code, get_script_path(), &ecma_err);
+		ecma_class = binder->parse_ecma_class(code, script_path, &ecma_err);
 	}
 	if (!ecma_class) {
 		err = ERR_PARSE_ERROR;
 		ERR_PRINTS(binder->error_to_string(ecma_err));
+	} else {
+#ifdef TOOLS_ENABLED
+		set_last_modified_time(FileAccess::get_modified_time(script_path));
+
+		for (Set<Object *>::Element *E = instances.front(); E; E = E->next()) {
+			Object *owner = E->get();
+
+			Map<StringName, Variant> values;
+			if (p_keep_state) {
+				const StringName *p = ecma_class->properties.next(NULL);
+				while (p) {
+					values.insert(*p, owner->get(*p));
+					p = ecma_class->properties.next(p);
+				}
+			}
+
+			ScriptInstance *si = E->get()->get_script_instance();
+			if (si->is_placeholder()) {
+				PlaceHolderScriptInstance *psi = static_cast<PlaceHolderScriptInstance *>(si);
+				if (ecma_class->tool) {
+					_placeholder_erased(psi);
+				}
+			} else if (!ecma_class->tool) { // from tooled to !tooled
+				PlaceHolderScriptInstance *psi = placeholder_instance_create(owner);
+				owner->set_script_instance(psi);
+				instances.insert(owner);
+			}
+			if (ecma_class->tool) { // re-create as an instance
+				instance_create(owner);
+			}
+
+			if (p_keep_state) {
+				for (Map<StringName, Variant>::Element *E = values.front(); E; E = E->next()) {
+					if (const ECMAProperyInfo *epi = ecma_class->properties.getptr(E->key())) {
+						const Variant &backup = E->value();
+						owner->set(E->key(), backup.get_type() == epi->type ? backup : epi->default_value);
+					}
+				}
+			}
+		}
+#endif
 	}
 	this->binder = binder;
 	return err;
@@ -104,6 +146,7 @@ bool ECMAScript::instance_has(const Object *p_this) const {
 
 #ifdef TOOLS_ENABLED
 void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
+	instances.erase(p_placeholder->get_owner());
 	placeholders.erase(p_placeholder);
 }
 #endif
@@ -213,6 +256,9 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 	err = script->reload();
 	if (r_error) *r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, RES(), "Parse source code from file '" + p_path + "' failed.");
+#ifdef TOOLS_ENABLED
+	ECMAScriptLanguage::get_singleton()->get_scripts().insert(script);
+#endif
 	return script;
 }
 

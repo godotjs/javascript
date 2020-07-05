@@ -22,6 +22,21 @@ void ECMAScriptPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_export_enumeration_binding_file"), &ECMAScriptPlugin::_export_enumeration_binding_file);
 }
 
+void ECMAScriptPlugin::_notification(int p_what) {
+	switch (p_what) {
+		case MainLoop::NOTIFICATION_WM_FOCUS_IN: {
+			Set<Ref<ECMAScript> > &scripts = ECMAScriptLanguage::get_singleton()->get_scripts();
+			for (Set<Ref<ECMAScript> >::Element *E = scripts.front(); E; E = E->next()) {
+				uint64_t last_time = E->get()->get_last_modified_time();
+				uint64_t time = FileAccess::get_modified_time(E->get()->get_script_path());
+				if (last_time != time) {
+					ECMAScriptLanguage::get_singleton()->reload_tool_script(E->get(), true);
+				}
+			}
+		} break;
+	}
+}
+
 void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
 	switch (item) {
 		case MenuItem::ITEM_GEN_DECLAR_FILE:
