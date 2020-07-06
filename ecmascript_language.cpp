@@ -213,6 +213,24 @@ Script *ECMAScriptLanguage::create_script() const {
 	return memnew(ECMAScript);
 }
 
+void ECMAScriptLanguage::reload_all_scripts() {
+	for (Set<Ref<ECMAScript> >::Element *E = scripts.front(); E; E = E->next()) {
+		reload_script(E->get(), true);
+	}
+}
+
+void ECMAScriptLanguage::reload_script(const Ref<Script> &p_script, bool p_soft_reload) {
+	Ref<ECMAScript> s = p_script;
+	if (s.is_valid()) {
+		Error err = OK;
+		Ref<ECMAScriptModule> module = ResourceFormatLoaderECMAScriptModule::load_static(s->get_script_path(), "", &err);
+		ERR_FAIL_COND_MSG(err != OK, ("Cannot load script file '" + s->get_script_path() + "'."));
+		s->set_source_code(module->get_source_code());
+		err = s->reload(p_soft_reload);
+		ERR_FAIL_COND_MSG(err != OK, "Parse source code from file '" + s->get_script_path() + "' failed.");
+	}
+}
+
 void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back(EXT_JSMODULE);
 	p_extensions->push_back(EXT_JSCLASS);

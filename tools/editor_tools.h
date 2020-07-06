@@ -21,7 +21,10 @@ protected:
 	static String BUILTIN_DECLEARATION_TEXT;
 	static String TSCONFIG_CONTENT;
 	static String TS_DECORATORS_CONTENT;
+
 	static void _bind_methods();
+
+	void _notification(int p_what);
 	void _on_menu_item_pressed(int item);
 	void _export_typescript_declare_file(const String &p_path);
 	void _export_enumeration_binding_file(const String &p_path);

@@ -61,4 +61,7 @@ ECMAScriptInstance::ECMAScriptInstance() {
 }
 
 ECMAScriptInstance::~ECMAScriptInstance() {
+	if (script.is_valid() && owner) {
+		script->instances.erase(owner);
+	}
 }
