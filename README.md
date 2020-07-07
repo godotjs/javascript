@@ -1,30 +1,30 @@
 ## JavaScript language binding for godot game engine
 
-This module implements the JavaScript script language support for godot game engine.
+This module implements JavaScript language support for the godot game engine.
 
 [QuickJS](https://bellard.org/quickjs/) is used as the ECMAScript engine.
 > QuickJS is a small and embeddable Javascript engine. It supports the ES2020 specification including modules, asynchronous generators and proxies.
 >
 > It optionally supports mathematical extensions such as big integers (BigInt), big floating point numbers (BigFloat) and operator overloading.
 
-It is also possible to replace the ECMAScript engine like V8 or SpiderMonkey but not in the near plan.
+In the future it may also be possible to replace the ECMAScript engine with other engines such as V8 or SpiderMonkey.
 
 **This project is still in development so it may contain bugs.**
 
 -----
 
-### Compile
+### Compilation
 * Clone the source code of [godot](https://github.com/godotengine/godot)
 * Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
-* [Recompile godot engine](https://docs.godotengine.org/en/3.2/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
+* [Recompile the godot engine](https://docs.godotengine.org/en/3.2/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
 
 ### Usage
 
 ##### How to export script class to godot
-1. Define your ECMAScript class inhirent from godot class and export it as **default** entry
+1. Define your ECMAScript class and inherit from a godot class then export it as the **default** entry
 ```js
-// The default export entry is treat as exported class to godot
+// The default export entry is treated as an exported class to godot
 export default class MySprite extends godot.Sprite {
 	
 	// this is _init() in GDScript
@@ -42,7 +42,7 @@ export default class MySprite extends godot.Sprite {
 }
 ```
 2. Save the script with extension `.jsx`
-3. Attach the script file to the node or resource object like you did with GDScript
+3. Attach the script file to the node or resource object like you do with GDScript
 
 ##### How to export signals
 
@@ -66,9 +66,9 @@ godot.register_property(MySprite, 'direction', new godot.Vector2(1, 0));
 
 #### About the API
 
-All godot api are define in the `godot` namespace.
+All of godots api's are defined within the `godot` namespace.
 
-We didn't change any api name so you don't need to change your habbit at all.
+No API names have been renamed or changed so you shouldn't need to change your habits.
 
 GDScript | ECMAScript
 ---- | ---
@@ -104,10 +104,10 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
   - `godot.set_script_icon(cls, path)` to set icon of the class
   - `godot.get_type(val)` Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
   - `godot.yield(target, signal)` Returns a Promise which will be resolved when the signal emitted
-  - `requestAnimationFrame(callback)` to add a callback function to be called every frame
-  - `cancelAnimationFrame(request_id)` to cancel an frame request previously scheduled
+  - `requestAnimationFrame(callback)` registers a callback function to be called every frame, returns a request ID.
+  - `cancelAnimationFrame(request_id)` to cancel a previously scheduled frame request
   - `require(module_id)` to load a CommonJS module or load a resource file
-  - `$` is the alia of `Node.get_node`
+  - `$` is the alias of `Node.get_node`
 - Using signals in the ECMAScript way
   - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect` and `godot.Object.is_connected`
 	```js
@@ -124,16 +124,16 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 	```js
 	import ICON from 'res://icon.png';
 	```
-- Multi-threading with minimal [Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Worker) (**This is an expiremental feature**)
+- Multi-threading with minimal [Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Worker) (**This is an experimental feature**)
 	- Start a new thread with Worker
 		```js
 		const worker = new Worker('worker.js'); // Run worker.js in a new thread context
 		worker.postMessage({type: 'load_dlc', value: 'dlc01.pck'});
 		worker.onmessage = function(msg) {
-			console.log("[MainThread] recived message from worker thread:", msg);
+			console.log("[MainThread] received message from worker thread:", msg);
 		}
 		```
-	- Tansfer value in different thread context with `Worker.abandonValue` and `Worker.adoptValue`
+	- Transfer value in different thread context with `Worker.abandonValue` and `Worker.adoptValue`
 		```js
 		// In worker thread
 		let id = Worker.abandonValue(object);
@@ -148,11 +148,14 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 		```
 	
 ### TypeScript support
-- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from godot editor to generate a TypeScript project
+- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from the godot editor to generate a TypeScript project
 - Run `tsc -w -p .` under your project folder in the terminal to compile scripts
 
-#### Here is an example for using TypesSript
+#### Example TypeScript Usage
+
 Make sure the file with extension '.tsx' so it can be compiled to a `.jsx` file then we can attach it to a node in godot editor.
+
+Most of the `register` functions are available as various decorators as seen below.
 
 ```ts
 import { signal, property, tool, onready } from "./decorators";
@@ -167,7 +170,7 @@ export default class InputLine extends godot.HBoxContainer {
 
 	static readonly Signal = Signal;
 	
-	// register offset property to godot inspector with default value Vector2(0, 0)
+	// register offset property with the godot inspector with default value of Vector2(0, 0)
 	@property(godot.Vector2.ZERO)
 	offset: Vector2;
 	
@@ -196,7 +199,7 @@ export default class InputLine extends godot.HBoxContainer {
 	get label(): godot.Label { return this._label; }
 	protected _label: godot.Label;
 
-	// call get_node('LineEdit') and assign the returen value to 'this.edit' automatically when the node is ready
+	// call get_node('LineEdit') and assign the returned value to 'this.edit' automatically when the node is ready
 	@onready('LineEdit')
 	edit: godot.LineEdit;
 
@@ -205,7 +208,7 @@ export default class InputLine extends godot.HBoxContainer {
 	}
 
 	_ready() {
-		// get first child with the type of godot.Lable
+		// get first child with the type of godot.Label
 		this._label = this.get_node(godot.Label);
 		
 		// Apply the inspector filled values with property setters
