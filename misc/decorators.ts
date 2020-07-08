@@ -85,3 +85,27 @@ export function onready<T extends godot.Node>(path: string | (new()=>godot.Node)
 		return descriptor;
 	}
 }
+
+/**
+ * Register the member as a node property  
+ * **Note: The value is null before current node is ready**
+ * @param path The default path name of the node
+ */
+export function node<T extends godot.Node>(path: string = "") {
+	return function (target: T, property: string, descriptor?: any) {
+		const key = `__on_ready_value:${property}`;
+		const path_key = `${property} `; // <-- a space here
+		descriptor = descriptor || {};
+		descriptor.set = function(v) { this[key] = v; };
+		descriptor.get = function() {
+			let v = this[key];
+			if (!v) {
+				v = (this as godot.Node).get_node(this[path_key]);
+				this[key] = v;
+			}
+			return v;
+		};
+		godot.register_property(target, path_key, { type: godot.TYPE_NODE_PATH, default: path});
+		return descriptor;
+	}
+}
