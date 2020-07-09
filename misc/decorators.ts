@@ -11,56 +11,27 @@ export function icon<T extends godot.Object>(icon) {
 }
 
 /** Register signal to godot script */
-export function signal<T extends godot.Object>(name: string) {
-	return function (target: new() => T) {
-		godot.register_signal(target, name);
-	}
-}
+export function signal(target: godot.Object | (new() => godot.Object), property: string, descriptor?: any) {
+	var constructor: Function = typeof(target) === 'function' ? target : target.constructor;
+	var prototype: object = constructor.prototype;
+	godot.register_signal(target, property);
 
-/**
- * Register multiple signals from an array or keys of an object
- * @param signals The object or array contains signal names
- */
-export function signals<T extends godot.Object>(signals: {[key: string]: any} | string[]) {
-	return function (target: new() => T) {
-		let keys: string[] = Array.isArray(signals) ? signals : Object.getOwnPropertyNames(signals);
-		for (const signal of keys) {
-			godot.register_signal(target, signal);
-		}
-	}
+	descriptor = descriptor || {};
+	(descriptor as PropertyDescriptor).value = property;
+	(descriptor as PropertyDescriptor).writable = false;
+
+	Object.defineProperty(constructor, property, descriptor);
+	Object.defineProperty(prototype, property, descriptor);
 }
 
 /**
  * Register property to godot class
  * @param value The default value of the property
  */
-export function property<T extends godot.Object>(value) {
+export function property<T extends godot.Object>(info: godot.PropertyInfo) {
 	return function (target: T, property: string, descriptor?: any) {
-		godot.register_property(target, property, value);
-		return descriptor;
-	}
-}
-
-/**
- * Register an enumeration property
- * @param enumeration Enumeration name list
- * @param default_value The default value of the property
- */
-export function enum_property<T extends godot.Object>(enumeration: string[], default_value?: string|number) {
-	return function (target: T, property: string, descriptor?: any) {
-		const pi: godot.PropertyInfo = {
-			hint: godot.PropertyHint.PROPERTY_HINT_ENUM,
-			type: typeof(default_value) === 'string' ? godot.TYPE_STRING : godot.TYPE_INT,
-			hint_string: '',
-			default: typeof(default_value) === 'string' ? default_value : 0
-		};
-		for (let i = 0; i < enumeration.length; i++) {
-			pi.hint_string += enumeration[i];
-			if (i < enumeration.length - 1) {
-				pi.hint_string += ',';
-			}
-		}
-		godot.register_property(target, property, pi);
+		info = info || {};
+		godot.register_property(target, property, info);
 		return descriptor;
 	}
 }
@@ -71,7 +42,7 @@ export function enum_property<T extends godot.Object>(enumeration: string[], def
  */
 export function onready<T extends godot.Node>(path: string | (new()=>godot.Node)) {
 	return function (target: T, property: string, descriptor?: any) {
-		const key = `__on_ready_value:${property}`;
+		const key = `$onready:${property}`;
 		descriptor = descriptor || {};
 		descriptor.set = function(v) { this[key] = v; };
 		descriptor.get = function() {
@@ -91,21 +62,43 @@ export function onready<T extends godot.Node>(path: string | (new()=>godot.Node)
  * **Note: The value is null before current node is ready**
  * @param path The default path name of the node
  */
-export function node<T extends godot.Node>(path: string = "") {
+export function node<T extends godot.Node>(target: T, property: string, descriptor?: any) {
+	const key = `$onready:${property}`;
+	const path_key = `${property} `; // <-- a space at the end
+	descriptor = descriptor || {};
+	descriptor.set = function(v) { this[key] = v; };
+	descriptor.get = function() {
+		let v = this[key];
+		if (!v) {
+			v = (this as godot.Node).get_node(this[path_key]);
+			this[key] = v;
+		}
+		return v;
+	};
+	godot.register_property(target, path_key, { type: godot.TYPE_NODE_PATH });
+	return descriptor;
+}
+
+/**
+ * Register an enumeration property
+ * @param enumeration Enumeration name list
+ * @param default_value The default value of the property
+ */
+export function enumeration<T extends godot.Object>(enumeration: string[], default_value?: string|number) {
 	return function (target: T, property: string, descriptor?: any) {
-		const key = `__on_ready_value:${property}`;
-		const path_key = `${property} `; // <-- a space here
-		descriptor = descriptor || {};
-		descriptor.set = function(v) { this[key] = v; };
-		descriptor.get = function() {
-			let v = this[key];
-			if (!v) {
-				v = (this as godot.Node).get_node(this[path_key]);
-				this[key] = v;
-			}
-			return v;
+		const pi: godot.PropertyInfo = {
+			hint: godot.PropertyHint.PROPERTY_HINT_ENUM,
+			type: typeof(default_value) === 'string' ? godot.TYPE_STRING : godot.TYPE_INT,
+			hint_string: '',
+			default: typeof(default_value) === 'string' ? default_value : 0
 		};
-		godot.register_property(target, path_key, { type: godot.TYPE_NODE_PATH, default: path});
+		for (let i = 0; i < enumeration.length; i++) {
+			pi.hint_string += enumeration[i];
+			if (i < enumeration.length - 1) {
+				pi.hint_string += ',';
+			}
+		}
+		godot.register_property(target, property, pi);
 		return descriptor;
 	}
 }
