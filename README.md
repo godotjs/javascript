@@ -1,17 +1,16 @@
 ## JavaScript language binding for godot game engine
 
-This module implements JavaScript language support for the godot game engine.
-
-[QuickJS](https://bellard.org/quickjs/) is used as the ECMAScript engine.
-> QuickJS is a small and embeddable Javascript engine. It supports the ES2020 specification including modules, asynchronous generators and proxies.
->
-> It optionally supports mathematical extensions such as big integers (BigInt), big floating point numbers (BigFloat) and operator overloading.
-
-In the future it may also be possible to replace the ECMAScript engine with other engines such as V8 or SpiderMonkey.
-
-**This project is still in development so it may contain bugs.**
+This module implements JavaScript/TypeScript language support for the godot game engine. [QuickJS](https://bellard.org/quickjs/) is used as the ECMAScript engine.
 
 -----
+
+### Features
+- Almost complete ES2020 support
+- All godot api avaliable
+- Operator overriding for builtin types (Vector3, Color, etc)
+- Using thirdpart libraries directly from npm
+- Multi-thread support with Worker API
+- Full TypeScript workflow support
 
 ### Compilation
 * Clone the source code of [godot](https://github.com/godotengine/godot)
@@ -158,24 +157,25 @@ Make sure the file with extension '.tsx' so it can be compiled to a `.jsx` file 
 Most of the `register` functions are available as various decorators as seen below.
 
 ```ts
-import { signal, property, tool, onready } from "./decorators";
-
-export const Signal = {
-	OnTextChanged: 'OnTextChanged'
-};
+import { signal, property, tool, onready, node } from "./decorators";
 
 @tool // make the script runnable in godot editor
-@signal(Signal.OnTextChanged) // register signal to class InputLine
 export default class InputLine extends godot.HBoxContainer {
 
-	static readonly Signal = Signal;
-	
+	// define a signal
+	@signal
+	static readonly OnTextChanged: string;
+
+	// expose a node property
+	@node
+	icon: godot.Sprite;
+
 	// register offset property with the godot inspector with default value of Vector2(0, 0)
-	@property(godot.Vector2.ZERO)
+	@property({ default: godot.Vector2.ZERO })
 	offset: Vector2;
 	
 	// register properties for godot editor inspector
-	@property("Title")
+	@property({ type: godot.VariantType.TYPE_STRING })
 	get title() { return this._title; }
 	set title(v: string) {
 		this._title = v;
@@ -185,7 +185,7 @@ export default class InputLine extends godot.HBoxContainer {
 	}
 	private _title: string;
 
-	@property("Input text here")
+	@property({ default: "Input text here" })
 	get hint() { return this._hint; }
 	set hint(v: string) {
 		this._hint = v;
@@ -216,7 +216,7 @@ export default class InputLine extends godot.HBoxContainer {
 		this.hint = this.hint;
 
 		this.edit.connect(godot.LineEdit.text_changed, (text: string)=>{
-			this.emit_signal(Signal.OnTextChanged, text);
+			this.emit_signal(InputLine.OnTextChanged, text);
 		});
 	}
 }
