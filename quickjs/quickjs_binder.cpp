@@ -1311,7 +1311,8 @@ void QuickJSBinder::frame() {
 	while (id) {
 		const ECMAScriptGCHandler &func = frame_callbacks.get(*id);
 		JSValueConst js_func = JS_MKPTR(JS_TAG_OBJECT, func.ecma_object);
-		JSValue argv[] = { JS_NewInt64(ctx, (int64_t)OS::get_singleton()->get_system_time_msecs()) };
+		double timestamp = OS::get_singleton()->get_ticks_usec() / 1000.0;
+		JSValue argv[] = { JS_NewFloat64(ctx, timestamp) };
 		JSValue ret = JS_Call(ctx, js_func, global_object, 1, argv);
 		JS_FreeValue(ctx, argv[0]);
 		if (JS_IsException(ret)) {
