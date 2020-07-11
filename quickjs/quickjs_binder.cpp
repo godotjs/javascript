@@ -187,7 +187,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 		case Variant::BOOL:
 			return ((bool)p_var) ? JS_TRUE : JS_FALSE;
 		case Variant::INT:
-			return JS_NewInt32(ctx, int32_t(p_var));
+			return JS_NewInt64(ctx, int64_t(p_var));
 		case Variant::REAL:
 			return JS_NewFloat64(ctx, (double)(p_var));
 		case Variant::NODE_PATH:
