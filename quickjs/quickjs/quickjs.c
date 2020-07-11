@@ -6757,6 +6757,9 @@ static int JS_SetPrototypeInternal(JSContext *ctx, JSValueConst obj,
     if (unlikely(p->class_id == JS_CLASS_PROXY))
         return js_proxy_setPrototypeOf(ctx, obj, proto_val, throw_flag);
     sh = p->shape;
+    if (!sh) {
+        return -1;
+    }
     if (sh->proto == proto)
         return TRUE;
     if (!p->extensible) {

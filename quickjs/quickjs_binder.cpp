@@ -1859,7 +1859,13 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->constructor.ecma_object);
 	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 	JS_CallConstructor2(ctx, constructor, object, 0, NULL);
-	JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object));
+	if (JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object)) < 0) {
+		JSValue e = JS_GetException(ctx);
+		ECMAscriptScriptError error;
+		dump_exception(ctx, e, &error);
+		JS_FreeValue(ctx, e);
+		ERR_FAIL_V_MSG(*bind, vformat("Cannot create instance from %s\n%s", p_class->class_name, error_to_string(error)));
+	}
 
 	// Initialize properties with default value
 	const StringName *prop_name = p_class->properties.next(NULL);
@@ -1871,7 +1877,7 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 			ECMAscriptScriptError error;
 			dump_exception(ctx, e, &error);
 			JS_FreeValue(ctx, e);
-			ERR_PRINTS(error_to_string(error));
+			ERR_PRINTS(vformat("Cannot initialize property %s of %s\n%s", *prop_name, p_class->class_name, error_to_string(error)));
 		}
 		JS_FreeAtom(ctx, pname);
 		prop_name = p_class->properties.next(prop_name);
