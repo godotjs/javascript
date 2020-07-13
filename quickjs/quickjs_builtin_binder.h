@@ -25,9 +25,21 @@ private:
 	JSValue to_string_function;
 	JSAtom js_key_to_string;
 
+	struct GodotVariantParser {
+		Variant::Type type;
+		union {
+			Transform2D *_transform2d;
+			::AABB *_aabb;
+			Basis *_basis;
+			Transform *_transform;
+			void *_ptr; //generic pointer
+			uint8_t _mem[sizeof(real_t)];
+		} data GCC_ALIGNED_8;
+	};
+
 public:
 	void builtin_finalizer(ECMAScriptGCHandler *p_bind);
-	JSValue bind_builtin_object(Variant::Type p_type, void *p_object);
+	JSValue bind_builtin_object(Variant::Type p_type, const void *p_object);
 
 	void register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc);
 	void register_property(Variant::Type p_type, const char *p_name, JSCFunctionMagic *p_getter, JSCFunctionMagic *p_setter, int magic);
@@ -50,7 +62,7 @@ public:
 	_FORCE_INLINE_ JSClassID get_classid(Variant::Type p_type) { return builtin_class_map[p_type].id; }
 	_FORCE_INLINE_ BuiltinClass &get_class(Variant::Type p_type) { return *(builtin_class_map + p_type); }
 
-	static JSValue bind_builtin_object_static(JSContext *ctx, Variant::Type p_type, void *p_object);
+	static JSValue bind_builtin_object_static(JSContext *ctx, Variant::Type p_type, const void *p_object);
 	static JSValue new_object_from(JSContext *ctx, const Variant &p_val);
 	static JSValue new_object_from(JSContext *ctx, const Vector2 &p_val);
 	static JSValue new_object_from(JSContext *ctx, const Vector3 &p_val);
