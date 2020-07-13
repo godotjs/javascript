@@ -214,9 +214,11 @@ Script *ECMAScriptLanguage::create_script() const {
 }
 
 void ECMAScriptLanguage::reload_all_scripts() {
+#ifdef TOOLS_ENABLED
 	for (Set<Ref<ECMAScript> >::Element *E = scripts.front(); E; E = E->next()) {
 		reload_script(E->get(), true);
 	}
+#endif
 }
 
 void ECMAScriptLanguage::reload_script(const Ref<Script> &p_script, bool p_soft_reload) {

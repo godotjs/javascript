@@ -38,8 +38,9 @@ public:
 	_FORCE_INLINE_ int get_language_index() const { return language_index; }
 	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
 
+#ifdef TOOLS_ENABLED
 	_FORCE_INLINE_ Set<Ref<ECMAScript> > &get_scripts() { return scripts; }
-
+#endif
 	/* LANGUAGE FUNCTIONS */
 
 	_FORCE_INLINE_ virtual String get_type() const { return "JavaScript"; }
