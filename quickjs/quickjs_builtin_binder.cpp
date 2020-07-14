@@ -78,7 +78,7 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, const vo
 		default:
 			break;
 	}
-	void *ptr = Memory::alloc_static(sizeof(ECMAScriptGCHandler) + size, false);
+	void *ptr = memalloc(sizeof(ECMAScriptGCHandler) + size);
 	ECMAScriptGCHandler *bind = memnew_placement(ptr, ECMAScriptGCHandler);
 	bind->context = ctx;
 	bind->type = p_type;
@@ -95,7 +95,7 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, const vo
 }
 
 void QuickJSBuiltinBinder::builtin_finalizer(ECMAScriptGCHandler *p_bind) {
-	Memory::free_static(p_bind, false);
+	memfree(p_bind);
 }
 
 void QuickJSBuiltinBinder::register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc) {

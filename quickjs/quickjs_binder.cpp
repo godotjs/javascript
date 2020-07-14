@@ -1430,8 +1430,8 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 		data->type = Variant::OBJECT;
 		data->flags = ECMAScriptGCHandler::FLAG_OBJECT;
 		if (Reference *ref = Object::cast_to<Reference>(p_object)) {
+			ref->reference();
 			data->flags |= ECMAScriptGCHandler::FLAG_REFERENCE;
-			ref->reference(); // This will call godot_refcount_incremented when the object is created form js
 			union {
 				REF *ref;
 				struct {
@@ -1454,7 +1454,7 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 
 void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
-	if (bind->is_valid_ecma_object()) {
+	if (bind->is_valid_ecma_object() && bind->is_reference()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		JS_DupValue((JSContext *)bind->context, js_obj); // JS ref_count ++
 	}
@@ -1462,7 +1462,7 @@ void QuickJSBinder::godot_refcount_incremented(Reference *p_object) {
 
 bool QuickJSBinder::godot_refcount_decremented(Reference *p_object) {
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
-	if (bind->is_valid_ecma_object()) {
+	if (bind->is_valid_ecma_object() && bind->is_reference()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		JS_FreeValue((JSContext *)bind->context, js_obj); // JS ref_count --
 		return bind->is_finalized();
@@ -1505,8 +1505,10 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		si->binder = binder;
 		gd_obj->set_script_instance(si);
 
-		if (bind->is_reference()) {
+		if (bind->is_reference()) { // restore the ref count added in bind_gc_object
+			bind->flags ^= ECMAScriptGCHandler::FLAG_REFERENCE; // Diable the flag to avoid affects to js ref count by unreference call
 			bind->godot_reference->ptr()->unreference();
+			bind->flags |= ECMAScriptGCHandler::FLAG_REFERENCE;
 		} else if (bind->is_object()) {
 			JS_DupValue(ctx, js_obj);
 		}
@@ -1516,11 +1518,11 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 }
 
 void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
-	if (p_bind->is_reference()) {
-		memdelete(p_bind->godot_reference);
-		p_bind->flags ^= ECMAScriptGCHandler::FLAG_REFERENCE;
-	}
 	p_bind->flags ^= ECMAScriptGCHandler::FLAG_OBJECT;
+	if (p_bind->is_reference()) {
+		p_bind->flags ^= ECMAScriptGCHandler::FLAG_REFERENCE;
+		memdelete(p_bind->godot_reference);
+	}
 }
 
 void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
@@ -1533,7 +1535,6 @@ void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
 		} else {
 			binder->builtin_binder.builtin_finalizer(bind);
 		}
-		bind->clear();
 		JS_SetOpaque(val, NULL);
 	}
 }
