@@ -49,7 +49,7 @@ void QuickJSWorker::thread_main(void *p_this) {
 }
 
 JSValue QuickJSWorker::global_worker_close(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
-	QuickJSWorker *worker = dynamic_cast<QuickJSWorker *>(get_context_binder(ctx));
+	QuickJSWorker *worker = static_cast<QuickJSWorker *>(get_context_binder(ctx));
 	if (worker) {
 		worker->running = false;
 	}
@@ -58,7 +58,7 @@ JSValue QuickJSWorker::global_worker_close(JSContext *ctx, JSValue this_val, int
 
 JSValue QuickJSWorker::global_worker_post_message(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc < 1, JS_ThrowTypeError(ctx, "message value expected of argument #0"));
-	QuickJSWorker *worker = dynamic_cast<QuickJSWorker *>(get_context_binder(ctx));
+	QuickJSWorker *worker = static_cast<QuickJSWorker *>(get_context_binder(ctx));
 	if (worker) {
 		GLOBAL_LOCK_FUNCTION
 		worker->output_message_queue.push_back(var_to_variant(ctx, argv[0]));

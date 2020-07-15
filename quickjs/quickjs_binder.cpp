@@ -1388,7 +1388,7 @@ Error QuickJSBinder::compile_to_bytecode(const String &p_code, Vector<uint8_t> &
 
 Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module) {
 	JSValue value = JS_ReadObject(ctx, p_bytecode.ptr(), p_bytecode.size(), JS_READ_OBJ_BYTECODE);
-	ERR_FAIL_COND_V(value.tag != JS_TAG_MODULE, ERR_PARSE_ERROR);
+	ERR_FAIL_COND_V(JS_VALUE_GET_TAG(value) != JS_TAG_MODULE, ERR_PARSE_ERROR);
 	r_module->ecma_object = JS_VALUE_GET_PTR(value);
 	return OK;
 }
