@@ -172,7 +172,7 @@ export default class InputLine extends godot.HBoxContainer {
 
 	// register offset property with the godot inspector with default value of Vector2(0, 0)
 	@property({ default: godot.Vector2.ZERO })
-	offset: Vector2;
+	offset: godot.Vector2;
 	
 	// register properties for godot editor inspector
 	@property({ type: godot.VariantType.TYPE_STRING })
@@ -189,9 +189,9 @@ export default class InputLine extends godot.HBoxContainer {
 	get hint() { return this._hint; }
 	set hint(v: string) {
 		this._hint = v;
-		if (this._edit) {
-			this._edit.hint_tooltip = v;
-			this._edit.placeholder_text = v;
+		if (this.edit) {
+			this.edit.hint_tooltip = v;
+			this.edit.placeholder_text = v;
 		}
 	}
 	private _hint: string;
