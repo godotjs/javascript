@@ -237,8 +237,8 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 }
 
 Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
-
-	switch (JS_VALUE_GET_TAG(p_val)) {
+	int64_t tag = JS_VALUE_GET_TAG(p_val);
+	switch (tag) {
 		case JS_TAG_INT:
 			return Variant(JS_VALUE_GET_INT(p_val));
 		case JS_TAG_BOOL:
@@ -277,7 +277,16 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 				return dict;
 			}
 		} break;
+		case JS_TAG_NULL:
+		case JS_TAG_UNDEFINED:
+			return Variant();
+			break;
 		default:
+#ifdef JS_NAN_BOXING
+			if (tag > JS_TAG_FLOAT64 || tag < JS_TAG_FIRST) {
+				return Variant(real_t(JS_VALUE_GET_FLOAT64(p_val)));
+			}
+#endif
 			return Variant();
 	}
 }
