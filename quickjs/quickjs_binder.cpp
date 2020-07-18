@@ -1899,7 +1899,8 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 		ECMAscriptScriptError error;
 		dump_exception(ctx, e, &error);
 		JS_FreeValue(ctx, e);
-		ERR_FAIL_V_MSG(*bind, vformat("Cannot create instance from %s\n%s", p_class->class_name, error_to_string(error)));
+		bind->ecma_object = NULL;
+		ERR_FAIL_V_MSG(*bind, vformat("Cannot create instance from ECMAScript class '%s'\n%s", p_class->class_name, error_to_string(error)));
 	}
 
 	// Initialize properties with default value
@@ -1912,7 +1913,7 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 			ECMAscriptScriptError error;
 			dump_exception(ctx, e, &error);
 			JS_FreeValue(ctx, e);
-			ERR_PRINTS(vformat("Cannot initialize property %s of %s\n%s", *prop_name, p_class->class_name, error_to_string(error)));
+			ERR_PRINTS(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, error_to_string(error)));
 		}
 		JS_FreeAtom(ctx, pname);
 		prop_name = p_class->properties.next(prop_name);
