@@ -129,19 +129,19 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	String err_message;
 	switch (call_err.error) {
 		case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
-			err_message = "Argument of type '" + Variant::get_type_name(binder->method_call_arguments[call_err.argument].get_type()) + "' is not assignable to parameter #" + itos(call_err.argument) + " of type '" + Variant::get_type_name(call_err.expected) + "'.";
+			err_message = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(binder->method_call_arguments[call_err.argument].get_type()), call_err.argument, Variant::get_type_name(call_err.expected));
 			break;
 		case Variant::CallError::CALL_ERROR_INVALID_METHOD:
-			err_message = "Invalid method '" + String(mb->get_name()) + "' for type '" + obj->get_class_name() + "'.";
+			err_message = vformat("Invalid method '%s' for type '%s'", mb->get_name(), obj->get_class_name());
 			break;
 		case Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
-			err_message = "Too few arguments for method '" + String(mb->get_name()) + "'";
+			err_message = vformat("Too few arguments for method '%s'", mb->get_name());
 			break;
 		case Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
-			err_message = "Too many arguments for method '" + String(mb->get_name()) + "'";
+			err_message = vformat("Too many arguments for method '%s'", mb->get_name());
 			break;
 		case Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL:
-			err_message = "Attempt to call " + String(mb->get_name()) + " on a null instance.";
+			err_message = vformat("Attempt to call '%s' on a null instance.", mb->get_name());
 			break;
 		default:
 			break;
@@ -300,6 +300,30 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
 	}
 	Expression::exec_func(func, binder->method_call_argument_ptrs, &ret, err, err_msg);
+#ifdef DEBUG_METHODS_ENABLED
+	if (err.error != Variant::CallError::CALL_OK) {
+		String func_name = Expression::get_func_name(func);
+		if (err_msg.empty()) {
+			switch (err.error) {
+				case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
+					err_msg = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(binder->method_call_arguments[err.argument].get_type()), err.argument, Variant::get_type_name(err.expected));
+					break;
+				case Variant::CallError::CALL_ERROR_INVALID_METHOD:
+					err_msg = vformat("Invalid builtin function", func_name);
+					break;
+				case Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
+					err_msg = vformat("Too few arguments builtin function", func_name);
+					break;
+				case Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
+					err_msg = vformat("Too many arguments for builtin function", func_name);
+					break;
+				default:
+					break;
+			}
+		}
+	}
+#endif
+
 	for (int i = 0; i < argc; ++i) {
 		binder->method_call_arguments[i] = Variant();
 	}
