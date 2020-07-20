@@ -304,7 +304,7 @@ public:
 	const ECMAClassInfo *parse_ecma_class_from_module(ModuleCache *p_module, const String &p_path, ECMAscriptScriptError *r_error);
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object);
-	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
+	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);

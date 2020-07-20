@@ -54,26 +54,26 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, const vo
 		case Variant::AABB:
 			size += sizeof(AABB);
 			break;
-		case Variant::POOL_INT_ARRAY:
-			size += sizeof(PoolIntArray);
+		case Variant::PACKED_INT32_ARRAY:
+			size += sizeof(PackedInt32Array);
 			break;
-		case Variant::POOL_BYTE_ARRAY:
-			size += sizeof(PoolByteArray);
+		case Variant::PACKED_BYTE_ARRAY:
+			size += sizeof(PackedByteArray);
 			break;
-		case Variant::POOL_REAL_ARRAY:
-			size += sizeof(PoolRealArray);
+		case Variant::PACKED_FLOAT32_ARRAY:
+			size += sizeof(PackedFloat32Array);
 			break;
-		case Variant::POOL_COLOR_ARRAY:
-			size += sizeof(PoolColorArray);
+		case Variant::PACKED_COLOR_ARRAY:
+			size += sizeof(PackedColorArray);
 			break;
-		case Variant::POOL_STRING_ARRAY:
-			size += sizeof(PoolStringArray);
+		case Variant::PACKED_STRING_ARRAY:
+			size += sizeof(PackedStringArray);
 			break;
-		case Variant::POOL_VECTOR2_ARRAY:
-			size += sizeof(PoolVector2Array);
+		case Variant::PACKED_VECTOR2_ARRAY:
+			size += sizeof(PackedVector2Array);
 			break;
-		case Variant::POOL_VECTOR3_ARRAY:
-			size += sizeof(PoolVector3Array);
+		case Variant::PACKED_VECTOR3_ARRAY:
+			size += sizeof(PackedVector3Array);
 			break;
 		default:
 			break;
@@ -482,32 +482,32 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Basis &p_val
 	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::BASIS, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolIntArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_INT_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedInt32Array &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_INT32_ARRAY, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolByteArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_BYTE_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedByteArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_BYTE_ARRAY, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolRealArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_REAL_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedFloat32Array &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_FLOAT32_ARRAY, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolColorArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_COLOR_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedColorArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_COLOR_ARRAY, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolStringArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_STRING_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedStringArray &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_STRING_ARRAY, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector2Array &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_VECTOR2_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedVector2Array &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_VECTOR2_ARRAY, &p_val);
 }
 
-JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector3Array &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_VECTOR3_ARRAY, &p_val);
+JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedVector3Array &p_val) {
+	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PACKED_VECTOR3_ARRAY, &p_val);
 }
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
@@ -515,12 +515,12 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	{ // PoolByteArray
 		// PoolByteArray.prototype.compress
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_BYTE_ARRAY,
+				Variant::PACKED_BYTE_ARRAY,
 				"compress",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolByteArray *ptr = bind->getPoolByteArray();
-					PoolByteArray compressed;
+					PackedByteArray *ptr = bind->getPackedByteArray();
+					PackedByteArray compressed;
 					if (ptr->size() > 0) {
 #ifdef DEBUG_METHODS_ENABLED
 						ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of PoolByteArray.compress")));
@@ -536,12 +536,12 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				1);
 		// PoolByteArray.prototype.decompress
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_BYTE_ARRAY,
+				Variant::PACKED_BYTE_ARRAY,
 				"decompress",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolByteArray *ptr = bind->getPoolByteArray();
-					PoolByteArray decompressed;
+					PackedByteArray *ptr = bind->getPackedByteArray();
+					PackedByteArray decompressed;
 #ifdef DEBUG_METHODS_ENABLED
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of PoolByteArray.decompress")));
 #endif
@@ -562,14 +562,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 
 		// PoolByteArray.prototype.get_string_from_utf8
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_BYTE_ARRAY,
+				Variant::PACKED_BYTE_ARRAY,
 				"get_string_from_utf8",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolByteArray *ptr = bind->getPoolByteArray();
+					PackedByteArray *ptr = bind->getPackedByteArray();
 					String ret;
 					if (ptr->size() > 0) {
-						PoolByteArray::Read r = ptr->read();
+						PackedByteArray::Read r = ptr->read();
 						ret.parse_utf8((const char *)r.ptr(), ptr->size());
 					}
 					return QuickJSBinder::to_js_string(ctx, ret);
@@ -577,14 +577,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				0);
 		// PoolByteArray.prototype.get_string_from_ascii
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_BYTE_ARRAY,
+				Variant::PACKED_BYTE_ARRAY,
 				"get_string_from_ascii",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolByteArray *ptr = bind->getPoolByteArray();
+					PackedByteArray *ptr = bind->getPackedByteArray();
 					String ret;
 					if (ptr->size() > 0) {
-						PoolByteArray::Read r = ptr->read();
+						PackedByteArray::Read r = ptr->read();
 						CharString cs;
 						cs.resize(ptr->size() + 1);
 						copymem(cs.ptrw(), r.ptr(), ptr->size());
@@ -596,14 +596,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				0);
 		// PoolByteArray.prototype.hex_encode
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_BYTE_ARRAY,
+				Variant::PACKED_BYTE_ARRAY,
 				"hex_encode",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolByteArray *ptr = bind->getPoolByteArray();
+					PackedByteArray *ptr = bind->getPackedByteArray();
 					String ret;
 					if (ptr->size() > 0) {
-						PoolByteArray::Read r = ptr->read();
+						PackedByteArray::Read r = ptr->read();
 						ret = String::hex_encode_buffer(&r[0], ptr->size());
 					}
 					return QuickJSBinder::to_js_string(ctx, ret);
@@ -611,14 +611,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				0);
 		// PoolByteArray.prototype.get_buffer
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_BYTE_ARRAY,
+				Variant::PACKED_BYTE_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolByteArray *array = memnew(PoolByteArray(*bind->getPoolByteArray()));
+					PackedByteArray *array = memnew(PackedByteArray(*bind->getPackedByteArray()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, const_cast<uint8_t *>(array->read().ptr()), array->size(), [](JSRuntime *rt, void *opaque, void *ptr) {
-								memdelete(static_cast<PoolByteArray *>(opaque));
+								memdelete(static_cast<PackedByteArray *>(opaque));
 							},
 							array, false);
 					return ret;
@@ -628,14 +628,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	{
 		// PoolIntArray.prototype.get_buffer
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_INT_ARRAY,
+				Variant::PACKED_INT32_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolIntArray *array = memnew(PoolIntArray(*bind->getPoolIntArray()));
+					PackedInt32Array *array = memnew(PackedInt32Array(*bind->getPackedInt32Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(int), [](JSRuntime *rt, void *opaque, void *ptr) {
-								memdelete(static_cast<PoolIntArray *>(opaque));
+								memdelete(static_cast<PackedInt32Array *>(opaque));
 							},
 							array, false);
 					return ret;
@@ -645,14 +645,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	{
 		// PoolRealArray.prototype.get_buffer
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_REAL_ARRAY,
+				Variant::PACKED_FLOAT32_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolRealArray *array = memnew(PoolRealArray(*bind->getPoolRealArray()));
+					PackedFloat32Array *array = memnew(PackedFloat32Array(*bind->getPackedFloat32Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(real_t), [](JSRuntime *rt, void *opaque, void *ptr) {
-								memdelete(static_cast<PoolRealArray *>(opaque));
+								memdelete(static_cast<PackedFloat32Array *>(opaque));
 							},
 							array, false);
 					return ret;
@@ -662,14 +662,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	{
 		// PoolVector2Array.prototype.get_buffer
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_VECTOR2_ARRAY,
+				Variant::PACKED_VECTOR2_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolVector2Array *array = memnew(PoolVector2Array(*bind->getPoolVector2Array()));
+					PackedVector2Array *array = memnew(PackedVector2Array(*bind->getPackedVector2Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(Vector2), [](JSRuntime *rt, void *opaque, void *ptr) {
-								memdelete(static_cast<PoolVector2Array *>(opaque));
+								memdelete(static_cast<PackedVector2Array *>(opaque));
 							},
 							array, false);
 					return ret;
@@ -680,14 +680,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	{
 		// PoolVector3Array.prototype.get_buffer
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_VECTOR3_ARRAY,
+				Variant::PACKED_VECTOR3_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolVector3Array *array = memnew(PoolVector3Array(*bind->getPoolVector3Array()));
+					PackedVector3Array *array = memnew(PackedVector3Array(*bind->getPackedVector3Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(Vector3), [](JSRuntime *rt, void *opaque, void *ptr) {
-								memdelete(static_cast<PoolVector3Array *>(opaque));
+								memdelete(static_cast<PackedVector3Array *>(opaque));
 							},
 							array, false);
 					return ret;
@@ -698,14 +698,14 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	{
 		// PoolColorArray.prototype.get_buffer
 		binder->get_builtin_binder().register_method(
-				Variant::POOL_COLOR_ARRAY,
+				Variant::PACKED_COLOR_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-					PoolColorArray *array = memnew(PoolColorArray(*bind->getPoolColorArray()));
+					PackedColorArray *array = memnew(PackedColorArray(*bind->getPackedColorArray()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->read().ptr()), array->size() * sizeof(Color), [](JSRuntime *rt, void *opaque, void *ptr) {
-								memdelete(static_cast<PoolColorArray *>(opaque));
+								memdelete(static_cast<PackedColorArray *>(opaque));
 							},
 							array, false);
 					return ret;

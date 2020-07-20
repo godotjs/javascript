@@ -63,20 +63,20 @@ struct ECMAScriptGCHandler {
 				return *(static_cast<Plane *>(godot_builtin_object_ptr));
 			case Variant::AABB:
 				return *(static_cast<AABB *>(godot_builtin_object_ptr));
-			case Variant::POOL_INT_ARRAY:
-				return *(static_cast<PoolIntArray *>(godot_builtin_object_ptr));
-			case Variant::POOL_BYTE_ARRAY:
-				return *(static_cast<PoolByteArray *>(godot_builtin_object_ptr));
-			case Variant::POOL_REAL_ARRAY:
-				return *(static_cast<PoolRealArray *>(godot_builtin_object_ptr));
-			case Variant::POOL_COLOR_ARRAY:
-				return *(static_cast<PoolColorArray *>(godot_builtin_object_ptr));
-			case Variant::POOL_STRING_ARRAY:
-				return *(static_cast<PoolStringArray *>(godot_builtin_object_ptr));
-			case Variant::POOL_VECTOR2_ARRAY:
-				return *(static_cast<PoolVector2Array *>(godot_builtin_object_ptr));
-			case Variant::POOL_VECTOR3_ARRAY:
-				return *(static_cast<PoolVector3Array *>(godot_builtin_object_ptr));
+			case Variant::PACKED_INT32_ARRAY:
+				return *(static_cast<PackedInt32Array *>(godot_builtin_object_ptr));
+			case Variant::PACKED_BYTE_ARRAY:
+				return *(static_cast<PackedByteArray *>(godot_builtin_object_ptr));
+			case Variant::PACKED_FLOAT32_ARRAY:
+				return *(static_cast<PackedFloat32Array *>(godot_builtin_object_ptr));
+			case Variant::PACKED_COLOR_ARRAY:
+				return *(static_cast<PackedColorArray *>(godot_builtin_object_ptr));
+			case Variant::PACKED_STRING_ARRAY:
+				return *(static_cast<PackedStringArray *>(godot_builtin_object_ptr));
+			case Variant::PACKED_VECTOR2_ARRAY:
+				return *(static_cast<PackedVector2Array *>(godot_builtin_object_ptr));
+			case Variant::PACKED_VECTOR3_ARRAY:
+				return *(static_cast<PackedVector3Array *>(godot_builtin_object_ptr));
 			default:
 				return Variant();
 		}
@@ -103,13 +103,13 @@ struct ECMAScriptGCHandler {
 	_FORCE_INLINE_ RID *getRID() const { return static_cast<RID *>(godot_builtin_object_ptr); }
 	_FORCE_INLINE_ Plane *getPlane() const { return static_cast<Plane *>(godot_builtin_object_ptr); }
 	_FORCE_INLINE_ Quat *getQuat() const { return static_cast<Quat *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolIntArray *getPoolIntArray() const { return static_cast<PoolIntArray *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolByteArray *getPoolByteArray() const { return static_cast<PoolByteArray *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolRealArray *getPoolRealArray() const { return static_cast<PoolRealArray *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolStringArray *getPoolStringArray() const { return static_cast<PoolStringArray *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolColorArray *getPoolColorArray() const { return static_cast<PoolColorArray *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolVector2Array *getPoolVector2Array() const { return static_cast<PoolVector2Array *>(godot_builtin_object_ptr); }
-	_FORCE_INLINE_ PoolVector3Array *getPoolVector3Array() const { return static_cast<PoolVector3Array *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedInt32Array *getPackedInt32Array() const { return static_cast<PackedInt32Array *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedByteArray *getPackedByteArray() const { return static_cast<PackedByteArray *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedFloat32Array *getPackedFloat32Array() const { return static_cast<PackedFloat32Array *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedStringArray *getPackedStringArray() const { return static_cast<PackedStringArray *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedColorArray *getPackedColorArray() const { return static_cast<PackedColorArray *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedVector2Array *getPackedVector2Array() const { return static_cast<PackedVector2Array *>(godot_builtin_object_ptr); }
+	_FORCE_INLINE_ PackedVector3Array *getPackedVector3Array() const { return static_cast<PackedVector3Array *>(godot_builtin_object_ptr); }
 
 	_FORCE_INLINE_ bool is_object() const {
 		return flags & FLAG_OBJECT && !(flags & FLAG_REFERENCE);

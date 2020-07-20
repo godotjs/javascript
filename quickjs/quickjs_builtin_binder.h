@@ -34,7 +34,8 @@ private:
 			Transform *_transform;
 			void *_ptr; //generic pointer
 			uint8_t _mem[sizeof(real_t)];
-		} data GCC_ALIGNED_8;
+		} data;
+		// } data GCC_ALIGNED_8;
 	};
 
 public:
@@ -75,13 +76,13 @@ public:
 	static JSValue new_object_from(JSContext *ctx, const RID &p_val);
 	static JSValue new_object_from(JSContext *ctx, const AABB &p_val);
 	static JSValue new_object_from(JSContext *ctx, const Basis &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolIntArray &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolByteArray &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolRealArray &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolColorArray &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolStringArray &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolVector2Array &p_val);
-	static JSValue new_object_from(JSContext *ctx, const PoolVector3Array &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedInt32Array &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedByteArray &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedFloat32Array &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedColorArray &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedStringArray &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedVector2Array &p_val);
+	static JSValue new_object_from(JSContext *ctx, const PackedVector3Array &p_val);
 };
 
 #endif // QUICKJS_BUILTIN_BINDER_H

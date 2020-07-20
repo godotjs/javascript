@@ -47,7 +47,7 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 		ERR_FAIL_V(NULL);
 	}
 
-	Variant::CallError unchecked_error;
+	Callable::CallError unchecked_error;
 	ECMAScriptGCHandler ecma_instance = binder->create_ecma_instance_for_godot_object(cls, p_this);
 	ERR_FAIL_NULL_V(ecma_instance.ecma_object, NULL);
 

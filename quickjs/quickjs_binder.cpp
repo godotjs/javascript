@@ -122,31 +122,31 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
 	}
 
-	Variant::CallError call_err;
+	Callable::CallError call_err;
 	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc, call_err);
 	JSValue ret = variant_to_var(ctx, ret_val);
 #ifdef DEBUG_METHODS_ENABLED
 	String err_message;
 	switch (call_err.error) {
-		case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
+		case Callable::CallError::CALL_ERROR_INVALID_ARGUMENT:
 			err_message = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(binder->method_call_arguments[call_err.argument].get_type()), call_err.argument, Variant::get_type_name(call_err.expected));
 			break;
-		case Variant::CallError::CALL_ERROR_INVALID_METHOD:
+		case Callable::CallError::CALL_ERROR_INVALID_METHOD:
 			err_message = vformat("Invalid method '%s' for type '%s'", mb->get_name(), obj->get_class_name());
 			break;
-		case Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
+		case Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
 			err_message = vformat("Too few arguments for method '%s'", mb->get_name());
 			break;
-		case Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
+		case Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
 			err_message = vformat("Too many arguments for method '%s'", mb->get_name());
 			break;
-		case Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL:
+		case Callable::CallError::CALL_ERROR_INSTANCE_IS_NULL:
 			err_message = vformat("Attempt to call '%s' on a null instance.", mb->get_name());
 			break;
 		default:
 			break;
 	}
-	if (call_err.error != Variant::CallError::CALL_OK) {
+	if (call_err.error != Callable::CallError::CALL_OK) {
 		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + binder->get_backtrace(1));
 		JS_FreeValue(ctx, ret);
 		ret = JS_ThrowTypeError(ctx, err_message.utf8().ptr());
@@ -177,7 +177,7 @@ JSValue QuickJSBinder::object_indexed_property(JSContext *ctx, JSValue this_val,
 		binder->method_call_arguments[1] = var_to_variant(ctx, argv[0]);
 	}
 
-	Variant::CallError call_err;
+	Callable::CallError call_err;
 	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc + 1, call_err);
 	return variant_to_var(ctx, ret_val);
 }
@@ -188,7 +188,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			return ((bool)p_var) ? JS_TRUE : JS_FALSE;
 		case Variant::INT:
 			return JS_NewInt64(ctx, int64_t(p_var));
-		case Variant::REAL:
+		case Variant::FLOAT:
 			return JS_NewFloat64(ctx, (double)(p_var));
 		case Variant::NODE_PATH:
 		case Variant::STRING:
@@ -294,7 +294,7 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 
 	Variant ret;
-	Variant::CallError err;
+	Callable::CallError err;
 	String err_msg;
 
 	Expression::BuiltinFunc func = (Expression::BuiltinFunc)magic;
@@ -310,20 +310,20 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 	}
 	Expression::exec_func(func, binder->method_call_argument_ptrs, &ret, err, err_msg);
 #ifdef DEBUG_METHODS_ENABLED
-	if (err.error != Variant::CallError::CALL_OK) {
+	if (err.error != Callable::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
 		if (err_msg.empty()) {
 			switch (err.error) {
-				case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
+				case Callable::CallError::CALL_ERROR_INVALID_ARGUMENT:
 					err_msg = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(binder->method_call_arguments[err.argument].get_type()), err.argument, Variant::get_type_name(err.expected));
 					break;
-				case Variant::CallError::CALL_ERROR_INVALID_METHOD:
+				case Callable::CallError::CALL_ERROR_INVALID_METHOD:
 					err_msg = vformat("Invalid builtin function", func_name);
 					break;
-				case Variant::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
+				case Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS:
 					err_msg = vformat("Too few arguments builtin function", func_name);
 					break;
-				case Variant::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
+				case Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS:
 					err_msg = vformat("Too many arguments for builtin function", func_name);
 					break;
 				default:
@@ -337,7 +337,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		binder->method_call_arguments[i] = Variant();
 	}
 
-	if (err.error != Variant::CallError::CALL_OK) {
+	if (err.error != Callable::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
 		return JS_ThrowTypeError(ctx, "Call builtin function error %s: %s", func_name.ascii().ptr(), err_msg.utf8().ptr());
 	}
@@ -351,7 +351,7 @@ bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValueC
 			return JS_IsNull(p_val) || JS_IsUndefined(p_val);
 		case Variant::BOOL:
 		case Variant::INT:
-		case Variant::REAL:
+		case Variant::FLOAT:
 			return JS_IsNumber(p_val) || JS_IsBool(p_val) || JS_IsNull(p_val) || JS_IsUndefined(p_val);
 		case Variant::STRING:
 			return JS_IsString(p_val);
@@ -1922,7 +1922,7 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 	return *bind;
 }
 
-Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
+Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
 
 	JSValue object = GET_JSVALUE(p_object);
 	JSAtom atom = get_atom(ctx, p_method);
@@ -1933,7 +1933,7 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 	JSValue *argv = NULL;
 
 	if (!JS_IsFunction(ctx, method) || JS_IsPureCFunction(ctx, method)) {
-		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
+		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
 		goto finish;
 	}
 
@@ -1944,14 +1944,14 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 	return_val = JS_Call(ctx, method, object, p_argcount, argv);
 
 	if (JS_IsException(return_val)) {
-		r_error.error = Variant::CallError::CALL_ERROR_INVALID_ARGUMENT;
+		r_error.error = Callable::CallError::CALL_ERROR_INVALID_ARGUMENT;
 		JSValue exception = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, exception, &err);
 		ERR_PRINTS(error_to_string(err));
 		JS_Throw(ctx, exception);
 	} else {
-		r_error.error = Variant::CallError::CALL_OK;
+		r_error.error = Callable::CallError::CALL_OK;
 	}
 finish:
 	Variant ret = var_to_variant(ctx, return_val);
