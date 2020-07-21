@@ -8,6 +8,7 @@
 #include "core/math/expression.h"
 #include "core/os/file_access.h"
 #include "core/os/os.h"
+#include "core/ustring.h"
 #include "quickjs_binder.h"
 #include "quickjs_worker.h"
 
@@ -35,7 +36,8 @@ _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, 
 }
 
 JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
-	PoolStringArray args;
+	PackedStringArray args = PackedStringArray();
+	// VectorWriteProxy args_write = VectorWriteProxy<String>();
 	args.resize(argc);
 
 	QuickJSBinder *binder = get_context_binder(ctx);
@@ -57,7 +59,8 @@ JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int a
 		}
 	}
 
-	String message = args.join(" ");
+	String message = String(" ").join(args);
+	// String message = args.join(" ");
 	if (magic == CONSOLE_ERROR || magic == CONSOLE_TRACE) {
 		message += ENDL;
 		message += get_context_binder(ctx)->get_backtrace(1);
