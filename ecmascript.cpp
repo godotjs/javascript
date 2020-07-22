@@ -358,7 +358,7 @@ RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, cons
 	Ref<ECMAScriptModule> module;
 	module.instance();
 	module->set_script_path(p_path);
-	if (p_path.ends_with("." EXT_JSMODULE) || p_path.ends_with("." EXT_JSCLASS)) {
+	if (p_path.ends_with("." EXT_JSMODULE) || p_path.ends_with("." EXT_JSCLASS) || p_path.ends_with("." EXT_JSON)) {
 		String code = FileAccess::get_file_as_string(p_path, &err);
 		if (r_error) *r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load source code from file '" + p_path + "'.");
@@ -367,7 +367,7 @@ RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, cons
 		module->set_bytecode(FileAccess::get_file_as_array(p_path, &err));
 		if (r_error) *r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load bytecode from file '" + p_path + "'.");
-	} else if (p_path.ends_with("." EXT_JSCLASS_ENCRYPTED)) {
+	} else if (p_path.ends_with("." EXT_JSMODULE_ENCRYPTED) || p_path.ends_with("." EXT_JSCLASS_ENCRYPTED)) {
 		FileAccess *fa = FileAccess::open(p_path, FileAccess::READ);
 		if (fa->is_open()) {
 			FileAccessEncrypted *fae = memnew(FileAccessEncrypted);

@@ -296,7 +296,7 @@ public:
 	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret);
 	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);
 
-	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode);
+	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode, const String &p_file);
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module);
 
 	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);

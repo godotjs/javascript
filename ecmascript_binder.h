@@ -71,7 +71,7 @@ public:
 	virtual String error_to_string(const ECMAscriptScriptError &p_error) = 0;
 	virtual String get_backtrace(int skip_level = 0) = 0;
 
-	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode) = 0;
+	virtual Error compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode, const String &p_file) = 0;
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, ECMAScriptGCHandler *r_module) = 0;
 	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) = 0;
 	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, ECMAscriptScriptError *r_error) = 0;

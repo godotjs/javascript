@@ -10,6 +10,7 @@
 #include "core/os/os.h"
 #include "quickjs_binder.h"
 #include "quickjs_worker.h"
+#include "../ecmascript.h"
 
 uint32_t QuickJSBinder::global_context_id = 0;
 uint32_t QuickJSBinder::global_transfer_id = 0;
@@ -562,18 +563,27 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 		List<String> extensions;
 		ECMAScriptLanguage::get_singleton()->get_recognized_extensions(&extensions);
 		if (extensions.find(file.get_extension()) != NULL) {
-			String code = FileAccess::get_file_as_string(file, &err);
-			if (err != OK || !code.size()) {
+			Ref<ECMAScriptModule> em = ResourceFormatLoaderECMAScriptModule::load_static(file, "", &err);
+			if (err != OK || !em.is_valid()) {
 				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
 				return NULL;
 			}
-			ECMAscriptScriptError err;
-			if (file.ends_with(EXT_JSON)) {
-				code = "export default " + code;
+			ECMAscriptScriptError es_err;
+			String code = em->get_source_code();
+			if (!code.empty()) {
+				if (file.ends_with(EXT_JSON)) {
+					code = "export default " + code;
+				}
+				if (ModuleCache *module = binder->js_compile_module(ctx, code, file, &es_err)) {
+					m = module->module;
+				}
+			} else {
+				Vector<uint8_t> bytecode = em->get_bytecode();
+				if (bytecode.size()) {
+					// TODO: load module from bytecode
+				}
 			}
-			if (ModuleCache *module = binder->js_compile_module(ctx, code, file, &err)) {
-				m = module->module;
-			}
+
 		} else { // Try load as Resource
 			RES res = ResourceLoader::load(file);
 			if (res.is_null()) {
@@ -687,25 +697,30 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 		ECMAScriptLanguage::get_singleton()->get_recognized_extensions(&extensions);
 		if (extensions.find(file.get_extension()) != NULL) {
 			Error err;
-			String text = FileAccess::get_file_as_string(file, &err);
-			ERR_FAIL_COND_V(err != OK, JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
-			if (file.ends_with(EXT_JSON)) {
-				CharString utf8code = text.utf8();
-				ret = JS_ParseJSON(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr());
+			Ref<ECMAScriptModule> em = ResourceFormatLoaderECMAScriptModule::load_static(file, "", &err);
+			ERR_FAIL_COND_V(err != OK || em.is_null(), JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
+			String text = em->get_source_code();
+			if (!text.empty()) {
+				if (file.ends_with(EXT_JSON)) {
+					CharString utf8code = text.utf8();
+					ret = JS_ParseJSON(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr());
+				} else {
+					String code = "(function() {"
+					              "  const module = {"
+					              "    exports: {}"
+					              "  };"
+					              "  let exports = module.exports;"
+					              "  (function(){ " +
+					              text +
+					              "    }"
+					              "  )();"
+					              "  return module.exports;"
+					              "})();";
+					CharString utf8code = code.utf8();
+					ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+				}
 			} else {
-				String code = "(function() {"
-							  "  const module = {"
-							  "    exports: {}"
-							  "  };"
-							  "  let exports = module.exports;"
-							  "  (function(){ " +
-							  text +
-							  "    }"
-							  "  )();"
-							  "  return module.exports;"
-							  "})();";
-				CharString utf8code = code.utf8();
-				ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+				// TODO: require module from bytecode
 			}
 			m.exports = JS_DupValue(ctx, ret);
 			m.flags = MODULE_FLAG_SCRIPT;
@@ -1394,9 +1409,9 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const
 	}
 	return OK;
 }
-Error QuickJSBinder::compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode) {
+Error QuickJSBinder::compile_to_bytecode(const String &p_code, Vector<uint8_t> &r_bytecode, const String &p_file) {
 	ECMAscriptScriptError script_err;
-	if (ModuleCache *mc = js_compile_module(ctx, p_code, "", &script_err)) {
+	if (ModuleCache *mc = js_compile_module(ctx, p_code, p_file, &script_err)) {
 		JSValue module = JS_MKPTR(JS_TAG_MODULE, mc->module);
 		if (JS_IsException(module)) {
 			JSValue e = JS_GetException(ctx);

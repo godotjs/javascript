@@ -52,7 +52,10 @@ public:
 			script_mode = preset->get_script_export_mode();
 		}
 
-		if (!p_path.ends_with(".js") || script_mode == EditorExportPreset::MODE_SCRIPT_TEXT)
+		if (script_mode == EditorExportPreset::MODE_SCRIPT_TEXT)
+			return;
+		String extension = p_path.get_extension();
+		if (extension != EXT_JSCLASS && extension != EXT_JSMODULE)
 			return;
 
 		if (script_mode == EditorExportPreset::MODE_SCRIPT_ENCRYPTED) {
@@ -61,7 +64,7 @@ public:
 				return;
 
 			String script_key = preset->get_script_encryption_key().to_lower();
-			String tmp_path = EditorSettings::get_singleton()->get_cache_dir().plus_file("script.jse");
+			String tmp_path = EditorSettings::get_singleton()->get_cache_dir().plus_file("script." + extension + "e");
 			FileAccess *fa = FileAccess::open(tmp_path, FileAccess::WRITE);
 
 			Vector<uint8_t> key;
@@ -97,7 +100,7 @@ public:
 			memdelete(fae);
 
 			file = FileAccess::get_file_as_array(tmp_path);
-			add_file(p_path.get_basename() + ".jse", file, true);
+			add_file(p_path.get_basename() + "." + extension + "e", file, true);
 
 			// Clean up temporary file.
 			DirAccess::remove_file_or_error(tmp_path);
@@ -109,8 +112,8 @@ public:
 			ERR_FAIL_COND(err != OK);
 
 			Vector<uint8_t> file;
-			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_main_binder()->compile_to_bytecode(code, file) != OK);
-			add_file(p_path.get_basename() + ".jsc", file, true);
+			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_main_binder()->compile_to_bytecode(code, file, p_path) != OK);
+			add_file(p_path.get_basename() + "." + extension + "b", file, true);
 		}
 	}
 };
