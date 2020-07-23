@@ -112,7 +112,7 @@ public:
 			ERR_FAIL_COND(err != OK);
 
 			Vector<uint8_t> file;
-			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_main_binder()->compile_to_bytecode(code, file, p_path) != OK);
+			ERR_FAIL_COND(ECMAScriptLanguage::get_singleton()->get_main_binder()->compile_to_bytecode(code, p_path, file) != OK);
 			add_file(p_path.get_basename() + "." + extension + "b", file, true);
 		}
 	}
