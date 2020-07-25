@@ -445,7 +445,8 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
         info->message_buffer[message_length] = '\0';
 
         JSValue message = JS_ParseJSON(ctx, info->message_buffer, message_length, "<debugger>");
-        const char *type = JS_ToCString(ctx, JS_GetPropertyStr(ctx, message, "type"));
+        JSValue js_type = JS_GetPropertyStr(ctx, message, "type");
+        const char *type = JS_ToCString(ctx, js_type);
         if (strcmp("request", type) == 0) {
             js_process_request(info, &state, JS_GetPropertyStr(ctx, message, "request"));
             // done_processing = 1;
@@ -463,6 +464,7 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
         }
 
         JS_FreeCString(ctx, type);
+        JS_FreeValue(ctx, js_type);
         JS_FreeValue(ctx, message);
     }
     while (info->is_paused);
@@ -630,9 +632,11 @@ void js_debugger_free(JSContext *ctx, JSDebuggerInfo *info) {
     if (!info->transport_close)
         return;
 
+#if 0 // Don't send any message here as the connection may be disconnected here
     // don't use the JSContext because it might be in a funky state during teardown.
     const char* terminated = "{\"type\":\"event\",\"event\":{\"type\":\"terminated\"}}";
     js_transport_write_message_newline(info, terminated, strlen(terminated));
+#endif
 
     info->transport_close(ctx, info->transport_udata);
 

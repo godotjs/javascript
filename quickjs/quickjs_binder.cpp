@@ -1183,6 +1183,9 @@ QuickJSBinder::QuickJSBinder() {
 	godot_allocator.js_malloc_usable_size = NULL;
 	godot_object_class = NULL;
 	godot_reference_class = NULL;
+#ifdef QUICKJS_WITH_DEBUGGER
+	debugger = NULL;
+#endif
 
 	if (class_remap.empty()) {
 		class_remap.insert(_File::get_class_static(), "File");
@@ -1261,6 +1264,26 @@ void QuickJSBinder::initialize() {
 	} else {
 		CRASH_NOW_MSG("Execute script binding failed:" ENDL + script_binding_error);
 	}
+
+#ifdef QUICKJS_WITH_DEBUGGER
+	debugger = js_debugger_info(ctx);
+	List<String> args = OS::get_singleton()->get_cmdline_args();
+	if (List<String>::Element *E = args.find("--js-debugger-listen")) {
+		if (E->next() && E->next()->get().find(":") != -1) {
+			String address = E->next()->get();
+			js_debugger_wait_connection(ctx, address.ascii().ptr());
+		} else {
+			ERR_PRINTS("Invalid debugger address");
+		}
+	} else if (List<String>::Element *E = args.find("--js-debugger-connect")) {
+		if (E->next() && E->next()->get().find(":") != -1) {
+			String address = E->next()->get();
+			js_debugger_connect(ctx, address.ascii().ptr());
+		} else {
+			ERR_PRINTS("Invalid debugger address");
+		}
+	}
+#endif
 }
 
 void QuickJSBinder::uninitialize() {

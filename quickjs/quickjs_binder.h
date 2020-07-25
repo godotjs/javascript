@@ -3,6 +3,11 @@
 
 #include "../ecmascript_binder.h"
 #include "./quickjs/quickjs.h"
+
+#ifdef QUICKJS_WITH_DEBUGGER
+#include "./quickjs/quickjs-debugger.h"
+#endif
+
 #include "core/os/memory.h"
 #include "core/os/thread.h"
 #include "core/resource.h"
@@ -32,6 +37,9 @@ protected:
 	JSMallocFunctions godot_allocator;
 	uint32_t context_id;
 	Thread::ID thread_id;
+#ifdef QUICKJS_WITH_DEBUGGER
+	JSDebuggerInfo *debugger;
+#endif
 
 public:
 	struct PtrHasher {
