@@ -7,6 +7,8 @@
 		"module": "ESNext",
 		"lib": ["ESNext"],
 		"experimentalDecorators": true,
-		"jsx": "preserve"
+		"jsx": "preserve",
+		"sourceMap": true,
+		"sourceRoot": "."
 	}
 }
