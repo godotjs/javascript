@@ -1,0 +1,108 @@
+name: Build Godot with ECMAScript
+# TODO: Investigate making this on tag instead of push since builds take so long
+on: [push]
+
+# TODO: Need to also publish release builds without tools (for exporters) for linux, windows, mac, ios, android
+jobs:
+  build_linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Get repositories
+        # TODO: Migrate this to use checkout action for ECMAScript.git rather than clone
+        run: | 
+          rm -rf /godot && cd /
+          git clone https://github.com/godotengine/godot.git 
+          cd ./godot
+          git checkout 3.2.2-stable
+          git clone https://github.com/GodotExplorer/ECMAScript.git ./modules/ECMAScript
+      - name: Build godot with ECMAScript module for Linux
+        run: |
+          cd /godot
+          scons -j8 p=x11
+          ls ./bin
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: godotjs.x11.tools.64
+          path: /godot/bin/godot.x11.tools.64
+  build_windows:
+    name: Build Windows
+    runs-on: ubuntu-latest
+    container:
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Get repositories
+        # TODO: Migrate this to use checkout action for ECMAScript.git rather than clone
+        run: |
+          rm -rf /godot && cd /
+          git clone https://github.com/godotengine/godot.git 
+          cd ./godot
+          git checkout 3.2.2-stable
+          git clone https://github.com/GodotExplorer/ECMAScript.git ./modules/ECMAScript
+      - name: Build godot with ECMAScript module for Windows
+        run: |
+          cd /godot
+          update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+          scons -j8 p=windows bits=64
+          ls ./bin
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: godotjs.windows.tools.64.exe
+          path: /godot/bin/godot.windows.tools.64.exe
+  build_mac:
+    name: Build Mac
+    runs-on: macos-latest
+    steps:
+      - name: Get dependencies
+        run: |
+          brew install scons yasm
+      - name: Get repositories
+        # TODO: Migrate this to use checkout action for ECMAScript.git rather than clone
+        run: |
+          cd ~
+          git clone https://github.com/godotengine/godot.git 
+          cd ./godot
+          git checkout 3.2.2-stable
+          git clone https://github.com/GodotExplorer/ECMAScript.git ./modules/ECMAScript
+      - name: Build godot with ECMAScript module for MacOS
+        # TODO: Support apple silicon with 3.2.3 for universal binaries - https://docs.godotengine.org/en/stable/development/compiling/compiling_for_osx.html
+        run: | 
+          cd ~/godot
+          scons -j8 p=osx arch=x86_64
+          ls ./bin
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: godotjs.osx.tools.x86_64
+          path: ~/godot/bin/godot.osx.tools.x86_64
+  build_html5:
+    name: Build HTML5 Exporter
+    runs-on: ubuntu-latest
+    container:
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Get repositories
+        # TODO: Migrate this to use checkout action for ECMAScript.git rather than clone
+        run: |
+          rm -rf /godot && cd /
+          git clone https://github.com/godotengine/godot.git 
+          cd ./godot
+          git checkout 3.2.2-stable
+          git clone https://github.com/GodotExplorer/ECMAScript.git ./modules/ECMAScript
+      - name: Build godot with ECMAScript for HTML5 platform
+        # This needs to run in bash for source command
+        run: |
+          bash -c "/emsdk/emsdk activate latest && chmod +x /emsdk/emsdk_env.sh && cd /emsdk && source ./emsdk_env.sh && cd /godot && scons -j8 p=javascript tools=no target=release && ls ./bin" 
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: godotjs.javascript.opt.zip
+          path: /godot/bin/godot.javascript.opt.zip
