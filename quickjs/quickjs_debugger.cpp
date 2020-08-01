@@ -107,8 +107,11 @@ void QuickJSDebugger::poll() {
 			attach_js_debugger(ctx, server->take_connection());
 		}
 	}
-	if (peer.is_valid()) {
-		peer->get_status();
+	if (peer.is_valid() && server.is_valid() && server->is_listening()) {
+		if (peer->get_status() == StreamPeerTCP::STATUS_NONE || peer->get_status() == StreamPeerTCP::STATUS_ERROR) {
+			JSDebuggerInfo *info = js_debugger_info(ctx);
+			js_debugger_free(ctx, info);
+		}
 	}
 }
 

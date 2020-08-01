@@ -433,8 +433,10 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
 
         message_length_buf[8] = '\0';
         int message_length = strtol(message_length_buf, NULL, 16);
-        assert(message_length > 0);
-        if (message_length > info->message_buffer_length) {
+        if (message_length <= 0) {
+            goto done;
+        }
+        if (message_length > info->message_buffer_length || info->message_buffer == NULL) {
             if (info->message_buffer) {
                 js_free(ctx, info->message_buffer);
                 info->message_buffer = NULL;
