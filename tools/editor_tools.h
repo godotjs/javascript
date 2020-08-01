@@ -21,6 +21,7 @@ protected:
 	static String BUILTIN_DECLEARATION_TEXT;
 	static String TSCONFIG_CONTENT;
 	static String TS_DECORATORS_CONTENT;
+	static String PACKAGE_JSON_CONTENT;
 
 	static void _bind_methods();
 

@@ -16,6 +16,16 @@ struct ECMAScriptAlphCompare {
 	}
 };
 
+static Error dump_to_file(const String &p_path, const String &p_content) {
+	FileAccessRef tsconfig = FileAccess::open(p_path, FileAccess::WRITE);
+	if (tsconfig.f && tsconfig->is_open()) {
+		tsconfig->store_string(p_content);
+		tsconfig->close();
+		return OK;
+	}
+	return FAILED;
+}
+
 void ECMAScriptPlugin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &ECMAScriptPlugin::_on_menu_item_pressed);
 	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &ECMAScriptPlugin::_export_typescript_declare_file);
@@ -685,23 +695,12 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	dict["enumerations"] = enumerations;
 	file_content = applay_partern(file_content, dict);
 
-	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
-	if (f.f && f->is_open()) {
-		f->store_string(file_content);
-		f->close();
-	}
+	dump_to_file(p_path, file_content);
 }
 
 void ECMAScriptPlugin::_generate_typescript_project() {
 	_export_typescript_declare_file("res://godot.d.ts");
-	FileAccessRef tsconfig = FileAccess::open("res://tsconfig.json", FileAccess::WRITE);
-	if (tsconfig.f && tsconfig->is_open()) {
-		tsconfig->store_string(TSCONFIG_CONTENT);
-		tsconfig->close();
-	}
-	FileAccessRef decorators = FileAccess::open("res://decorators.ts", FileAccess::WRITE);
-	if (decorators.f && decorators->is_open()) {
-		decorators->store_string(TS_DECORATORS_CONTENT);
-		decorators->close();
-	}
+	dump_to_file("res://tsconfig.json", TSCONFIG_CONTENT);
+	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
+	dump_to_file("res://package.json", PACKAGE_JSON_CONTENT);
 }

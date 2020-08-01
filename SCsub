@@ -65,6 +65,9 @@ if env['tools']:
 	with open_file("tools/decorators.ts.gen.cpp", "w") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TS_DECORATORS_CONTENT = \n${source};'
 		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/decorators.ts")))
+	with open_file("tools/package.json.gen.cpp", "w") as f:
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::PACKAGE_JSON_CONTENT = \n${source};'
+		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/package.json")))
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
