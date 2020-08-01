@@ -9,8 +9,12 @@
 #include "core/math/expression.h"
 #include "core/os/file_access.h"
 #include "core/os/os.h"
+#include "core/project_settings.h"
 #include "quickjs_binder.h"
 #include "quickjs_worker.h"
+#ifdef TOOLS_ENABLED
+#include "editor/editor_settings.h"
+#endif
 
 uint32_t QuickJSBinder::global_context_id = 0;
 uint32_t QuickJSBinder::global_transfer_id = 0;
@@ -1264,29 +1268,51 @@ void QuickJSBinder::initialize() {
 
 #ifdef QUICKJS_WITH_DEBUGGER
 	debugger.instance();
-
-	List<String> args = OS::get_singleton()->get_cmdline_args();
-	if (List<String>::Element *E = args.find("--js-debugger-listen")) {
-		if (E->next() && E->next()->get().find(":") != -1) {
-			String address = E->next()->get();
+	bool is_editor_hint = false;
+	bool default_server_enabled = GLOBAL_DEF("JavaScript/debugger/enabled", false);
+	int default_port = GLOBAL_DEF("JavaScript/debugger/port", 5556);
+#ifdef TOOLS_ENABLED
+	is_editor_hint = Engine::get_singleton()->is_editor_hint();
+#endif
+	if (!is_editor_hint) {
+		List<String> args = OS::get_singleton()->get_cmdline_args();
+		if (List<String>::Element *E = args.find("--js-debugger-connect")) {
+			if (E->next() && E->next()->get().find(":") != -1) {
+				String address = E->next()->get();
+				Error err = debugger->connect(ctx, address);
+				if (err != OK) {
+					ERR_PRINTS(vformat("Failed to connect to JavaScript debugger at %s", address));
+				}
+			} else {
+				ERR_PRINTS("Invalid debugger address");
+			}
+		} else if (List<String>::Element *E = args.find("--js-debugger-listen")) {
+			if (E->next() && E->next()->get().find(":") != -1) {
+				String address = E->next()->get();
+				Error err = debugger->listen(ctx, address);
+				if (err == OK) {
+					print_line(vformat("JavaScript debugger started at %s", address));
+				} else {
+					ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
+				}
+			} else {
+				ERR_PRINTS("Invalid debugger address");
+			}
+		} else if (default_server_enabled) {
+			String address = vformat("localhost:%d", default_port);
 			Error err = debugger->listen(ctx, address);
-			if (err != OK) {
+			if (err == OK) {
+				print_line(vformat("JavaScript debugger started at %s", address));
+			} else {
 				ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
 			}
-		} else {
-			ERR_PRINTS("Invalid debugger address");
 		}
-	} else if (List<String>::Element *E = args.find("--js-debugger-connect")) {
-		if (E->next() && E->next()->get().find(":") != -1) {
-			String address = E->next()->get();
-			Error err = debugger->connect(ctx, address);
-			if (err != OK) {
-				ERR_PRINTS(vformat("Failed to connect to JavaScript debugger at %s", address));
-			}
-		} else {
-			ERR_PRINTS("Invalid debugger address");
-		}
+	} else {
+#ifdef TOOLS_ENABLED
+		// TODO: debug editor plugin support
+#endif
 	}
+
 #endif
 }
 
