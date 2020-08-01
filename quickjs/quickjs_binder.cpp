@@ -1183,9 +1183,6 @@ QuickJSBinder::QuickJSBinder() {
 	godot_allocator.js_malloc_usable_size = NULL;
 	godot_object_class = NULL;
 	godot_reference_class = NULL;
-#ifdef QUICKJS_WITH_DEBUGGER
-	debugger = NULL;
-#endif
 
 	if (class_remap.empty()) {
 		class_remap.insert(_File::get_class_static(), "File");
@@ -1266,19 +1263,26 @@ void QuickJSBinder::initialize() {
 	}
 
 #ifdef QUICKJS_WITH_DEBUGGER
-	debugger = js_debugger_info(ctx);
+	debugger.instance();
+
 	List<String> args = OS::get_singleton()->get_cmdline_args();
 	if (List<String>::Element *E = args.find("--js-debugger-listen")) {
 		if (E->next() && E->next()->get().find(":") != -1) {
 			String address = E->next()->get();
-			js_debugger_wait_connection(ctx, address.ascii().ptr());
+			Error err = debugger->listen(ctx, address);
+			if (err != OK) {
+				ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
+			}
 		} else {
 			ERR_PRINTS("Invalid debugger address");
 		}
 	} else if (List<String>::Element *E = args.find("--js-debugger-connect")) {
 		if (E->next() && E->next()->get().find(":") != -1) {
 			String address = E->next()->get();
-			js_debugger_connect(ctx, address.ascii().ptr());
+			Error err = debugger->connect(ctx, address);
+			if (err != OK) {
+				ERR_PRINTS(vformat("Failed to connect to JavaScript debugger at %s", address));
+			}
 		} else {
 			ERR_PRINTS("Invalid debugger address");
 		}
@@ -1287,6 +1291,11 @@ void QuickJSBinder::initialize() {
 }
 
 void QuickJSBinder::uninitialize() {
+
+#ifdef QUICKJS_WITH_DEBUGGER
+	debugger = Ref<QuickJSDebugger>();
+#endif
+
 	godot_object_class = NULL;
 	godot_reference_class = NULL;
 	builtin_binder.uninitialize();
@@ -1443,6 +1452,10 @@ void QuickJSBinder::frame() {
 		}
 		id = frame_callbacks.next(id);
 	}
+
+#ifdef QUICKJS_WITH_DEBUGGER
+	debugger->poll();
+#endif
 }
 
 Error QuickJSBinder::eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret) {

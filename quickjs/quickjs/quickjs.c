@@ -2296,10 +2296,6 @@ void JS_FreeContext(JSContext *ctx)
     }
 #endif
 
-#ifdef QUICKJS_WITH_DEBUGGER
-    js_debugger_free(ctx, &ctx->debugger_info);
-#endif
-
     js_free_modules(ctx, JS_FREE_MODULE_ALL);
 
     JS_FreeValue(ctx, ctx->global_obj);
@@ -6152,7 +6148,7 @@ void JS_DumpMemoryUsage(FILE *fp, const JSMemoryUsage *s, JSRuntime *rt)
 #ifdef CONFIG_BIGNUM
             "BigNum "
 #endif
-            "2020-07-05" " version, %d-bit, malloc limit: %"PRId64"\n\n",
+             "2020-07-05" " version, %d-bit, malloc limit: %"PRId64"\n\n",
             (int)sizeof(void *) * 8, (int64_t)(ssize_t)s->malloc_limit);
 #if 1
     if (rt) {
@@ -16144,6 +16140,9 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
         int call_argc;
         JSValue *call_argv;
 
+#ifdef QUICKJS_WITH_DEBUGGER
+        js_debugger_check(ctx, NULL);
+#endif
         SWITCH(pc) {
         CASE(OP_push_i32):
             *sp++ = JS_NewInt32(ctx, get_u32(pc));
@@ -32232,6 +32231,10 @@ static void free_function_bytecode(JSRuntime *rt, JSFunctionBytecode *b)
         JS_FreeAtomRT(rt, b->debug.filename);
         js_free_rt(rt, b->debug.pc2line_buf);
         js_free_rt(rt, b->debug.source);
+#ifdef QUICKJS_WITH_DEBUGGER
+        if (b->debugger.breakpoints)
+            js_free_rt(rt, b->debugger.breakpoints);
+#endif
     }
 
     remove_gc_object(&b->header);
@@ -53446,7 +53449,7 @@ JSDebuggerInfo *js_debugger_info(JSContext *ctx) {
 
 uint32_t js_debugger_stack_depth(JSContext *ctx) {
     uint32_t stack_index = 0;
-    JSStackFrame *sf = ctx ->rt->current_stack_frame;
+    JSStackFrame *sf = ctx->rt->current_stack_frame;
     while (sf != NULL) {
         sf = sf->prev_frame;
         stack_index++;

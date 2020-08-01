@@ -117,6 +117,12 @@ static JSValue js_get_scopes(JSContext *ctx, int frame) {
     return scopes;
 }
 
+static inline JS_BOOL JS_IsInteger(JSValueConst v)
+{
+    int tag = JS_VALUE_GET_TAG(v);
+    return tag == JS_TAG_INT || tag == JS_TAG_BIG_INT;
+}
+
 static void js_debugger_get_variable_type(JSContext *ctx,
         struct DebuggerSuspendedState *state,
         JSValue var, JSValue var_val) {
@@ -140,7 +146,7 @@ static void js_debugger_get_variable_type(JSContext *ctx,
 
         JSObject *p = JS_VALUE_GET_OBJ(var_val);
         // todo: xor the the two dwords to get a better hash?
-        uint32_t pl = (uint32_t)(intptr_t)p;
+        uint32_t pl = (uint32_t)p;
         JSValue found = JS_GetPropertyUint32(ctx, state->variable_pointers, pl);
         if (JS_IsUndefined(found)) {
             reference = state->variable_reference_count++;
@@ -497,7 +503,6 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
     if (info->is_debugging)
         return;
     info->is_debugging = 1;
-
 #if 0
     if (!info->attempted_connect) {
         info->attempted_connect = 1;
@@ -599,7 +604,7 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
     // and read it without blocking until all data is consumed.
     if (!info->is_paused) {
         // only peek at the stream every now and then.
-        if (info->peek_ticks++ < 10000 && !info->should_peek)
+        if (info->peek_ticks++ < 1000 && !info->should_peek)
             goto done;
 
         info->peek_ticks = 0;
@@ -633,6 +638,7 @@ void js_debugger_free(JSContext *ctx, JSDebuggerInfo *info) {
         return;
 
 #if 0 // Don't send any message here as the connection may be disconnected here
+
     // don't use the JSContext because it might be in a funky state during teardown.
     const char* terminated = "{\"type\":\"event\",\"event\":{\"type\":\"terminated\"}}";
     js_transport_write_message_newline(info, terminated, strlen(terminated));

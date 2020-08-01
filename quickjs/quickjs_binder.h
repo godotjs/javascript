@@ -5,7 +5,7 @@
 #include "./quickjs/quickjs.h"
 
 #ifdef QUICKJS_WITH_DEBUGGER
-#include "./quickjs/quickjs-debugger.h"
+#include "quickjs_debugger.h"
 #endif
 
 #include "core/os/memory.h"
@@ -38,7 +38,7 @@ protected:
 	uint32_t context_id;
 	Thread::ID thread_id;
 #ifdef QUICKJS_WITH_DEBUGGER
-	JSDebuggerInfo *debugger;
+	Ref<QuickJSDebugger> debugger;
 #endif
 
 public:
