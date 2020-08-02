@@ -1299,7 +1299,7 @@ void QuickJSBinder::initialize() {
 				ERR_PRINTS("Invalid debugger address");
 			}
 		} else if (default_server_enabled) {
-			String address = vformat("localhost:%d", default_port);
+			String address = vformat("0.0.0.0:%d", default_port);
 			Error err = debugger->listen(ctx, address);
 			if (err == OK) {
 				print_line(vformat("JavaScript debugger started at %s", address));
