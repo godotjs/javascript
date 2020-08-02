@@ -1890,6 +1890,7 @@ declare module godot {
 		constructor(source?: number[]);
 		constructor(from: PoolByteArray);
 		constructor(from: ArrayBuffer);
+		[Symbol.iterator](): IterableIterator<number>;
 		
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(byte: number) : void;
@@ -1956,6 +1957,7 @@ declare module godot {
 		constructor(source?: Color[]);
 		constructor(from: PoolColorArray);
 		constructor(from: ArrayBuffer);
+		[Symbol.iterator](): IterableIterator<Color>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(color: Color) : void;
@@ -2006,6 +2008,7 @@ declare module godot {
 		constructor(source?: number[]);
 		constructor(from: PoolIntArray);
 		constructor(from: ArrayBuffer);
+		[Symbol.iterator](): IterableIterator<number>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(integer: number) : void;
@@ -2053,6 +2056,7 @@ declare module godot {
 		constructor(source?: number[]);
 		constructor(from: PoolRealArray);
 		constructor(from: ArrayBuffer);
+		[Symbol.iterator](): IterableIterator<number>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(value: number) : void;
@@ -2100,6 +2104,7 @@ declare module godot {
 
 		constructor(source?: string[]);
 		constructor(from: PoolStringArray);
+		[Symbol.iterator](): IterableIterator<string>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(p_string: string) : void;
@@ -2147,6 +2152,7 @@ declare module godot {
 		constructor(source?: Vector2[]);
 		constructor(from: PoolVector2Array);
 		constructor(from: ArrayBuffer);
+		[Symbol.iterator](): IterableIterator<Vector2>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(vector2: Vector2) : void;
@@ -2194,6 +2200,7 @@ declare module godot {
 		constructor(source?: Vector3[]);
 		constructor(from: PoolVector3Array);
 		constructor(from: ArrayBuffer);
+		[Symbol.iterator](): IterableIterator<Vector3>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(vector3: Vector3) : void;
