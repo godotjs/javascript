@@ -22,13 +22,14 @@ jobs:
       - name: Build godot with ECMAScript module for Linux
         run: |
           cd /godot
-          scons -j8 p=x11
+          scons p=x11 target=release_debug -j8
+          strip bin/godot.x11.opt.tools.64
           ls ./bin
       - name: Publish artifact
         uses: actions/upload-artifact@v2
         with:
-          name: godotjs.x11.tools.64
-          path: /godot/bin/godot.x11.tools.64
+          name: godot.javascript.x11.opt.debug.64
+          path: /godot/bin/godot.x11.opt.tools.64
   build_windows:
     name: Build Windows
     runs-on: ubuntu-latest
@@ -50,13 +51,14 @@ jobs:
           update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
           update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
           update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
-          scons -j8 p=windows bits=64
+          scons p=windows bits=64 target=release_debug -j8
+          strip bin/godot.windows.opt.tools.64.exe
           ls ./bin
       - name: Publish artifact
         uses: actions/upload-artifact@v2
         with:
-          name: godotjs.windows.tools.64.exe
-          path: /godot/bin/godot.windows.tools.64.exe
+          name: godot.javascript.windows.opt.tools.64.exe
+          path: /godot/bin/godot.windows.opt.tools.64.exe
   build_mac:
     name: Build Mac
     runs-on: macos-latest
@@ -76,13 +78,14 @@ jobs:
         # TODO: Support apple silicon with 3.2.3 for universal binaries - https://docs.godotengine.org/en/stable/development/compiling/compiling_for_osx.html
         run: | 
           cd ~/godot
-          scons -j8 p=osx arch=x86_64
+          scons p=osx arch=x86_64 target=release_debug -j8
+          strip bin/godot.osx.opt.tools.x86_64
           ls ./bin
       - name: Publish artifact
         uses: actions/upload-artifact@v2
         with:
-          name: godotjs.osx.tools.x86_64
-          path: ~/godot/bin/godot.osx.tools.x86_64
+          name: godot.javascript.osx.opt.tools.x86_64
+          path: ~/godot/bin/godot.osx.opt.tools.x86_64
   build_html5:
     name: Build HTML5 Exporter
     runs-on: ubuntu-latest
@@ -104,5 +107,5 @@ jobs:
       - name: Publish artifact
         uses: actions/upload-artifact@v2
         with:
-          name: godotjs.javascript.opt.zip
+          name: godot.javascript.html5.opt.zip
           path: /godot/bin/godot.javascript.opt.zip
