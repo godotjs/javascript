@@ -95,7 +95,32 @@ JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, const vo
 }
 
 void QuickJSBuiltinBinder::builtin_finalizer(ECMAScriptGCHandler *p_bind) {
-	memfree(p_bind);
+	switch (p_bind->type) {
+		case Variant::POOL_BYTE_ARRAY:
+			p_bind->getPoolByteArray()->~PoolVector<uint8_t>();
+			break;
+		case Variant::POOL_INT_ARRAY:
+			p_bind->getPoolIntArray()->~PoolVector<int>();
+			break;
+		case Variant::POOL_REAL_ARRAY:
+			p_bind->getPoolRealArray()->~PoolVector<real_t>();
+			break;
+		case Variant::POOL_STRING_ARRAY:
+			p_bind->getPoolStringArray()->~PoolVector<String>();
+			break;
+		case Variant::POOL_VECTOR2_ARRAY:
+			p_bind->getPoolVector2Array()->~PoolVector<Vector2>();
+			break;
+		case Variant::POOL_VECTOR3_ARRAY:
+			p_bind->getPoolVector3Array()->~PoolVector<Vector3>();
+			break;
+		case Variant::POOL_COLOR_ARRAY:
+			p_bind->getPoolColorArray()->~PoolVector<Color>();
+			break;
+		default:
+			break;
+	}
+	memdelete(p_bind);
 }
 
 void QuickJSBuiltinBinder::register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc) {
