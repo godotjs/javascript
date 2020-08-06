@@ -12,6 +12,7 @@ class QuickJSDebugger : public Reference {
 
 	Ref<StreamPeerTCP> peer;
 	Ref<TCP_Server> server;
+	JSRuntime *runtime;
 	JSContext *ctx;
 	uint8_t request_buffer[QJS_DEBUGGER_MAX_BUFFER_SIZE];
 
@@ -25,7 +26,7 @@ class QuickJSDebugger : public Reference {
 	static size_t transport_read(void *udata, char *buffer, size_t length);
 	static size_t transport_write(void *udata, const char *buffer, size_t length);
 	static size_t transport_peek(void *udata);
-	static void transport_close(JSContext *ctx, void *udata);
+	static void transport_close(JSRuntime *rt, void *udata);
 
 	Error attach_js_debugger(JSContext *p_ctx, Ref<StreamPeerTCP> p_peer);
 

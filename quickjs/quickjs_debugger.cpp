@@ -58,7 +58,7 @@ size_t QuickJSDebugger::transport_peek(void *udata) {
 	return debugger->peer->get_available_bytes();
 }
 
-void QuickJSDebugger::transport_close(JSContext *ctx, void *udata) {
+void QuickJSDebugger::transport_close(JSRuntime *rt, void *udata) {
 	QuickJSDebugger *debugger = static_cast<QuickJSDebugger *>(udata);
 	ERR_FAIL_COND(debugger == NULL || debugger->peer.is_null());
 	debugger->peer->disconnect_from_host();
@@ -79,6 +79,9 @@ Error QuickJSDebugger::attach_js_debugger(JSContext *ctx, Ref<StreamPeerTCP> p_p
 }
 
 Error QuickJSDebugger::connect(JSContext *ctx, const String &address) {
+	this->ctx = ctx;
+	this->runtime = JS_GetRuntime(ctx);
+
 	ConnectionConfig c = parse_address(address);
 	Ref<StreamPeerTCP> peer = memnew(StreamPeerTCP);
 	Error err = peer->connect_to_host(c.address, c.port);
@@ -92,6 +95,7 @@ Error QuickJSDebugger::connect(JSContext *ctx, const String &address) {
 
 Error QuickJSDebugger::listen(JSContext *ctx, const String &address) {
 	this->ctx = ctx;
+	this->runtime = JS_GetRuntime(ctx);
 	if (server.is_valid() && server->is_listening()) {
 		server->stop();
 	}
@@ -109,14 +113,15 @@ void QuickJSDebugger::poll() {
 	}
 	if (peer.is_valid() && server.is_valid() && server->is_listening()) {
 		if (peer->get_status() == StreamPeerTCP::STATUS_NONE || peer->get_status() == StreamPeerTCP::STATUS_ERROR) {
-			JSDebuggerInfo *info = js_debugger_info(ctx);
-			js_debugger_free(ctx, info);
+			JSDebuggerInfo *info = js_debugger_info(runtime);
+			js_debugger_free(runtime, info);
 		}
 	}
 }
 
 QuickJSDebugger::QuickJSDebugger() {
 	ctx = NULL;
+	runtime = NULL;
 }
 
 QuickJSDebugger::~QuickJSDebugger() {

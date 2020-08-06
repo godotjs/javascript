@@ -27,7 +27,9 @@ typedef struct JSDebuggerLocation {
 #define JS_DEBUGGER_STEP_CONTINUE 4
 
 typedef struct JSDebuggerInfo {
+    // JSContext that is used to for the JSON transport and debugger state.
     JSContext *ctx;
+    JSContext *debugging_ctx;
  
     int attempted_connect;
     int attempted_wait;
@@ -41,7 +43,7 @@ typedef struct JSDebuggerInfo {
     size_t (*transport_read)(void *udata, char* buffer, size_t length);
     size_t (*transport_write)(void *udata, const char* buffer, size_t length);
     size_t (*transport_peek)(void *udata);
-    void (*transport_close)(JSContext *ctx, void *udata);
+    void (*transport_close)(JSRuntime* rt, void *udata);
     void *transport_udata;
 
     JSValue breakpoints;
@@ -52,21 +54,23 @@ typedef struct JSDebuggerInfo {
     int step_depth;
 } JSDebuggerInfo;
 
+void js_debugger_new_context(JSContext *ctx);
+void js_debugger_free_context(JSContext *ctx);
 void js_debugger_check(JSContext *ctx, const uint8_t *pc);
 void js_debugger_exception(JSContext* ctx);
-void js_debugger_free(JSContext *ctx, JSDebuggerInfo *info);
+void js_debugger_free(JSRuntime *rt, JSDebuggerInfo *info);
 
 void js_debugger_attach(
     JSContext* ctx,
     size_t (*transport_read)(void *udata, char* buffer, size_t length),
     size_t (*transport_write)(void *udata, const char* buffer, size_t length),
     size_t (*transport_peek)(void *udata),
-    void (*transport_close)(JSContext *ctx, void *udata),
+    void (*transport_close)(JSRuntime* rt, void *udata),
     void *udata
 );
 void js_debugger_connect(JSContext *ctx, const char *address);
 void js_debugger_wait_connection(JSContext *ctx, const char* address);
-int js_debugger_is_transport_connected(JSContext *ctx);
+int js_debugger_is_transport_connected(JSRuntime* rt);
 
 JSValue js_debugger_file_breakpoints(JSContext *ctx, const char *path);
 void js_debugger_cooperate(JSContext *ctx);
@@ -74,7 +78,7 @@ void js_debugger_cooperate(JSContext *ctx);
 // begin internal api functions
 // these functions all require access to quickjs internal structures.
 
-JSDebuggerInfo *js_debugger_info(JSContext *ctx);
+JSDebuggerInfo *js_debugger_info(JSRuntime *rt);
 
 // this may be able to be done with an Error backtrace,
 // but would be clunky and require stack string parsing.

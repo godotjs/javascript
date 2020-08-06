@@ -1318,10 +1318,6 @@ void QuickJSBinder::initialize() {
 
 void QuickJSBinder::uninitialize() {
 
-#ifdef QUICKJS_WITH_DEBUGGER
-	debugger = Ref<QuickJSDebugger>();
-#endif
-
 	godot_object_class = NULL;
 	godot_reference_class = NULL;
 	builtin_binder.uninitialize();
@@ -1405,6 +1401,10 @@ void QuickJSBinder::uninitialize() {
 	for (List<RES>::Element *E = module_resources.front(); E; E = E->next()) {
 		E->get()->unreference(); // Avoid imported resource leaking
 	}
+
+#ifdef QUICKJS_WITH_DEBUGGER
+	debugger = Ref<QuickJSDebugger>();
+#endif
 
 	ctx = NULL;
 	runtime = NULL;
