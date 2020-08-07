@@ -212,6 +212,10 @@ declare module godot {
 	 * ```*/
 	function load(path: string): Resource;
 	
+	/**
+	 * Returns the Object that corresponds to `instance_id`. All Objects have a unique instance ID. 
+	 */
+	function instance_from_id(instance_id: number): Object;
 	
 	/**
 	 * Wait a signal of an object

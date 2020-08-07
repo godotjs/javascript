@@ -176,6 +176,8 @@ protected:
 	static JSValue godot_to_string(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_get_type(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_load(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_instance_from_id(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
 	static void add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind);
 
 	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
@@ -250,6 +252,16 @@ public:
 		uint32_t u;
 		JS_ToUint32(ctx, &u, p_val);
 		return u;
+	}
+	_FORCE_INLINE_ static int64_t js_to_int64(JSContext *ctx, const JSValueConst &p_val) {
+		int64_t i;
+		JS_ToInt64(ctx, &i, p_val);
+		return i;
+	}
+	_FORCE_INLINE_ static uint64_t js_to_uint64(JSContext *ctx, const JSValueConst &p_val) {
+		uint64_t i;
+		JS_ToIndex(ctx, &i, p_val);
+		return i;
 	}
 	_FORCE_INLINE_ static JSValue to_js_number(JSContext *ctx, real_t p_val) {
 		return JS_NewFloat64(ctx, double(p_val));

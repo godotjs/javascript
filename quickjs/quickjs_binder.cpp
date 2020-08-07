@@ -453,6 +453,15 @@ JSValue QuickJSBinder::godot_load(JSContext *ctx, JSValue this_val, int argc, JS
 	return variant_to_var(ctx, res);
 }
 
+JSValue QuickJSBinder::godot_instance_from_id(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+#ifdef DEBUG_METHODS_ENABLED
+	ERR_FAIL_COND_V(argc < 1 || !JS_IsNumber(argv[0]), JS_ThrowTypeError(ctx, "number expected for %s.%s", GODOT_OBJECT_NAME, "instance_from_id"));
+#endif
+	ObjectID id = js_to_uint64(ctx, argv[0]);
+	Object *obj = ObjectDB::get_instance(id);
+	return variant_to_var(ctx, obj);
+}
+
 void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind) {
 	if (!p_bind) return;
 	JSValue classname = JS_UNDEFINED;
@@ -1161,6 +1170,9 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.load
 	JSValue js_func_load = JS_NewCFunction(ctx, godot_load, "load", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "load", js_func_load, PROP_DEF_DEFAULT);
+	// godot.instance_from_id
+	JSValue js_godot_instance_from_id = JS_NewCFunction(ctx, godot_instance_from_id, "instance_from_id", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "instance_from_id", js_godot_instance_from_id, PROP_DEF_DEFAULT);
 	{
 		// godot.DEBUG_ENABLED
 #ifdef DEBUG_ENABLED
