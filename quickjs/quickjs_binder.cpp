@@ -2078,7 +2078,7 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 	return_val = JS_Call(ctx, method, object, p_argcount, argv);
 
 	if (JS_IsException(return_val)) {
-		r_error.error = Variant::CallError::CALL_ERROR_INVALID_ARGUMENT;
+		r_error.error = Variant::CallError::CALL_ERROR_INVALID_METHOD;
 		JSValue exception = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, exception, &err);

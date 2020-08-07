@@ -45,8 +45,10 @@ Variant::Type ECMAScriptInstance::get_property_type(const StringName &p_name, bo
 }
 
 Variant ECMAScriptInstance::call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
-	ERR_FAIL_COND_V(binder == NULL, Variant());
-	ERR_FAIL_COND_V(ecma_object.ecma_object == NULL, Variant());
+	if (binder == NULL || ecma_object.ecma_object == NULL) {
+		r_error.error = Variant::CallError::CALL_ERROR_INSTANCE_IS_NULL;
+		ERR_FAIL_V(Variant());
+	}
 	return binder->call_method(ecma_object, p_method, p_args, p_argcount, r_error);
 }
 
