@@ -62,18 +62,25 @@ JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int a
 		}
 	}
 
+	ECMAScriptStackInfo stack_top;
+	List<ECMAScriptStackInfo> stacks;
 	String message = args.join(" ");
-	if (magic == CONSOLE_ERROR || magic == CONSOLE_TRACE) {
-		message += ENDL;
-		message += get_context_binder(ctx)->get_backtrace(1);
+	if (magic == CONSOLE_ERROR || magic == CONSOLE_TRACE || magic == CONSOLE_WARN) {
+		if (binder->get_stacks(stacks) == OK) {
+			stack_top = stacks.front()->get();
+			message += ENDL;
+			message += binder->get_backtrace_message(stacks);
+		}
 	}
 
 	switch (magic) {
 		case CONSOLE_ERROR:
-			print_error(message);
+			_err_print_error(stack_top.function.utf8().get_data(), stack_top.file.utf8().get_data(), stack_top.line, message, ErrorHandlerType::ERR_HANDLER_ERROR);
+			break;
+		case CONSOLE_WARN:
+			_err_print_error(stack_top.function.utf8().get_data(), stack_top.file.utf8().get_data(), stack_top.line, message, ErrorHandlerType::ERR_HANDLER_WARNING);
 			break;
 		case CONSOLE_LOG:
-		case CONSOLE_WARN:
 		case CONSOLE_TRACE:
 		default:
 			print_line(message);
@@ -152,7 +159,12 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 			break;
 	}
 	if (call_err.error != Variant::CallError::CALL_OK) {
-		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + binder->get_backtrace(1));
+		List<ECMAScriptStackInfo> stacks;
+		String stack_message;
+		if (binder->get_stacks(stacks) == OK) {
+			stack_message = binder->get_backtrace_message(stacks);
+		}
+		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
 		ret = JS_ThrowTypeError(ctx, err_message.utf8().ptr());
 	}
@@ -401,23 +413,39 @@ String QuickJSBinder::error_to_string(const ECMAscriptScriptError &p_error) {
 	return message;
 }
 
-String QuickJSBinder::get_backtrace(int skip_level) {
+Error QuickJSBinder::get_stacks(List<ECMAScriptStackInfo> &r_stacks) {
 	JSValue error_constructor = JS_GetProperty(ctx, global_object, JS_ATOM_Error);
 	JSValue error = JS_CallConstructor(ctx, error_constructor, 0, NULL);
 	JSValue stack = JS_GetProperty(ctx, error, JS_ATOM_stack);
-
 	String stack_text = js_to_string(ctx, stack);
-	for (int i = 0; i < skip_level; i++) {
-		int idx = stack_text.find("\n");
-		if (idx < 0 && idx >= stack_text.length()) break;
-		stack_text = stack_text.substr(idx + 1);
+	Vector<String> raw_stacks = stack_text.split("\n", false);
+	for (int i = 1; i < raw_stacks.size(); i++) {
+		String line_text = raw_stacks[i].strip_edges();
+		if (line_text.empty()) continue;
+		ECMAScriptStackInfo s;
+		int colon = line_text.find_last(":");
+		int bracket = line_text.find_last("(");
+		s.line = line_text.substr(colon + 1, line_text.length() - colon - 2).to_int();
+		s.file = line_text.substr(bracket + 1, colon - bracket - 1);
+		s.function = line_text.substr(3, bracket - 4);
+		r_stacks.push_back(s);
 	}
-
 	JS_FreeValue(ctx, stack);
 	JS_FreeValue(ctx, error);
 	JS_FreeValue(ctx, error_constructor);
+	return OK;
+}
 
-	return stack_text;
+String QuickJSBinder::get_backtrace_message(const List<ECMAScriptStackInfo> &stacks) {
+	String message;
+	for (const List<ECMAScriptStackInfo>::Element *E = stacks.front(); E; E = E->next()) {
+		message += "  ";
+		message += vformat("at %s (%s:%d)", E->get().function, E->get().file, E->get().line);
+		if (E != stacks.back()) {
+			message += ENDL;
+		}
+	}
+	return message;
 }
 
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {

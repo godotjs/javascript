@@ -225,7 +225,8 @@ public:
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
 	static void dump_exception(JSContext *ctx, const JSValueConst &p_exception, ECMAscriptScriptError *r_error);
 	virtual String error_to_string(const ECMAscriptScriptError &p_error);
-	virtual String get_backtrace(int skip_level = 0);
+	virtual Error get_stacks(List<ECMAScriptStackInfo> &r_stacks);
+	virtual String get_backtrace_message(const List<ECMAScriptStackInfo> &stacks);
 
 	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
 		double_t v = 0;
