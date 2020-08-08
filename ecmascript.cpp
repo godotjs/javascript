@@ -10,8 +10,6 @@ ScriptLanguage *ECMAScript::get_language() const {
 }
 
 ECMAScript::ECMAScript() {
-	ecma_class = NULL;
-	binder = NULL;
 }
 
 ECMAScript::~ECMAScript() {
@@ -27,27 +25,28 @@ bool ECMAScript::can_instance() const {
 }
 
 StringName ECMAScript::get_instance_base_type() const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (cls) {
-		return cls->native_class->name;
-	} else {
-		static StringName empty;
-		return empty;
-	}
+	static StringName empty;
+	ERR_FAIL_NULL_V(ecma_class, empty);
+	return ecma_class->class_name;
 }
 
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 
-	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(binder, NULL);
-	ERR_FAIL_NULL_V(cls, NULL);
+	ECMAScriptBinder *binder = ECMAScriptLanguage::get_thread_binder(Thread::get_caller_id());
+	ERR_FAIL_NULL_V_MSG(binder, NULL, "Cannot create instance from this thread");
+	const ECMAClassInfo *cls = NULL;
+	ECMAscriptScriptError ecma_err;
+	if (!bytecode.empty()) {
+		cls = binder->parse_ecma_class(bytecode, script_path, false, &ecma_err);
+	} else {
+		cls = binder->parse_ecma_class(code, script_path, false, &ecma_err);
+	}
+	ERR_FAIL_NULL_V_MSG(cls, NULL, vformat("Cannot parse class from %s", get_script_path()));
 
 	if (!ClassDB::is_parent_class(p_this->get_class_name(), cls->native_class->name)) {
-		ERR_PRINTS("Script inherits from native type '" + String(cls->native_class->name) + "', so it can't be instanced in object of type: '" + p_this->get_class() + "'");
-		ERR_FAIL_V(NULL);
+		ERR_FAIL_V_MSG(NULL, vformat("Script inherits from native type '%s', so it can't be instanced in object of type: '%s'", cls->native_class->name, p_this->get_class()));
 	}
 
-	Variant::CallError unchecked_error;
 	ECMAScriptGCHandler ecma_instance = binder->create_ecma_instance_for_godot_object(cls, p_this);
 	ERR_FAIL_NULL_V(ecma_instance.ecma_object, NULL);
 
@@ -82,15 +81,17 @@ bool ECMAScript::is_placeholder_fallback_enabled() const {
 }
 
 Error ECMAScript::reload(bool p_keep_state) {
+	ecma_class = NULL;
 	Error err = OK;
 	ECMAScriptBinder *binder = ECMAScriptLanguage::get_thread_binder(Thread::get_caller_id());
 	ERR_FAIL_COND_V_MSG(binder == NULL, ERR_INVALID_DATA, "Cannot load script in this thread");
 	ECMAscriptScriptError ecma_err;
 	if (!bytecode.empty()) {
-		ecma_class = binder->parse_ecma_class(bytecode, script_path, &ecma_err);
+		ecma_class = binder->parse_ecma_class(bytecode, script_path, true, &ecma_err);
 	} else {
-		ecma_class = binder->parse_ecma_class(code, script_path, &ecma_err);
+		ecma_class = binder->parse_ecma_class(code, script_path, true, &ecma_err);
 	}
+
 	if (!ecma_class) {
 		err = ERR_PARSE_ERROR;
 		ERR_PRINTS(binder->error_to_string(ecma_err));
@@ -136,7 +137,6 @@ Error ECMAScript::reload(bool p_keep_state) {
 		}
 #endif
 	}
-	this->binder = binder;
 	return err;
 }
 
@@ -152,49 +152,46 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 #endif
 
 bool ECMAScript::has_method(const StringName &p_method) const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!binder || !cls) return false;
-	return binder->has_method(cls->prototype, p_method);
+	if (!ecma_class) return false;
+	return ecma_class->methods.getptr(p_method) != NULL;
 }
 
 MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
-
 	MethodInfo mi;
-	const ECMAClassInfo *cls = get_ecma_class();
-	ERR_FAIL_NULL_V(cls, mi);
-
-	if (has_method(p_method)) {
-		mi.name = p_method;
+	ERR_FAIL_NULL_V(ecma_class, mi);
+	if (const MethodInfo *ptr = ecma_class->methods.getptr(p_method)) {
+		mi = *ptr;
 	}
-
 	return mi;
 }
 
 bool ECMAScript::is_tool() const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!binder || !cls) return false;
-	return cls->tool;
+	if (!ecma_class) return false;
+	return ecma_class->tool;
 }
 
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
-	// TODO
+	if (!ecma_class) return;
+	const StringName *key = ecma_class->methods.next(NULL);
+	while (key) {
+		p_list->push_back(ecma_class->methods.get(*key));
+		key = ecma_class->methods.next(key);
+	}
 }
 
 void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls) return;
-	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
-		const ECMAProperyInfo &pi = cls->properties.get(*name);
+	if (!ecma_class) return;
+	for (const StringName *name = ecma_class->properties.next(NULL); name; name = ecma_class->properties.next(name)) {
+		const ECMAProperyInfo &pi = ecma_class->properties.get(*name);
 		p_list->push_back(pi);
 	}
 }
 
 bool ECMAScript::get_property_default_value(const StringName &p_property, Variant &r_value) const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls)
+	if (!ecma_class)
 		return false;
 
-	if (const ECMAProperyInfo *pi = cls->properties.getptr(p_property)) {
+	if (const ECMAProperyInfo *pi = ecma_class->properties.getptr(p_property)) {
 		r_value = pi->default_value;
 		return true;
 	}
@@ -205,13 +202,12 @@ bool ECMAScript::get_property_default_value(const StringName &p_property, Varian
 void ECMAScript::update_exports() {
 
 #ifdef TOOLS_ENABLED
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls) return;
+	if (!ecma_class) return;
 
 	List<PropertyInfo> props;
 	Map<StringName, Variant> values;
-	for (const StringName *name = cls->properties.next(NULL); name; name = cls->properties.next(name)) {
-		const ECMAProperyInfo pi = cls->properties.get(*name);
+	for (const StringName *name = ecma_class->properties.next(NULL); name; name = ecma_class->properties.next(name)) {
+		const ECMAProperyInfo pi = ecma_class->properties.get(*name);
 		props.push_back(pi);
 		values[*name] = pi.default_value;
 	}
@@ -223,21 +219,19 @@ void ECMAScript::update_exports() {
 }
 
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!binder || !cls) return false;
-	return cls->signals.has(p_signal) || binder->has_signal(cls, p_signal);
+	if (!ecma_class) return false;
+	return ecma_class->signals.has(p_signal);
 }
 
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
-	const ECMAClassInfo *cls = get_ecma_class();
-	if (!cls) return;
-	for (const StringName *name = cls->signals.next(NULL); name; name = cls->signals.next(name)) {
-		r_signals->push_back(cls->signals.get(*name));
+	if (!ecma_class) return;
+	for (const StringName *name = ecma_class->signals.next(NULL); name; name = ecma_class->signals.next(name)) {
+		r_signals->push_back(ecma_class->signals.get(*name));
 	}
 }
 
 bool ECMAScript::is_valid() const {
-	return get_ecma_class() != NULL;
+	return ecma_class != NULL;
 }
 
 void ECMAScript::_bind_methods() {

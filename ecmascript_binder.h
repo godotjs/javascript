@@ -18,15 +18,19 @@ struct ECMAscriptScriptError {
 	Vector<String> stack;
 };
 
-struct ECMAClassInfo {
+struct BasicECMAClassInfo {
 	bool tool;
 	StringName class_name;
 	String icon_path;
-	ECMAScriptGCHandler constructor;
-	ECMAScriptGCHandler prototype;
 	const ClassDB::ClassInfo *native_class;
 	HashMap<StringName, MethodInfo> signals;
+	HashMap<StringName, MethodInfo> methods;
 	HashMap<StringName, ECMAProperyInfo> properties;
+};
+
+struct ECMAClassInfo : public BasicECMAClassInfo {
+	ECMAScriptGCHandler constructor;
+	ECMAScriptGCHandler prototype;
 };
 
 struct GlobalNumberConstant {
@@ -73,8 +77,8 @@ public:
 
 	virtual Error compile_to_bytecode(const String &p_code, const String &p_file, Vector<uint8_t> &r_bytecode) = 0;
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, const String &p_file, ECMAScriptGCHandler *r_module) = 0;
-	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) = 0;
-	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, ECMAscriptScriptError *r_error) = 0;
+	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) = 0;
+	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) = 0;
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object) = 0;
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;

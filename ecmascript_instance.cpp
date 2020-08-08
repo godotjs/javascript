@@ -34,8 +34,8 @@ void ECMAScriptInstance::get_property_list(List<PropertyInfo> *p_properties) con
 Variant::Type ECMAScriptInstance::get_property_type(const StringName &p_name, bool *r_is_valid) const {
 	*r_is_valid = false;
 	if (!script.is_null()) {
-		if (const ECMAClassInfo *cls = script->get_ecma_class()) {
-			if (const ECMAProperyInfo *pi = cls->properties.getptr(p_name)) {
+		if (ecma_class) {
+			if (const ECMAProperyInfo *pi = ecma_class->properties.getptr(p_name)) {
 				*r_is_valid = true;
 				return pi->type;
 			}

@@ -31,7 +31,9 @@ _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(JSContext *ctx, 
 	ERR_FAIL_COND_V(p_object == NULL || ctx == NULL, NULL);
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(p_object);
 	if (bind) {
-		ERR_FAIL_COND_V_MSG(bind->context && bind->context != ctx, NULL, "The object is not belong to this context");
+		if (bind->context && bind->context != ctx) {
+			ERR_FAIL_V_MSG(NULL, "The object is not belong to this context");
+		}
 		if (!bind->context) {
 			QuickJSBinder::bind_gc_object(ctx, bind, p_object);
 		}
@@ -1862,6 +1864,22 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 		}
 		JS_FreeValue(ctx, props);
 
+		// methods
+		Set<String> keys;
+		get_own_property_names(ctx, prototype, &keys);
+		for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
+			StringName method_name = E->get();
+			JSAtom key = get_atom(ctx, method_name);
+			JSValue value = JS_GetProperty(ctx, prototype, key);
+			if (JS_IsFunction(ctx, value)) {
+				MethodInfo mi;
+				mi.name = E->get();
+				ecma_class.methods.set(method_name, mi);
+			}
+			JS_FreeValue(ctx, value);
+			JS_FreeAtom(ctx, key);
+		}
+
 		// cache the class
 		if (const ECMAClassInfo *ptr = binder->ecma_classes.getptr(p_path)) {
 			binder->free_ecmas_class(*ptr);
@@ -2127,14 +2145,23 @@ bool QuickJSBinder::has_method(const ECMAScriptGCHandler &p_object, const String
 	return success;
 }
 
-const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error) {
-
+const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const String &p_code, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) {
+	if (!ignore_cacehe) {
+		if (const ECMAClassInfo *cls = ecma_classes.getptr(p_path)) {
+			return cls;
+		}
+	}
 	ECMAscriptScriptError err;
 	ModuleCache *mc = js_compile_and_cache_module(ctx, p_code, p_path, r_error);
 	return parse_ecma_class_from_module(mc, p_path, r_error);
 }
 
-const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, ECMAscriptScriptError *r_error) {
+const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) {
+	if (!ignore_cacehe) {
+		if (const ECMAClassInfo *cls = ecma_classes.getptr(p_path)) {
+			return cls;
+		}
+	}
 	ModuleCache mc;
 	ECMAScriptGCHandler module;
 	if (OK == load_bytecode(p_bytecode, p_path, &module)) {

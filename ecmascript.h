@@ -24,12 +24,12 @@ private:
 	friend class ResourceFormatLoaderECMAScript;
 
 	Set<Object *> instances;
-	const ECMAClassInfo *ecma_class;
 	StringName class_name;
 	String code;
 	String script_path;
 	Vector<uint8_t> bytecode;
-	ECMAScriptBinder *binder;
+
+	const BasicECMAClassInfo *ecma_class;
 
 #ifdef TOOLS_ENABLED
 	Set<PlaceHolderScriptInstance *> placeholders;
@@ -78,8 +78,6 @@ public:
 	/* TODO */ virtual void get_members(Set<StringName> *p_constants) {}
 
 	virtual ScriptLanguage *get_language() const;
-
-	_FORCE_INLINE_ const ECMAClassInfo *get_ecma_class() const { return this->ecma_class; }
 
 	_FORCE_INLINE_ String get_script_path() const { return script_path; }
 	_FORCE_INLINE_ void set_script_path(const String &p_path) { script_path = p_path; }
