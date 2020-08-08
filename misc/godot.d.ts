@@ -95,24 +95,6 @@ declare module globalThis {
 		 * Stop the worker thread
 		 */
 		terminate(): void;
-		
-		/**
-		 * Drop the `value` in the context. You should never touching an abandoned value anymore be for it is adopted.
-		 * 
-		 * You can adopt the value in another thread context to transfer the value.
-		 * 
-		 * An `non zero` ID is return if no error happen.
-		 * @param value The value to abandon in the context
-		 * @note You can transfer any type the godot `Variant` can represent. But you cannot transfer JavaScript objects with function properties.
-		 * @returns The ID of the abandoned value
-		 */
-		static abandonValue(value: any): number;
-		
-		/**
-		 * Adopt an abandoned value.
-		 * @param value_id The ID of the abandoned value
-		 */
-		static adoptValue(value_id: number): any;
 	}
 	
 	/** **Worker context only**
@@ -221,6 +203,24 @@ declare module godot {
 	 * Returns the Object that corresponds to `instance_id`. All Objects have a unique instance ID. 
 	 */
 	function instance_from_id(instance_id: number): Object;
+
+	/**
+	 * Drop the `value` in the context. You should never touching an abandoned value anymore before it is adopted.
+	 * 
+	 * You can adopt the value in another thread context to transfer the `value` in threads.
+	 * 
+	 * A `non zero` ID is return if no error happen.
+	 * @param value The value to abandon in the context
+	 * @note You can only transfer values the godot `Variant` can represent.
+	 * @returns The ID of the abandoned value
+	*/
+	function abandon_value(value: any): number;
+	
+	/**
+	* Adopt an abandoned value.
+	* @param value_id The ID of the abandoned value
+	*/
+	function adopt_value(value_id: number): any;
 	
 	/**
 	 * Wait a signal of an object

@@ -1201,6 +1201,14 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.instance_from_id
 	JSValue js_godot_instance_from_id = JS_NewCFunction(ctx, godot_instance_from_id, "instance_from_id", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "instance_from_id", js_godot_instance_from_id, PROP_DEF_DEFAULT);
+
+	// godot.abandon_value
+	JSValue abandon_value_func = JS_NewCFunction(ctx, godot_abandon_value, "abandon_value", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "abandon_value", abandon_value_func, PROP_DEF_DEFAULT);
+	// godot.adopt_value
+	JSValue adopt_value_func = JS_NewCFunction(ctx, godot_adopt_value, "adopt_value", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "adopt_value", adopt_value_func, PROP_DEF_DEFAULT);
+
 	{
 		// godot.DEBUG_ENABLED
 #ifdef DEBUG_ENABLED
@@ -2272,7 +2280,7 @@ JSValue QuickJSBinder::worker_terminate(JSContext *ctx, JSValue this_val, int ar
 	return JS_UNDEFINED;
 }
 
-JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::godot_abandon_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc != 1, JS_ThrowTypeError(ctx, "one argument expected"));
 	JSValue &value = argv[0];
 	bool valid = true;
@@ -2305,7 +2313,7 @@ JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, in
 	return JS_NewInt64(ctx, id);
 }
 
-JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::godot_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc != 1 || !JS_IsNumber(argv[0]), JS_ThrowTypeError(ctx, "value id expected"));
 	int64_t id = js_to_int64(ctx, argv[0]);
 	ERR_FAIL_COND_V(id == 0, JS_ThrowTypeError(ctx, "id must greater than 0"));
@@ -2345,12 +2353,6 @@ void QuickJSBinder::add_global_worker() {
 	// Worker.prototype.terminate
 	JSValue terminate_func = JS_NewCFunction(ctx, worker_terminate, "terminate", 1);
 	JS_DefinePropertyValueStr(ctx, worker_class_data.prototype, "terminate", terminate_func, PROP_DEF_DEFAULT);
-	// Worker.abandonValue
-	JSValue abandon_value_func = JS_NewCFunction(ctx, worker_abandon_value, "abandonValue", 1);
-	JS_DefinePropertyValueStr(ctx, worker_class_data.constructor, "abandonValue", abandon_value_func, PROP_DEF_DEFAULT);
-	// Worker.adoptValue
-	JSValue adopt_value_func = JS_NewCFunction(ctx, worker_adopt_value, "adoptValue", 1);
-	JS_DefinePropertyValueStr(ctx, worker_class_data.constructor, "adoptValue", adopt_value_func, PROP_DEF_DEFAULT);
 
 	JS_NewClassID(&worker_class_data.class_id);
 	JS_NewClass(JS_GetRuntime(ctx), worker_class_data.class_id, &worker_class_data.jsclass);

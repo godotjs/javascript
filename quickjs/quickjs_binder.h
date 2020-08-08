@@ -200,8 +200,8 @@ protected:
 	static void worker_finializer(JSRuntime *rt, JSValue val);
 	static JSValue worker_post_message(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue worker_terminate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue worker_abandon_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue worker_adopt_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_abandon_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_adopt_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
