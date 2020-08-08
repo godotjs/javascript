@@ -200,8 +200,8 @@ protected:
 	static void worker_finializer(JSRuntime *rt, JSValue val);
 	static JSValue worker_post_message(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue worker_terminate(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue worker_abandon_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
-	static JSValue worker_adopt_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_abandon_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+	static JSValue godot_adopt_value(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
 	_FORCE_INLINE_ static JSValue js_empty_func(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_UNDEFINED; }
 	_FORCE_INLINE_ static JSValue js_empty_consturctor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) { return JS_NewObject(ctx); }
@@ -225,7 +225,8 @@ public:
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
 	static void dump_exception(JSContext *ctx, const JSValueConst &p_exception, ECMAscriptScriptError *r_error);
 	virtual String error_to_string(const ECMAscriptScriptError &p_error);
-	virtual String get_backtrace(int skip_level = 0);
+	virtual Error get_stacks(List<ECMAScriptStackInfo> &r_stacks);
+	virtual String get_backtrace_message(const List<ECMAScriptStackInfo> &stacks);
 
 	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
 		double_t v = 0;

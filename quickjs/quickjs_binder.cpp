@@ -64,18 +64,25 @@ JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int a
 		}
 	}
 
+	ECMAScriptStackInfo stack_top;
+	List<ECMAScriptStackInfo> stacks;
 	String message = args.join(" ");
-	if (magic == CONSOLE_ERROR || magic == CONSOLE_TRACE) {
-		message += ENDL;
-		message += get_context_binder(ctx)->get_backtrace(1);
+	if (magic == CONSOLE_ERROR || magic == CONSOLE_TRACE || magic == CONSOLE_WARN) {
+		if (binder->get_stacks(stacks) == OK) {
+			stack_top = stacks.front()->get();
+			message += ENDL;
+			message += binder->get_backtrace_message(stacks);
+		}
 	}
 
 	switch (magic) {
 		case CONSOLE_ERROR:
-			print_error(message);
+			_err_print_error(stack_top.function.utf8().get_data(), stack_top.file.utf8().get_data(), stack_top.line, message, ErrorHandlerType::ERR_HANDLER_ERROR);
+			break;
+		case CONSOLE_WARN:
+			_err_print_error(stack_top.function.utf8().get_data(), stack_top.file.utf8().get_data(), stack_top.line, message, ErrorHandlerType::ERR_HANDLER_WARNING);
 			break;
 		case CONSOLE_LOG:
-		case CONSOLE_WARN:
 		case CONSOLE_TRACE:
 		default:
 			print_line(message);
@@ -154,7 +161,12 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 			break;
 	}
 	if (call_err.error != Variant::CallError::CALL_OK) {
-		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + binder->get_backtrace(1));
+		List<ECMAScriptStackInfo> stacks;
+		String stack_message;
+		if (binder->get_stacks(stacks) == OK) {
+			stack_message = binder->get_backtrace_message(stacks);
+		}
+		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
 		ret = JS_ThrowTypeError(ctx, err_message.utf8().ptr());
 	}
@@ -403,23 +415,39 @@ String QuickJSBinder::error_to_string(const ECMAscriptScriptError &p_error) {
 	return message;
 }
 
-String QuickJSBinder::get_backtrace(int skip_level) {
+Error QuickJSBinder::get_stacks(List<ECMAScriptStackInfo> &r_stacks) {
 	JSValue error_constructor = JS_GetProperty(ctx, global_object, JS_ATOM_Error);
 	JSValue error = JS_CallConstructor(ctx, error_constructor, 0, NULL);
 	JSValue stack = JS_GetProperty(ctx, error, JS_ATOM_stack);
-
 	String stack_text = js_to_string(ctx, stack);
-	for (int i = 0; i < skip_level; i++) {
-		int idx = stack_text.find("\n");
-		if (idx < 0 && idx >= stack_text.length()) break;
-		stack_text = stack_text.substr(idx + 1);
+	Vector<String> raw_stacks = stack_text.split("\n", false);
+	for (int i = 1; i < raw_stacks.size(); i++) {
+		String line_text = raw_stacks[i].strip_edges();
+		if (line_text.empty()) continue;
+		ECMAScriptStackInfo s;
+		int colon = line_text.find_last(":");
+		int bracket = line_text.find_last("(");
+		s.line = line_text.substr(colon + 1, line_text.length() - colon - 2).to_int();
+		s.file = line_text.substr(bracket + 1, colon - bracket - 1);
+		s.function = line_text.substr(3, bracket - 4);
+		r_stacks.push_back(s);
 	}
-
 	JS_FreeValue(ctx, stack);
 	JS_FreeValue(ctx, error);
 	JS_FreeValue(ctx, error_constructor);
+	return OK;
+}
 
-	return stack_text;
+String QuickJSBinder::get_backtrace_message(const List<ECMAScriptStackInfo> &stacks) {
+	String message;
+	for (const List<ECMAScriptStackInfo>::Element *E = stacks.front(); E; E = E->next()) {
+		message += "  ";
+		message += vformat("at %s (%s:%d)", E->get().function, E->get().file, E->get().line);
+		if (E != stacks.back()) {
+			message += ENDL;
+		}
+	}
+	return message;
 }
 
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
@@ -1175,6 +1203,14 @@ void QuickJSBinder::add_godot_globals() {
 	// godot.instance_from_id
 	JSValue js_godot_instance_from_id = JS_NewCFunction(ctx, godot_instance_from_id, "instance_from_id", 1);
 	JS_DefinePropertyValueStr(ctx, godot_object, "instance_from_id", js_godot_instance_from_id, PROP_DEF_DEFAULT);
+
+	// godot.abandon_value
+	JSValue abandon_value_func = JS_NewCFunction(ctx, godot_abandon_value, "abandon_value", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "abandon_value", abandon_value_func, PROP_DEF_DEFAULT);
+	// godot.adopt_value
+	JSValue adopt_value_func = JS_NewCFunction(ctx, godot_adopt_value, "adopt_value", 1);
+	JS_DefinePropertyValueStr(ctx, godot_object, "adopt_value", adopt_value_func, PROP_DEF_DEFAULT);
+
 	{
 		// godot.DEBUG_ENABLED
 #ifdef DEBUG_ENABLED
@@ -2271,7 +2307,7 @@ JSValue QuickJSBinder::worker_terminate(JSContext *ctx, JSValue this_val, int ar
 	return JS_UNDEFINED;
 }
 
-JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::godot_abandon_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc != 1, JS_ThrowTypeError(ctx, "one argument expected"));
 	JSValue &value = argv[0];
 	bool valid = true;
@@ -2304,7 +2340,7 @@ JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, in
 	return JS_NewInt64(ctx, id);
 }
 
-JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+JSValue QuickJSBinder::godot_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc != 1 || !JS_IsNumber(argv[0]), JS_ThrowTypeError(ctx, "value id expected"));
 	int64_t id = js_to_int64(ctx, argv[0]);
 	ERR_FAIL_COND_V(id == 0, JS_ThrowTypeError(ctx, "id must greater than 0"));
@@ -2344,12 +2380,6 @@ void QuickJSBinder::add_global_worker() {
 	// Worker.prototype.terminate
 	JSValue terminate_func = JS_NewCFunction(ctx, worker_terminate, "terminate", 1);
 	JS_DefinePropertyValueStr(ctx, worker_class_data.prototype, "terminate", terminate_func, PROP_DEF_DEFAULT);
-	// Worker.abandonValue
-	JSValue abandon_value_func = JS_NewCFunction(ctx, worker_abandon_value, "abandonValue", 1);
-	JS_DefinePropertyValueStr(ctx, worker_class_data.constructor, "abandonValue", abandon_value_func, PROP_DEF_DEFAULT);
-	// Worker.adoptValue
-	JSValue adopt_value_func = JS_NewCFunction(ctx, worker_adopt_value, "adoptValue", 1);
-	JS_DefinePropertyValueStr(ctx, worker_class_data.constructor, "adoptValue", adopt_value_func, PROP_DEF_DEFAULT);
 
 	JS_NewClassID(&worker_class_data.class_id);
 	JS_NewClass(JS_GetRuntime(ctx), worker_class_data.class_id, &worker_class_data.jsclass);

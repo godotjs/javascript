@@ -38,6 +38,12 @@ struct GlobalNumberConstant {
 	double_t value;
 };
 
+struct ECMAScriptStackInfo {
+	int line;
+	String file;
+	String function;
+};
+
 class ECMAScriptBinder {
 protected:
 	// Path ==> ECMA Class
@@ -73,7 +79,8 @@ public:
 	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret) = 0;
 	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) = 0;
 	virtual String error_to_string(const ECMAscriptScriptError &p_error) = 0;
-	virtual String get_backtrace(int skip_level = 0) = 0;
+	virtual Error get_stacks(List<ECMAScriptStackInfo> &r_stacks) = 0;
+	virtual String get_backtrace_message(const List<ECMAScriptStackInfo> &stacks) = 0;
 
 	virtual Error compile_to_bytecode(const String &p_code, const String &p_file, Vector<uint8_t> &r_bytecode) = 0;
 	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, const String &p_file, ECMAScriptGCHandler *r_module) = 0;
