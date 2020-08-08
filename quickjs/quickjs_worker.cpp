@@ -31,7 +31,14 @@ void QuickJSWorker::thread_main(void *p_this) {
 					}
 					for (List<Variant>::Element *E = messages.front(); E; E = E->next()) {
 						JSValue argv[] = { variant_to_var(self->ctx, E->get()) };
-						JS_Call(self->ctx, onmessage_callback, self->global_object, 1, argv);
+						JSValue ret = JS_Call(self->ctx, onmessage_callback, self->global_object, 1, argv);
+						if (JS_IsException(ret)) {
+							JSValue e = JS_GetException(self->ctx);
+							ECMAscriptScriptError err;
+							dump_exception(self->ctx, e, &err);
+							ERR_PRINTS(String("Error in worker onmessage callback") + ENDL + self->error_to_string(err));
+							JS_FreeValue(self->ctx, e);
+						}
 						JS_FreeValue(self->ctx, argv[0]);
 					}
 				}
@@ -127,7 +134,14 @@ bool QuickJSWorker::frame_of_host(QuickJSBinder *host, const JSValueConst &value
 
 		for (List<Variant>::Element *E = messages.front(); E; E = E->next()) {
 			JSValue argv[] = { variant_to_var(host->ctx, E->get()) };
-			JS_Call(host->ctx, onmessage_callback, JS_NULL, 1, argv);
+			JSValue ret = JS_Call(host->ctx, onmessage_callback, JS_NULL, 1, argv);
+			if (JS_IsException(ret)) {
+				JSValue e = JS_GetException(host->ctx);
+				ECMAscriptScriptError err;
+				dump_exception(host->ctx, e, &err);
+				ERR_PRINTS(String("Error in worker onmessage callback") + ENDL + error_to_string(err));
+				JS_FreeValue(host->ctx, e);
+			}
 			JS_FreeValue(host->ctx, argv[0]);
 		}
 	}
