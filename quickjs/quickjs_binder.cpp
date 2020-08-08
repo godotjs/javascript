@@ -17,8 +17,8 @@
 #endif
 
 uint32_t QuickJSBinder::global_context_id = 0;
-uint32_t QuickJSBinder::global_transfer_id = 0;
-HashMap<uint32_t, ECMAScriptGCHandler *> QuickJSBinder::transfer_deopot;
+uint64_t QuickJSBinder::global_transfer_id = 0;
+HashMap<uint64_t, Variant> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 
 _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(Object *p_object) {
@@ -1430,23 +1430,7 @@ void QuickJSBinder::uninitialize() {
 void QuickJSBinder::language_finalize() {
 
 	GLOBAL_LOCK_FUNCTION
-
-	const uint32_t *id = transfer_deopot.next(NULL);
-	while (id) {
-		ECMAScriptGCHandler *data = transfer_deopot.get(*id);
-		if (data->is_atomic_type()) {
-			Variant *ptr = static_cast<Variant *>(data->native_ptr);
-			memdelete(ptr);
-			memdelete(data);
-		} else {
-			if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
-				builtin_binder.builtin_finalizer(data);
-			} else if (data->is_reference()) {
-				memdelete(data->godot_reference);
-			}
-		}
-		id = transfer_deopot.next(id);
-	}
+	transfer_deopot.clear();
 }
 
 void QuickJSBinder::frame() {
@@ -2263,92 +2247,53 @@ JSValue QuickJSBinder::worker_terminate(JSContext *ctx, JSValue this_val, int ar
 JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc != 1, JS_ThrowTypeError(ctx, "one argument expected"));
 	JSValue &value = argv[0];
-	Variant gd_value = var_to_variant(ctx, value);
-
 	bool valid = true;
-	ECMAScriptGCHandler *data = NULL;
-	QuickJSBinder *binder = get_context_binder(ctx);
-
-	switch (gd_value.get_type()) {
-		case Variant::NIL:
-		case Variant::INT:
-		case Variant::BOOL:
-		case Variant::REAL:
-		case Variant::ARRAY:
-		case Variant::DICTIONARY:
-		case Variant::STRING: {
-			data = new_gc_handler(NULL);
-			data->type = gd_value.get_type();
-			data->native_ptr = memnew(Variant(gd_value));
-			data->flags = ECMAScriptGCHandler::FLAG_ATOMIC_VALUE | ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
-		} break;
-		default: {
-			data = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(value, binder->godot_origin_class.class_id));
-			if (data) {
-				if (data->type == Variant::OBJECT) {
-					JS_FreeValue(ctx, value);
+	Variant gd_value = var_to_variant(ctx, value);
+	print_line("=================>" + String(gd_value));
+	if (gd_value.get_type() == Variant::OBJECT) {
+		ECMAScriptGCHandler *data = BINDING_DATA_FROM_JS(ctx, value);
+		if (data) {
+			JS_SetOpaque(value, NULL);
+			if (data->type == Variant::OBJECT) {
+				JS_FreeValue(ctx, value);
+				if (data->is_reference()) {
+					memdelete(data->godot_reference);
 				}
-				data->ecma_object = NULL;
-				data->context = NULL;
-				data->flags |= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
-				JS_SetOpaque(value, NULL);
-			} else {
-				valid = false;
 			}
-		} break;
+			data->godot_object = NULL;
+			data->ecma_object = NULL;
+			data->context = NULL;
+			data->flags |= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
+		} else {
+			valid = false;
+		}
 	}
 
-	uint32_t id = 0;
+	uint64_t id = 0;
 	if (valid) {
 		id = atomic_increment(&global_transfer_id);
 		GLOBAL_LOCK_FUNCTION
-		transfer_deopot.set(id, data);
+		transfer_deopot.set(id, gd_value);
 	}
 	return JS_NewInt64(ctx, id);
 }
 
 JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	ERR_FAIL_COND_V(argc != 1 || !JS_IsNumber(argv[0]), JS_ThrowTypeError(ctx, "value id expected"));
-	int64_t id = 0;
-
-	JS_ToInt64(ctx, &id, argv[0]);
+	int64_t id = js_to_int64(ctx, argv[0]);
 	ERR_FAIL_COND_V(id == 0, JS_ThrowTypeError(ctx, "id must greater than 0"));
 
-	ECMAScriptGCHandler *data = NULL;
+	Variant value = NULL;
 	{
 		GLOBAL_LOCK_FUNCTION
-		if (ECMAScriptGCHandler **ptr = transfer_deopot.getptr((uint32_t)id)) {
-			data = *ptr;
-			transfer_deopot.erase((uint32_t)id);
+		if (Variant *ptr = transfer_deopot.getptr(id)) {
+			value = *ptr;
+			transfer_deopot.erase(id);
 		}
 	}
-	ERR_FAIL_NULL_V(data || !data->is_transferable(), JS_UNDEFINED);
-	JSValue ret = JS_UNDEFINED;
-	if (data->is_atomic_type()) {
-		Variant *ptr = static_cast<Variant *>(data->native_ptr);
-		ret = variant_to_var(ctx, *ptr);
-		memdelete(ptr);
-		memdelete(data);
-	} else {
-		if (data->flags & ECMAScriptGCHandler::FLAG_BUILTIN_CLASS) {
-			ret = QuickJSBuiltinBinder::bind_builtin_object_static(ctx, data->type, data->godot_builtin_object_ptr);
-			memdelete(data);
-		} else if (data->type == Variant::OBJECT) {
-			Variant value = data->get_value();
-			if (data->is_reference()) {
-				memdelete(data->godot_reference);
-			}
-			bind_gc_object(ctx, data, value);
-			ret = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
-			if (data->is_object()) {
-				JS_DupValue(ctx, ret);
-			}
-			data->flags ^= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
-		} else {
-			ERR_FAIL_V((JS_UNDEFINED));
-		}
-	}
-	return ret;
+	ERR_FAIL_NULL_V(value, JS_UNDEFINED);
+	Object *obj = value;
+	return variant_to_var(ctx, value);
 }
 
 void QuickJSBinder::add_global_worker() {

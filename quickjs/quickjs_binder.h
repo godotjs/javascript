@@ -31,7 +31,7 @@ class QuickJSBinder : public ECMAScriptBinder {
 
 protected:
 	static uint32_t global_context_id;
-	static uint32_t global_transfer_id;
+	static uint64_t global_transfer_id;
 	JSRuntime *runtime;
 	JSContext *ctx;
 	JSMallocFunctions godot_allocator;
@@ -211,7 +211,7 @@ protected:
 	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
-	static HashMap<uint32_t, ECMAScriptGCHandler *> transfer_deopot;
+	static HashMap<uint64_t, Variant> transfer_deopot;
 	static Map<String, const char *> class_remap;
 #ifdef TOOLS_ENABLED
 	Dictionary modified_api;
