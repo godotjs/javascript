@@ -74,6 +74,11 @@ declare module globalThis {
 	class Worker {
 		
 		/**
+		 * Creates a dedicated worker thread that executes the script at the specified file
+		 */
+		constructor(script: string);
+		
+		/**
 		 * The `onmessage` property of the Worker interface represents an event handler, that is a function to be called when the message event occurs.
 		 * It will be called when the worker's parent receives a message from the worker context by `postMessage` method.
 		 */

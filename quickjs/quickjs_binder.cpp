@@ -2249,7 +2249,6 @@ JSValue QuickJSBinder::worker_abandon_value(JSContext *ctx, JSValue this_val, in
 	JSValue &value = argv[0];
 	bool valid = true;
 	Variant gd_value = var_to_variant(ctx, value);
-	print_line("=================>" + String(gd_value));
 	if (gd_value.get_type() == Variant::OBJECT) {
 		ECMAScriptGCHandler *data = BINDING_DATA_FROM_JS(ctx, value);
 		if (data) {
