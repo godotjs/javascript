@@ -2282,7 +2282,7 @@ JSValue QuickJSBinder::worker_adopt_value(JSContext *ctx, JSValue this_val, int 
 	int64_t id = js_to_int64(ctx, argv[0]);
 	ERR_FAIL_COND_V(id == 0, JS_ThrowTypeError(ctx, "id must greater than 0"));
 
-	Variant value = NULL;
+	Variant value;
 	{
 		GLOBAL_LOCK_FUNCTION
 		if (Variant *ptr = transfer_deopot.getptr(id)) {
