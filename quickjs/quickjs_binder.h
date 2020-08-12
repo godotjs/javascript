@@ -101,6 +101,7 @@ public:
 
 protected:
 	JSAtom js_key_godot_classid;
+	JSAtom js_key_godot_classname;
 	JSAtom js_key_godot_tooled;
 	JSAtom js_key_godot_icon_path;
 	JSAtom js_key_godot_exports;
@@ -167,6 +168,8 @@ protected:
 	void add_global_worker();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
+	static void initialize_properties(JSContext *ctx, const ECMAClassInfo *p_class, JSValue p_object);
+
 	static void object_finalizer(ECMAScriptGCHandler *p_bind);
 	static void origin_finalizer(JSRuntime *rt, JSValue val);
 
@@ -269,7 +272,7 @@ public:
 	}
 	_FORCE_INLINE_ static JSValue to_js_string(JSContext *ctx, const String &text) {
 		CharString utf8 = text.utf8();
-		return JS_NewStringLen(ctx, utf8.ptr(), utf8.length());
+		return JS_NewStringLen(ctx, utf8.get_data(), utf8.length());
 	}
 	_FORCE_INLINE_ static JSValue to_js_bool(JSContext *ctx, bool p_val) {
 		return JS_NewBool(ctx, p_val);

@@ -1282,7 +1282,8 @@ void QuickJSBinder::initialize() {
 	js_operators_create = JS_GetPropertyStr(ctx, js_operators, "create");
 	// global.godot
 	godot_object = JS_NewObject(ctx);
-	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("cls"));
+	js_key_godot_classid = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("native_class"));
+	js_key_godot_classname = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("ecma_class"));
 	js_key_godot_exports = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("exports"));
 	js_key_godot_signals = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("signals"));
 	js_key_godot_tooled = JS_NewAtom(ctx, JS_HIDDEN_SYMBOL("tool"));
@@ -1434,6 +1435,7 @@ void QuickJSBinder::uninitialize() {
 	}
 
 	JS_FreeAtom(ctx, js_key_godot_classid);
+	JS_FreeAtom(ctx, js_key_godot_classname);
 	JS_FreeAtom(ctx, js_key_godot_tooled);
 	JS_FreeAtom(ctx, js_key_godot_icon_path);
 	JS_FreeAtom(ctx, js_key_godot_exports);
@@ -1683,17 +1685,6 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		Object *gd_obj = cls.gdclass->creation_func();
 		bind = BINDING_DATA_FROM_GD(ctx, gd_obj);
 		js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-#if 0
-		if (bind->context != ctx) {
-			JS_SetOpaque(js_obj, NULL);
-			JS_FreeValue((JSContext *)bind->context, js_obj);
-			if (bind->is_reference()) {
-				memdelete(bind->godot_reference);
-			}
-			bind_gc_object(ctx, bind, gd_obj);
-			js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
-		}
-#endif
 
 		if (JS_IsFunction(ctx, new_target)) {
 			JSValue prototype = JS_GetProperty(ctx, new_target, QuickJSBinder::JS_ATOM_prototype);
@@ -1701,9 +1692,23 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 			JS_FreeValue(ctx, prototype);
 		}
 
+		// Make script and script instance for the object
 		ECMAScriptInstance *si = memnew(ECMAScriptInstance);
 		si->ecma_object = *bind;
 		si->binder = binder;
+		si->owner = gd_obj;
+		JSValue es_class_name = JS_GetProperty(ctx, js_obj, binder->js_key_godot_classname);
+		if (JS_IsString(es_class_name)) {
+			if (ECMAClassInfo *es_class = binder->ecma_classes.getptr(js_to_string(ctx, es_class_name))) {
+				si->script.instance();
+				si->script->ecma_class = es_class;
+				si->script->instances.insert(gd_obj);
+				si->script->ecma_class = es_class;
+				si->ecma_class = es_class;
+				initialize_properties(ctx, es_class, js_obj);
+			}
+		}
+		JS_FreeValue(ctx, es_class_name);
 		gd_obj->set_script_instance(si);
 
 		if (bind->is_reference()) { // restore the ref count added in bind_gc_object
@@ -1716,6 +1721,24 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 	}
 
 	return js_obj;
+}
+
+void QuickJSBinder::initialize_properties(JSContext *ctx, const ECMAClassInfo *p_class, JSValue p_object) {
+	const StringName *prop_name = p_class->properties.next(NULL);
+	QuickJSBinder *binder = get_context_binder(ctx);
+	while (prop_name) {
+		JSAtom pname = get_atom(ctx, *prop_name);
+		int ret = JS_SetProperty(ctx, p_object, pname, variant_to_var(ctx, p_class->properties.getptr(*prop_name)->default_value));
+		if (ret < 0) {
+			JSValue e = JS_GetException(ctx);
+			ECMAscriptScriptError error;
+			dump_exception(ctx, e, &error);
+			JS_FreeValue(ctx, e);
+			ERR_PRINTS(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, binder->error_to_string(error)));
+		}
+		JS_FreeAtom(ctx, pname);
+		prop_name = p_class->properties.next(prop_name);
+	}
 }
 
 void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
@@ -1921,6 +1944,7 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 			binder->free_ecmas_class(*ptr);
 		}
 		binder->ecma_classes.set(p_path, ecma_class);
+		JS_DefinePropertyValue(ctx, prototype, js_key_godot_classname, to_js_string(ctx, p_path), PROP_DEF_DEFAULT);
 	}
 fail:
 	JS_FreeValue(ctx, classid);
@@ -2086,23 +2110,7 @@ ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const E
 		bind->ecma_object = NULL;
 		ERR_FAIL_V_MSG(*bind, vformat("Cannot create instance from ECMAScript class '%s'\n%s", p_class->class_name, error_to_string(error)));
 	}
-
-	// Initialize properties with default value
-	const StringName *prop_name = p_class->properties.next(NULL);
-	while (prop_name) {
-		JSAtom pname = get_atom(ctx, *prop_name);
-		int ret = JS_SetProperty(ctx, object, pname, variant_to_var(ctx, p_class->properties.getptr(*prop_name)->default_value));
-		if (ret < 0) {
-			JSValue e = JS_GetException(ctx);
-			ECMAscriptScriptError error;
-			dump_exception(ctx, e, &error);
-			JS_FreeValue(ctx, e);
-			ERR_PRINTS(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, error_to_string(error)));
-		}
-		JS_FreeAtom(ctx, pname);
-		prop_name = p_class->properties.next(prop_name);
-	}
-
+	initialize_properties(ctx, p_class, object);
 	return *bind;
 }
 

@@ -7,8 +7,12 @@ Ref<Script> ECMAScriptInstance::get_script() const {
 }
 
 void ECMAScriptInstance::get_method_list(List<MethodInfo> *p_list) const {
-	ERR_FAIL_COND(script.is_null());
-	script->get_script_method_list(p_list);
+	if (!ecma_class) return;
+	const StringName *key = ecma_class->methods.next(NULL);
+	while (key) {
+		p_list->push_back(ecma_class->methods.get(*key));
+		key = ecma_class->methods.next(key);
+	}
 }
 
 bool ECMAScriptInstance::has_method(const StringName &p_method) const {
@@ -27,18 +31,19 @@ bool ECMAScriptInstance::get(const StringName &p_name, Variant &r_ret) const {
 }
 
 void ECMAScriptInstance::get_property_list(List<PropertyInfo> *p_properties) const {
-	ERR_FAIL_COND(script.is_null());
-	return script->get_script_property_list(p_properties);
+	if (!ecma_class) return;
+	for (const StringName *name = ecma_class->properties.next(NULL); name; name = ecma_class->properties.next(name)) {
+		const ECMAProperyInfo &pi = ecma_class->properties.get(*name);
+		p_properties->push_back(pi);
+	}
 }
 
 Variant::Type ECMAScriptInstance::get_property_type(const StringName &p_name, bool *r_is_valid) const {
 	*r_is_valid = false;
-	if (!script.is_null()) {
-		if (ecma_class) {
-			if (const ECMAProperyInfo *pi = ecma_class->properties.getptr(p_name)) {
-				*r_is_valid = true;
-				return pi->type;
-			}
+	if (ecma_class) {
+		if (const ECMAProperyInfo *pi = ecma_class->properties.getptr(p_name)) {
+			*r_is_valid = true;
+			return pi->type;
 		}
 	}
 	return Variant::NIL;
