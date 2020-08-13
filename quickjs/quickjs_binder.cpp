@@ -645,7 +645,8 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			JS_SetModuleExport(ctx, m, "default", val);
 
 			ModuleCache module;
-			module.md5 = FileAccess::get_md5(file);
+			Variant hash_var = res;
+			module.hash = hash_var.hash();
 			module.module = m;
 			module.res = res;
 			module.res->reference(); // Avoid auto release as module don't release automaticly
@@ -697,10 +698,9 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_and_cache_module(JSContext
 	if (!cfilename) cfilename = ""; // avoid crash with empty file name here
 	if (!cfilesource) cfilesource = ""; // avoid crash with empty source code here
 
-	String md5 = p_code.md5_text();
 	ModuleCache *last_module = binder->module_cache.getptr(p_filename);
 	if (last_module) {
-		if (last_module->md5 == md5) {
+		if (last_module->hash == p_code.hash()) {
 #if MODULE_HAS_REFCOUNT
 			if (last_module->module) {
 				JSValue val = JS_MKPTR(JS_TAG_MODULE, last_module->module);
@@ -720,11 +720,20 @@ QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_and_cache_module(JSContext
 	}
 
 	ModuleCache mc = js_compile_module(ctx, p_code, p_filename, r_error);
-	mc.md5 = md5;
+	mc.hash = p_code.hash();
 	if (mc.module) {
 		binder->module_cache.set(p_filename, mc);
 	}
 	return binder->module_cache.getptr(p_filename);
+}
+
+QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_and_cache_module(JSContext *ctx, const Vector<uint8_t> &p_bytecode, const String &p_filename, ECMAscriptScriptError *r_error) {
+	QuickJSBinder *binder = get_context_binder(ctx);
+	ECMAScriptGCHandler module;
+	if (OK == binder->load_bytecode(p_bytecode, p_filename, &module)) {
+		return module_cache.getptr(p_filename);
+	}
+	return NULL;
 }
 
 Error QuickJSBinder::js_evalute_module(JSContext *ctx, QuickJSBinder::ModuleCache *p_module, ECMAscriptScriptError *r_error) {
@@ -1576,6 +1585,15 @@ Error QuickJSBinder::compile_to_bytecode(const String &p_code, const String &p_f
 }
 
 Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, const String &p_file, ECMAScriptGCHandler *r_module) {
+
+	Variant bytes = p_bytecode;
+	if (ModuleCache *ptr = module_cache.getptr(p_file)) {
+		if (bytes.hash() == ptr->hash) {
+			r_module->ecma_object = ptr->module;
+			return OK;
+		}
+	}
+
 	JSValue value = JS_ReadObject(ctx, p_bytecode.ptr(), p_bytecode.size(), JS_READ_OBJ_BYTECODE | JS_READ_OBJ_REFERENCE | JS_READ_OBJ_SAB | JS_READ_OBJ_ROM_DATA);
 	ERR_FAIL_COND_V(JS_VALUE_GET_TAG(value) != JS_TAG_MODULE, ERR_PARSE_ERROR);
 	void *ptr = JS_VALUE_GET_PTR(value);
@@ -1583,6 +1601,7 @@ Error QuickJSBinder::load_bytecode(const Vector<uint8_t> &p_bytecode, const Stri
 
 	ModuleCache mc;
 	mc.flags = MODULE_FLAG_SCRIPT;
+	mc.hash = bytes.hash();
 	mc.module = static_cast<JSModuleDef *>(ptr);
 	module_cache.set(p_file, mc);
 
@@ -2206,12 +2225,9 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class(const Vector<uint8_t> &p_by
 			return cls;
 		}
 	}
-	ModuleCache mc;
-	ECMAScriptGCHandler module;
-	if (OK == load_bytecode(p_bytecode, p_path, &module)) {
-		mc.module = static_cast<JSModuleDef *>(module.ecma_object);
-	}
-	return parse_ecma_class_from_module(&mc, p_path, r_error);
+	ModuleCache *mc = js_compile_and_cache_module(ctx, p_bytecode, p_path, r_error);
+	ERR_FAIL_NULL_V(mc, NULL);
+	return parse_ecma_class_from_module(mc, p_path, r_error);
 }
 
 const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_module, const String &p_path, ECMAscriptScriptError *r_error) {

@@ -62,7 +62,7 @@ public:
 	struct ModuleCache {
 		int flags;
 		JSModuleDef *module;
-		String md5;
+		uint32_t hash;
 		JSValue res_value;
 		RES res;
 	};
@@ -123,6 +123,7 @@ protected:
 
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
 	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
+	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const Vector<uint8_t> &p_bytecode, const String &p_filename, ECMAscriptScriptError *r_error);
 	ModuleCache js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 	static Error js_evalute_module(JSContext *ctx, ModuleCache *p_module, ECMAscriptScriptError *r_error);
 
