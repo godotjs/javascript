@@ -60,9 +60,9 @@ public:
 	};
 
 	struct ModuleCache {
-		int flags;
-		JSModuleDef *module;
-		uint32_t hash;
+		int flags = 0;
+		JSModuleDef *module = NULL;
+		uint32_t hash = 0;
 		JSValue res_value;
 		RES res;
 	};

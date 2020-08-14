@@ -20,6 +20,7 @@ uint32_t QuickJSBinder::global_context_id = 0;
 uint64_t QuickJSBinder::global_transfer_id = 0;
 HashMap<uint64_t, Variant> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
+List<String> compiling_modules;
 
 _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(Object *p_object) {
 	ERR_FAIL_COND_V(p_object == NULL, NULL);
@@ -168,7 +169,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		}
 		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
-		ret = JS_ThrowTypeError(ctx, err_message.utf8().ptr());
+		ret = JS_ThrowTypeError(ctx, err_message.utf8().get_data());
 	}
 #endif
 
@@ -244,7 +245,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 				const Variant &key = keys[i];
 				const Variant &value = dict[key];
 				String key_str = keys[i];
-				JS_SetPropertyStr(ctx, obj, key_str.utf8().ptr(), variant_to_var(ctx, value));
+				JS_SetPropertyStr(ctx, obj, key_str.utf8().get_data(), variant_to_var(ctx, value));
 			}
 			return obj;
 		}
@@ -289,7 +290,7 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 				Set<String> keys;
 				get_own_property_names(ctx, p_val, &keys);
 				for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
-					JSValue v = JS_GetPropertyStr(ctx, p_val, E->get().utf8().ptr());
+					JSValue v = JS_GetPropertyStr(ctx, p_val, E->get().utf8().get_data());
 					dict[E->get()] = var_to_variant(ctx, v);
 					JS_FreeValue(ctx, v);
 				}
@@ -320,7 +321,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 	int arg_required = Expression::get_func_argument_count(func);
 	if (argc < arg_required) {
 		String func_name = Expression::get_func_name(func);
-		return JS_ThrowTypeError(ctx, "%d arguments expected for builtin funtion %s", arg_required, func_name.ascii().ptr());
+		return JS_ThrowTypeError(ctx, "%d arguments expected for builtin funtion %s", arg_required, func_name.ascii().get_data());
 	}
 
 	QuickJSBinder *binder = get_context_binder(ctx);
@@ -358,7 +359,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 
 	if (err.error != Variant::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
-		return JS_ThrowTypeError(ctx, "Call builtin function error %s: %s", func_name.ascii().ptr(), err_msg.utf8().ptr());
+		return JS_ThrowTypeError(ctx, "Call builtin function error %s: %s", func_name.ascii().get_data(), err_msg.utf8().get_data());
 	}
 
 	return variant_to_var(ctx, ret);
@@ -453,14 +454,14 @@ String QuickJSBinder::get_backtrace_message(const List<ECMAScriptStackInfo> &sta
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	String name = p_key;
 	CharString name_str = name.ascii();
-	JSAtom atom = JS_NewAtom(ctx, name_str.ptr());
+	JSAtom atom = JS_NewAtom(ctx, name_str.get_data());
 	return atom;
 }
 
 JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	String str = var_to_variant(ctx, this_val);
 	CharString ascii = str.ascii();
-	return JS_NewStringLen(ctx, ascii.ptr(), ascii.length());
+	return JS_NewStringLen(ctx, ascii.get_data(), ascii.length());
 }
 
 JSValue QuickJSBinder::godot_get_type(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
@@ -530,7 +531,7 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 
 static HashMap<String, String> resolve_path_cache;
 
-static String resolve_commanjs_module_file(const String &file, bool allow_node_module = false) {
+static String resolve_module_file(const String &file, bool allow_node_module = false) {
 	if (const String *ptr = resolve_path_cache.getptr(file)) {
 		return *ptr;
 	}
@@ -593,7 +594,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	String resolving_file;
 	resolving_file.parse_utf8(module_name);
 
-	String file = resolve_commanjs_module_file(resolving_file, false);
+	String file = resolve_module_file(resolving_file, false);
 	ERR_FAIL_COND_V_MSG(file.empty(), NULL, "Failed to resolve module: '" + resolving_file + "'.");
 	resolve_path_cache.set(resolving_file, file);
 
@@ -608,7 +609,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 		if (extensions.find(file.get_extension()) != NULL) {
 			Ref<ECMAScriptModule> em = ResourceFormatLoaderECMAScriptModule::load_static(file, "", &err);
 			if (err != OK || !em.is_valid()) {
-				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
+				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().get_data());
 				return NULL;
 			}
 			ECMAscriptScriptError es_err;
@@ -632,11 +633,11 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 		} else { // Try load as Resource
 			RES res = ResourceLoader::load(file);
 			if (res.is_null()) {
-				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().ptr());
+				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().get_data());
 				return NULL;
 			}
 			// hack the quick module to make the resource value as default entry
-			m = JS_NewCModule(ctx, file.utf8().ptr(), resource_module_initializer);
+			m = JS_NewCModule(ctx, file.utf8().get_data(), resource_module_initializer);
 			JS_AddModuleExport(ctx, m, "default");
 			JSValue func = JS_MKPTR(JS_TAG_MODULE, m);
 			JS_DupValue(ctx, func);
@@ -662,20 +663,32 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 
 QuickJSBinder::ModuleCache QuickJSBinder::js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error) {
 
+	if (NULL != compiling_modules.find(p_filename)) {
+		String chain;
+		for (List<String>::Element *E = compiling_modules.front(); E; E = E->next()) {
+			chain += E->get();
+			if (E->next() != NULL) {
+				chain += " <- ";
+			}
+		}
+		ERR_FAIL_V_MSG(ModuleCache(), vformat("Cyclic module import detected:\r\n  %s", chain));
+	}
+
 	ModuleCache module;
 	module.flags = 0;
 	module.module = NULL;
+	module.hash = p_code.hash();
 
 	CharString code = p_code.utf8();
 	CharString filename = p_filename.utf8();
-	const char *cfilename = filename.ptr();
-	const char *cfilesource = code.ptr();
-	if (!cfilename) cfilename = ""; // avoid crash with empty file name here
-	if (!cfilesource) cfilesource = ""; // avoid crash with empty source code here
+	const char *cfilename = filename.get_data();
+	const char *cfilesource = code.get_data();
 
+	compiling_modules.push_back(p_filename);
 	JSValue func = JS_Eval(ctx, cfilesource, code.length(), cfilename, JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+	compiling_modules.pop_back();
+
 	if (!JS_IsException(func)) {
-		module.module = NULL;
 		module.flags = MODULE_FLAG_SCRIPT;
 		module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
 		module.res_value = JS_UNDEFINED;
@@ -691,13 +704,6 @@ QuickJSBinder::ModuleCache QuickJSBinder::js_compile_module(JSContext *ctx, cons
 QuickJSBinder::ModuleCache *QuickJSBinder::js_compile_and_cache_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error) {
 
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-	CharString code = p_code.utf8();
-	CharString filename = p_filename.utf8();
-	const char *cfilename = filename.ptr();
-	const char *cfilesource = code.ptr();
-	if (!cfilename) cfilename = ""; // avoid crash with empty file name here
-	if (!cfilesource) cfilesource = ""; // avoid crash with empty source code here
-
 	ModuleCache *last_module = binder->module_cache.getptr(p_filename);
 	if (last_module) {
 		if (last_module->hash == p_code.hash()) {
@@ -780,9 +786,20 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 		file = ECMAScriptLanguage::globalize_relative_path(file, caller_path.get_base_dir());
 	}
 	String resolving_file = file;
-	file = resolve_commanjs_module_file(file, true);
+	file = resolve_module_file(file, true);
 	ERR_FAIL_COND_V_MSG(file.empty(), (JS_UNDEFINED), "Failed to resolve module '" + resolving_file + "'.");
 	resolve_path_cache.set(resolving_file, file);
+
+	if (NULL != compiling_modules.find(file)) {
+		String chain;
+		for (List<String>::Element *E = compiling_modules.front(); E; E = E->next()) {
+			chain += E->get();
+			if (E->next() != NULL) {
+				chain += " <- ";
+			}
+		}
+		return JS_ThrowTypeError(ctx, "Cyclic module import detected:\r\n  %s", chain.utf8().get_data());
+	}
 
 	JSValue ret = JS_UNDEFINED;
 	String md5 = FileAccess::get_md5(file);
@@ -798,12 +815,12 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 		if (extensions.find(file.get_extension()) != NULL) {
 			Error err;
 			Ref<ECMAScriptModule> em = ResourceFormatLoaderECMAScriptModule::load_static(file, "", &err);
-			ERR_FAIL_COND_V(err != OK || em.is_null(), JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().ptr()));
+			ERR_FAIL_COND_V(err != OK || em.is_null(), JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().get_data()));
 			String text = em->get_source_code();
 			if (!text.empty()) {
 				if (file.ends_with(EXT_JSON)) {
 					CharString utf8code = text.utf8();
-					ret = JS_ParseJSON(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr());
+					ret = JS_ParseJSON(ctx, utf8code.get_data(), utf8code.length(), file.utf8().get_data());
 				} else {
 					String code = "(function() {"
 								  "  const module = {"
@@ -817,7 +834,9 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 								  "  return module.exports;"
 								  "})();";
 					CharString utf8code = code.utf8();
-					ret = JS_Eval(ctx, utf8code.ptr(), utf8code.length(), file.utf8().ptr(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+					compiling_modules.push_back(file);
+					ret = JS_Eval(ctx, utf8code.get_data(), utf8code.length(), file.utf8().get_data(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
+					compiling_modules.pop_back();
 				}
 			} else {
 				// TODO: require module from bytecode
@@ -832,7 +851,7 @@ JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int ar
 				m.flags = MODULE_FLAG_RESOURCE;
 				m.res = res;
 			} else {
-				ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().ptr());
+				ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().get_data());
 			}
 		}
 		binder->commonjs_module_cache.set(md5, m);
@@ -854,7 +873,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 		}
 	} else {
 		data.class_name = String(p_cls->name).ascii();
-		data.jsclass.class_name = data.class_name.ptr();
+		data.jsclass.class_name = data.class_name.get_data();
 	}
 
 	data.jsclass.exotic = NULL;
@@ -874,8 +893,8 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 			godot_methods.write[internal_godot_method_id] = mb;
 
 			CharString name = String(*key).ascii();
-			JSValue method = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, name.ptr(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
-			JS_DefinePropertyValueStr(ctx, data.prototype, name.ptr(), method, PROP_DEF_DEFAULT);
+			JSValue method = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, name.get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
+			JS_DefinePropertyValueStr(ctx, data.prototype, name.get_data(), method, PROP_DEF_DEFAULT);
 
 			methods.insert(*key, method);
 
@@ -911,8 +930,8 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 				}
 				godot_object_indexed_properties.write[internal_godot_indexed_property_id] = &prop;
 				CharString name = String(*key).ascii();
-				getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.ptr(), 0, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
-				setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.ptr(), 1, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
+				getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.get_data(), 0, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
+				setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.get_data(), 1, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
 				++internal_godot_indexed_property_id;
 			} else {
 				if (Map<StringName, JSValue>::Element *E = methods.find(prop.setter)) {
@@ -1000,7 +1019,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 void QuickJSBinder::add_godot_origin() {
 	godot_origin_class.class_id = 0;
 	godot_origin_class.class_name = "GodotOrigin";
-	godot_origin_class.jsclass.class_name = godot_origin_class.class_name.ptr();
+	godot_origin_class.jsclass.class_name = godot_origin_class.class_name.get_data();
 	godot_origin_class.jsclass.finalizer = origin_finalizer;
 	godot_origin_class.jsclass.exotic = NULL;
 	godot_origin_class.jsclass.call = NULL;
@@ -1182,7 +1201,7 @@ void QuickJSBinder::add_godot_globals() {
 	for (int i = 0; i < Expression::FUNC_MAX; ++i) {
 		Expression::BuiltinFunc func = (Expression::BuiltinFunc)i;
 		String name = Expression::get_func_name(func);
-		JSValue js_func = JS_NewCFunctionMagic(ctx, godot_builtin_function, name.ascii().ptr(), 0, JS_CFUNC_generic_magic, i);
+		JSValue js_func = JS_NewCFunctionMagic(ctx, godot_builtin_function, name.ascii().get_data(), 0, JS_CFUNC_generic_magic, i);
 		JSAtom atom = get_atom(ctx, name);
 		JS_DefinePropertyValue(ctx, godot_object, atom, js_func, QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, atom);
@@ -1541,10 +1560,8 @@ Error QuickJSBinder::eval_string(const String &p_source, EvalType type, const St
 Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) {
 	ERR_FAIL_COND_V(p_source.empty(), FAILED);
 	CharString utf8_str = p_source.utf8();
-	const char *filename = p_path.utf8().ptr();
-	const char *code = utf8_str.ptr();
-	if (!filename) filename = "";
-	if (!code) code = "";
+	const char *filename = p_path.utf8().get_data();
+	const char *code = utf8_str.get_data();
 	int flags = JS_EVAL_FLAG_STRICT;
 	if (type == ECMAScriptBinder::EVAL_TYPE_MODULE) {
 		flags |= JS_EVAL_TYPE_MODULE;
@@ -1827,7 +1844,7 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 	JSClassID id = 0;
 
 	if (!JS_IsFunction(ctx, p_constructor)) {
-		JS_ThrowTypeError(ctx, "ECMAClass class expected: %s", p_path.utf8().ptr());
+		JS_ThrowTypeError(ctx, "ECMAClass class expected: %s", p_path.utf8().get_data());
 		goto fail;
 	}
 
@@ -1837,7 +1854,7 @@ const ECMAClassInfo *QuickJSBinder::register_ecma_class(const JSValue &p_constru
 	icon = JS_GetProperty(ctx, p_constructor, js_key_godot_icon_path);
 
 	if (JS_IsUndefined(classid)) {
-		JS_ThrowTypeError(ctx, "ECMAClass class expected: %s", p_path.utf8().ptr());
+		JS_ThrowTypeError(ctx, "ECMAClass class expected: %s", p_path.utf8().get_data());
 		goto fail;
 	}
 
@@ -2251,7 +2268,7 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 	if (!JS_IsFunction(ctx, default_entry)) {
 		String err = "Failed parse ECMAClass from script " + p_path + ENDL "\t" + "Default export entry must be a godot class!";
 		ERR_PRINTS(err);
-		JS_ThrowTypeError(ctx, err.utf8().ptr());
+		JS_ThrowTypeError(ctx, err.utf8().get_data());
 		goto fail;
 	}
 	ecma_class = register_ecma_class(default_entry, p_path);
