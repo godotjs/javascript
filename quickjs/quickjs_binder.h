@@ -232,6 +232,8 @@ public:
 	virtual Error get_stacks(List<ECMAScriptStackInfo> &r_stacks);
 	virtual String get_backtrace_message(const List<ECMAScriptStackInfo> &stacks);
 
+	static Dictionary js_to_dictionary(JSContext *ctx, const JSValueConst &p_val, List<void *> &stack);
+
 	_FORCE_INLINE_ static real_t js_to_number(JSContext *ctx, const JSValueConst &p_val) {
 		double_t v = 0;
 		JS_ToFloat64(ctx, &v, p_val);

@@ -285,16 +285,14 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 				ERR_FAIL_NULL_V(bind, Variant());
 				ERR_FAIL_NULL_V(bind->godot_object, Variant());
 				return bind->get_value();
+			} else if (JS_IsFunction(ctx, p_val)) {
+				JSValue name = JS_GetProperty(ctx, p_val, JS_ATOM_name);
+				String ret = vformat("function %s() { ... }", js_to_string(ctx, name));
+				JS_FreeValue(ctx, name);
+				return ret;
 			} else { // Plain Object as Dictionary
-				Dictionary dict;
-				Set<String> keys;
-				get_own_property_names(ctx, p_val, &keys);
-				for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
-					JSValue v = JS_GetPropertyStr(ctx, p_val, E->get().utf8().get_data());
-					dict[E->get()] = var_to_variant(ctx, v);
-					JS_FreeValue(ctx, v);
-				}
-				return dict;
+				List<void *> stack;
+				return js_to_dictionary(ctx, p_val, stack);
 			}
 		} break;
 		case JS_TAG_NULL:
@@ -449,6 +447,40 @@ String QuickJSBinder::get_backtrace_message(const List<ECMAScriptStackInfo> &sta
 		}
 	}
 	return message;
+}
+
+Dictionary QuickJSBinder::js_to_dictionary(JSContext *ctx, const JSValue &p_val, List<void *> &stack) {
+	Dictionary dict;
+	Set<String> keys;
+	get_own_property_names(ctx, p_val, &keys);
+	stack.push_back(JS_VALUE_GET_PTR(p_val));
+	for (Set<String>::Element *E = keys.front(); E; E = E->next()) {
+		JSValue v = JS_GetPropertyStr(ctx, p_val, E->get().utf8().get_data());
+		Variant val;
+		if (JS_IsObject(v)) {
+			void *ptr = JS_VALUE_GET_PTR(v);
+			if (stack.find(ptr)) {
+				union {
+					const void *p;
+					uint64_t i;
+				} u;
+				u.p = ptr;
+				ERR_PRINTS(vformat("Property '%s' circular reference to 0x%X", E->get(), u.i));
+				JS_FreeValue(ctx, v);
+				continue;
+			} else {
+				stack.push_back(ptr);
+				val = var_to_variant(ctx, v);
+				stack.pop_back();
+			}
+		} else {
+			val = var_to_variant(ctx, v);
+		}
+		dict[E->get()] = val;
+		JS_FreeValue(ctx, v);
+	}
+	stack.pop_back();
+	return dict;
 }
 
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
