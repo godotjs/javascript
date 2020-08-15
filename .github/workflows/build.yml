@@ -28,7 +28,7 @@ jobs:
       - name: Publish artifact
         uses: actions/upload-artifact@v2
         with:
-          name: godot.javascript.x11.opt.debug.64
+          name: godot.javascript.x11.opt.tools.64
           path: /godot/bin/godot.x11.opt.tools.64
   build_windows:
     name: Build Windows

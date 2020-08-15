@@ -17,11 +17,14 @@ This module implements JavaScript/TypeScript language support for the godot game
 ### Download
 You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)
 
+You can also get the binaries with lastest commits from the [github build action result](https://github.com/GodotExplorer/ECMAScript/actions)
+
 ### Compilation
 * Clone the source code of [godot](https://github.com/godotengine/godot)
 * Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
 * [Recompile the godot engine](https://docs.godotengine.org/en/3.2/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
+![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
 
 ### Usage
 
@@ -137,16 +140,16 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 			console.log("[MainThread] received message from worker thread:", msg);
 		}
 		```
-	- Transfer value in different thread context with `Worker.abandonValue` and `Worker.adoptValue`
+	- Transfer value in different thread context with `godot.abandon_value` and `godot.adopt_value`
 		```js
 		// In worker thread
-		let id = Worker.abandonValue(object);
+		let id = godot.abandon_value(object);
 		postMessage({ type: 'return_value', id: id });
 		
 		// In the host thread
 		worker.onmessage = function(msg) {
 			if (typeof msg === 'object' && msg.type === 'return_value') {
-				let value_from_worker = Worker.adoptValue(msg.id);
+				let value_from_worker = godot.adopt_value(msg.id);
 			}
 		}
 		```
