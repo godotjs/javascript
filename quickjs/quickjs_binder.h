@@ -153,8 +153,6 @@ protected:
 	Vector<const ClassDB::PropertySetGet *> godot_object_indexed_properties;
 	int internal_godot_indexed_property_id;
 	const ECMAScriptGCHandler *lastest_allocated_object = NULL;
-	Variant *method_call_arguments;
-	const Variant **method_call_argument_ptrs;
 
 #if NO_MODULE_EXPORT_SUPPORT
 	String parsing_script_file;

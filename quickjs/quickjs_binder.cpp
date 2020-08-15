@@ -22,6 +22,27 @@ HashMap<uint64_t, Variant> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 List<String> compiling_modules;
 
+struct GodotMethodArguments {
+	Variant *arguments;
+	const Variant **ptr;
+	GodotMethodArguments(int argc) {
+		if (argc) {
+			arguments = memnew_arr(Variant, argc);
+			ptr = memnew_arr(const Variant *, argc);
+			for (int i = 0; i < argc; i++) {
+				ptr[i] = &arguments[i];
+			}
+		} else {
+			arguments = NULL;
+			ptr = NULL;
+		}
+	}
+	~GodotMethodArguments() {
+		if (ptr) memdelete_arr(ptr);
+		if (arguments) memdelete_arr(arguments);
+	}
+};
+
 _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(Object *p_object) {
 	ERR_FAIL_COND_V(p_object == NULL, NULL);
 	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)(p_object)->get_script_instance_binding(ECMAScriptLanguage::get_singleton()->get_language_index());
@@ -133,18 +154,19 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		argc = MIN(argc, mb->get_argument_count());
 	}
 
+	GodotMethodArguments args(argc);
 	for (int i = 0; i < argc; ++i) {
-		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
+		args.arguments[i] = var_to_variant(ctx, argv[i]);
 	}
 
 	Variant::CallError call_err;
-	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc, call_err);
+	Variant ret_val = mb->call(obj, args.ptr, argc, call_err);
 	JSValue ret = variant_to_var(ctx, ret_val);
 #ifdef DEBUG_METHODS_ENABLED
 	String err_message;
 	switch (call_err.error) {
 		case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
-			err_message = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(binder->method_call_arguments[call_err.argument].get_type()), call_err.argument, Variant::get_type_name(call_err.expected));
+			err_message = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(args.arguments[call_err.argument].get_type()), call_err.argument, Variant::get_type_name(call_err.expected));
 			break;
 		case Variant::CallError::CALL_ERROR_INVALID_METHOD:
 			err_message = vformat("Invalid method '%s' for type '%s'", mb->get_name(), obj->get_class_name());
@@ -173,10 +195,6 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 	}
 #endif
 
-	for (int i = 0; i < argc; ++i) {
-		binder->method_call_arguments[i] = Variant();
-	}
-
 	return ret;
 }
 
@@ -192,13 +210,14 @@ JSValue QuickJSBinder::object_indexed_property(JSContext *ctx, JSValue this_val,
 	const ClassDB::PropertySetGet *prop = binder->godot_object_indexed_properties[property_id];
 	MethodBind *mb = is_setter ? prop->_setptr : prop->_getptr;
 
-	binder->method_call_arguments[0] = prop->index;
+	GodotMethodArguments args(2);
+	args.arguments[0] = prop->index;
 	if (is_setter) {
-		binder->method_call_arguments[1] = var_to_variant(ctx, argv[0]);
+		args.arguments[1] = var_to_variant(ctx, argv[0]);
 	}
 
 	Variant::CallError call_err;
-	Variant ret_val = mb->call(obj, binder->method_call_argument_ptrs, argc + 1, call_err);
+	Variant ret_val = mb->call(obj, args.ptr, argc + 1, call_err);
 	return variant_to_var(ctx, ret_val);
 }
 
@@ -323,17 +342,18 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 	}
 
 	QuickJSBinder *binder = get_context_binder(ctx);
+	GodotMethodArguments args(argc);
 	for (int i = 0; i < argc; ++i) {
-		binder->method_call_arguments[i] = var_to_variant(ctx, argv[i]);
+		args.arguments[i] = var_to_variant(ctx, argv[i]);
 	}
-	Expression::exec_func(func, binder->method_call_argument_ptrs, &ret, err, err_msg);
+	Expression::exec_func(func, args.ptr, &ret, err, err_msg);
 #ifdef DEBUG_METHODS_ENABLED
 	if (err.error != Variant::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
 		if (err_msg.empty()) {
 			switch (err.error) {
 				case Variant::CallError::CALL_ERROR_INVALID_ARGUMENT:
-					err_msg = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(binder->method_call_arguments[err.argument].get_type()), err.argument, Variant::get_type_name(err.expected));
+					err_msg = vformat("Argument of type '%s' is not assignable to parameter #%d of type '%s'", Variant::get_type_name(args.arguments[err.argument].get_type()), err.argument, Variant::get_type_name(err.expected));
 					break;
 				case Variant::CallError::CALL_ERROR_INVALID_METHOD:
 					err_msg = vformat("Invalid builtin function", func_name);
@@ -350,10 +370,6 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 		}
 	}
 #endif
-
-	for (int i = 0; i < argc; ++i) {
-		binder->method_call_arguments[i] = Variant();
-	}
 
 	if (err.error != Variant::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
@@ -1305,17 +1321,9 @@ QuickJSBinder::QuickJSBinder() {
 		class_remap.insert(_Mutex::get_class_static(), "");
 		class_remap.insert(_Semaphore::get_class_static(), "");
 	}
-
-	method_call_arguments = memnew_arr(Variant, MAX_ARGUMENT_COUNT);
-	method_call_argument_ptrs = memnew_arr(const Variant *, MAX_ARGUMENT_COUNT);
-	for (int i = 0; i < MAX_ARGUMENT_COUNT; ++i) {
-		method_call_argument_ptrs[i] = &(method_call_arguments[i]);
-	}
 }
 
 QuickJSBinder::~QuickJSBinder() {
-	memdelete_arr(method_call_arguments);
-	memdelete_arr(method_call_argument_ptrs);
 }
 
 void QuickJSBinder::initialize() {
