@@ -1,3 +1,13 @@
+/**
+ * Expose as an ECMAClass.
+ * An ECMAScript object is created and attached automaticly when construct an instance from this class
+ */
+export function gdclass<T extends godot.Object>(target: new() => T) {
+    const id = gdclass['internal_class_id'] = gdclass['internal_class_id'] ? gdclass['internal_class_id'] + 1 : 1;
+	const class_name = `AnonymousECMAClass${id}`;
+	godot.register_class(target, class_name);
+}
+
 /** Set the script is runable in editor */
 export function tool<T extends godot.Object>(target: new() => T) {
 	godot.set_script_tooled(target, true);
