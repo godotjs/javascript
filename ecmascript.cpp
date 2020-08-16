@@ -27,7 +27,8 @@ bool ECMAScript::can_instance() const {
 StringName ECMAScript::get_instance_base_type() const {
 	static StringName empty;
 	ERR_FAIL_NULL_V(ecma_class, empty);
-	return ecma_class->class_name;
+	ERR_FAIL_NULL_V(ecma_class->native_class, empty);
+	return ecma_class->native_class->name;
 }
 
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
