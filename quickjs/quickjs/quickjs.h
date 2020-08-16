@@ -1028,6 +1028,7 @@ JS_BOOL JS_IsPureCFunction(JSContext *ctx, JSValue val);
 const JSMallocState *JS_GetMollocState(JSRuntime *rt);
 int JS_GetRefCount(JSValue val);
 JS_BOOL JS_IsArrayBuffer(JSValueConst val);
+JS_BOOL JS_IsDataView(JSValueConst val);
 
 #undef js_unlikely
 #undef js_force_inline

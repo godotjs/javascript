@@ -53433,6 +53433,16 @@ JS_BOOL JS_IsArrayBuffer(JSValueConst val) {
     }
 }
 
+JS_BOOL JS_IsDataView(JSValueConst val) {
+    JSObject *p;
+    if (JS_VALUE_GET_TAG(val) == JS_TAG_OBJECT) {
+        p = JS_VALUE_GET_OBJ(val);
+        return p->class_id == JS_CLASS_DATAVIEW;
+    } else {
+        return FALSE;
+    }
+}
+
 #ifdef QUICKJS_WITH_DEBUGGER
 JSDebuggerLocation js_debugger_current_location(JSContext *ctx, const uint8_t *cur_pc) {
     JSDebuggerLocation location;

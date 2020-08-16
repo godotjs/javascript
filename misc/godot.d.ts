@@ -1898,6 +1898,7 @@ declare module godot {
 		constructor(source?: number[]);
 		constructor(from: PoolByteArray);
 		constructor(from: ArrayBuffer);
+		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<number>;
 		
 		/** Appends an element at the end of the array (alias of `push_back`). */
@@ -1965,6 +1966,7 @@ declare module godot {
 		constructor(source?: Color[]);
 		constructor(from: PoolColorArray);
 		constructor(from: ArrayBuffer);
+		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<Color>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
@@ -2016,6 +2018,7 @@ declare module godot {
 		constructor(source?: number[]);
 		constructor(from: PoolIntArray);
 		constructor(from: ArrayBuffer);
+		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<number>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
@@ -2064,6 +2067,7 @@ declare module godot {
 		constructor(source?: number[]);
 		constructor(from: PoolRealArray);
 		constructor(from: ArrayBuffer);
+		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<number>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
@@ -2160,6 +2164,7 @@ declare module godot {
 		constructor(source?: Vector2[]);
 		constructor(from: PoolVector2Array);
 		constructor(from: ArrayBuffer);
+		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<Vector2>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */
@@ -2208,6 +2213,7 @@ declare module godot {
 		constructor(source?: Vector3[]);
 		constructor(from: PoolVector3Array);
 		constructor(from: ArrayBuffer);
+		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<Vector3>;
 
 		/** Appends an element at the end of the array (alias of `push_back`). */

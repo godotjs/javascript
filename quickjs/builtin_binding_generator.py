@@ -144,6 +144,23 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 				ptr->resize(size / sizeof(${element}));
 				copymem(ptr->write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
 			}
+		} else if (JS_IsDataView(argv[0])) {
+			JSValue byte_length = JS_GetPropertyStr(ctx, argv[0], "byteLength");
+			uint64_t length = QuickJSBinder::js_to_uint64(ctx, byte_length);
+			JS_FreeValue(ctx, byte_length);
+
+			JSValue byte_offset = JS_GetPropertyStr(ctx, argv[0], "byteOffset");
+			uint64_t offset = QuickJSBinder::js_to_uint64(ctx, byte_offset);
+			JS_FreeValue(ctx, byte_offset);
+
+			size_t size;
+			JSValue arraybuffer = JS_GetPropertyStr(ctx, argv[0], "buffer");
+			uint8_t *buffer = JS_GetArrayBuffer(ctx, &size, arraybuffer);
+			JS_FreeValue(ctx, arraybuffer);
+			if (length) {
+				ptr->resize(length / sizeof(${element}));
+				copymem(ptr->write().ptr(), buffer + offset, length / sizeof(${element}) * sizeof(${element}));
+			}
 		} else {
 			memdelete(ptr);
 #ifdef DEBUG_METHODS_ENABLED
