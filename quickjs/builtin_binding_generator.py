@@ -115,9 +115,14 @@ def generate_constructor(cls):
 	TemplateConstructorDeclare = 'static JSValue ${class}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);\n'
 	TemplateConstructor = '''
 static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
-	${class} *ptr = memnew(${class});
+	${class} tmp;
 	${initializer}
-	return QuickJSBuiltinBinder::bind_builtin_object_static(ctx, ${type}, ptr);
+	JSValue proto = JS_GetProperty(ctx, new_target, QuickJSBinder::JS_ATOM_prototype);
+	JSValue obj = JS_NewObjectProtoClass(ctx, proto, QuickJSBinder::get_context_binder(ctx)->get_origin_class_id());
+	QuickJSBuiltinBinder::bind_builtin_object(ctx, obj, ${type}, &tmp);
+	JS_FreeValue(ctx, proto);
+	return obj;
+	// return QuickJSBuiltinBinder::create_builtin_value(ctx, ${type}, &tmp);
 }
 '''
 	TemplateSimplePoolArrays = '''
@@ -126,14 +131,14 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!JS_IsArray(ctx, argv[0]), (JS_ThrowTypeError(ctx, "Array expected for argument #0 of ${class}(from)")));
 #endif
 		Variant arr = QuickJSBinder::var_to_variant(ctx, argv[0]);
-		ptr->operator=(arr);
+		tmp.operator=(arr);
 	}
 	'''
 	TemplatePoolArrays = '''
 	if (argc == 1) {
 		if (JS_IsArray(ctx, argv[0])) {
 			Variant arr = QuickJSBinder::var_to_variant(ctx, argv[0]);
-			ptr->operator=(arr);
+			tmp.operator=(arr);
 		} else if (JS_IsArrayBuffer(argv[0])) {
 			size_t size;
 			uint8_t *buffer = JS_GetArrayBuffer(ctx, &size, argv[0]);
@@ -141,8 +146,8 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 				if (size % sizeof(${element}) != 0) {
 					ERR_PRINTS("Length of the ArrayBuffer does not match for ${class}");
 				}
-				ptr->resize(size / sizeof(${element}));
-				copymem(ptr->write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
+				tmp.resize(size / sizeof(${element}));
+				copymem(tmp.write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
 			}
 		} else if (JS_IsDataView(argv[0])) {
 			JSValue byte_length = JS_GetPropertyStr(ctx, argv[0], "byteLength");
@@ -158,11 +163,10 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 			uint8_t *buffer = JS_GetArrayBuffer(ctx, &size, arraybuffer);
 			JS_FreeValue(ctx, arraybuffer);
 			if (length) {
-				ptr->resize(length / sizeof(${element}));
-				copymem(ptr->write().ptr(), buffer + offset, length / sizeof(${element}) * sizeof(${element}));
+				tmp.resize(length / sizeof(${element}));
+				copymem(tmp.write().ptr(), buffer + offset, length / sizeof(${element}) * sizeof(${element}));
 			}
 		} else {
-			memdelete(ptr);
 #ifdef DEBUG_METHODS_ENABLED
 			ERR_FAIL_COND_V(false, (JS_ThrowTypeError(ctx, "Array or ArrayBuffer expected for argument #0 of ${class}(from)")));
 #endif
@@ -172,16 +176,16 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 	ConstructorInitializers = {
 		"Vector2": '''
 	if (argc == 2) {
-		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
-		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		tmp.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		tmp.y = QuickJSBinder::js_to_number(ctx, argv[1]);
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::VECTOR2) {
-				ptr->operator=(*bind->getVector2());
+				tmp = *bind->getVector2();
 			}
 		} else {
-			ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
-			ptr->y = ptr->x;
+			tmp.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+			tmp.y = tmp.x;
 		}
 	}
 ''',
@@ -189,41 +193,41 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 	if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::VECTOR3)
-				ptr->operator=(*bind->getVector3());
+				tmp = *bind->getVector3();
 		} else {
-			ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
-			ptr->z = ptr->y = ptr->x;
+			tmp.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+			tmp.z = tmp.y = tmp.x;
 		}
 	} else if (argc == 3) {
-		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
-		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
-		ptr->z = QuickJSBinder::js_to_number(ctx, argv[2]);
+		tmp.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		tmp.y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		tmp.z = QuickJSBinder::js_to_number(ctx, argv[2]);
 	}
 ''',
 		"Color": '''
 	if (argc >= 3) {
-		ptr->r = QuickJSBinder::js_to_number(ctx, argv[0]);
-		ptr->g = QuickJSBinder::js_to_number(ctx, argv[1]);
-		ptr->b = QuickJSBinder::js_to_number(ctx, argv[2]);
-		ptr->a = (argc >= 4) ? QuickJSBinder::js_to_number(ctx, argv[3]) : 1.0f;
+		tmp.r = QuickJSBinder::js_to_number(ctx, argv[0]);
+		tmp.g = QuickJSBinder::js_to_number(ctx, argv[1]);
+		tmp.b = QuickJSBinder::js_to_number(ctx, argv[2]);
+		tmp.a = (argc >= 4) ? QuickJSBinder::js_to_number(ctx, argv[3]) : 1.0f;
 	} else if (argc == 1) {
 		if (JS_IsNumber(argv[0])) {
-			ptr->operator=(Color::hex(QuickJSBinder::js_to_uint(ctx, argv[0])));
+			tmp = Color::hex(QuickJSBinder::js_to_uint(ctx, argv[0]));
 		} else if (JS_IsString(argv[0])) {
-			ptr->operator=(Color::html(QuickJSBinder::js_to_string(ctx, argv[0])));
+			tmp = Color::html(QuickJSBinder::js_to_string(ctx, argv[0]));
 		} else if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::COLOR) {
-				ptr->operator=(*bind->getColor());
+				tmp = *bind->getColor();
 			}
 		}
 	}
 ''',
 		"Rect2": '''
 	if (argc == 4) {
-		ptr->position.x = QuickJSBinder::js_to_number(ctx, argv[0]);
-		ptr->position.y = QuickJSBinder::js_to_number(ctx, argv[1]);
-		ptr->size.x = QuickJSBinder::js_to_number(ctx, argv[2]);
-		ptr->size.y = QuickJSBinder::js_to_number(ctx, argv[3]);
+		tmp.position.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		tmp.position.y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		tmp.size.x = QuickJSBinder::js_to_number(ctx, argv[2]);
+		tmp.size.y = QuickJSBinder::js_to_number(ctx, argv[3]);
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 0 of Rect2(position, size)")));
@@ -231,12 +235,12 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 #endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ptr->position = *param0->getVector2();
-		ptr->size = *param1->getVector2();
+		tmp.position = *param0->getVector2();
+		tmp.size = *param1->getVector2();
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::RECT2)
-				ptr->operator=(*bind->getRect2());
+				tmp = *bind->getRect2();
 		}
 	}
 ''',
@@ -248,21 +252,21 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 #endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ptr->position = *param0->getVector3();
-		ptr->size = *param1->getVector3();
+		tmp.position = *param0->getVector3();
+		tmp.size = *param1->getVector3();
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::AABB)
-				ptr->operator=(*bind->getAABB());
+				tmp = *bind->getAABB();
 		}
 	}
 ''',
 		"Plane": '''
 	if (argc == 4) {
-		ptr->normal.x = QuickJSBinder::js_to_number(ctx, argv[0]);
-		ptr->normal.y = QuickJSBinder::js_to_number(ctx, argv[1]);
-		ptr->normal.z = QuickJSBinder::js_to_number(ctx, argv[2]);
-		ptr->d = QuickJSBinder::js_to_number(ctx, argv[3]);
+		tmp.normal.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		tmp.normal.y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		tmp.normal.z = QuickJSBinder::js_to_number(ctx, argv[2]);
+		tmp.d = QuickJSBinder::js_to_number(ctx, argv[3]);
 	} else if (argc == 3) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Plane(v1, v2, v3)")));
@@ -272,40 +276,40 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
-		ptr->operator=(Plane(*param0->getVector3(), *param1->getVector3(), *param2->getVector3()));
+		tmp = Plane(*param0->getVector3(), *param1->getVector3(), *param2->getVector3());
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Plane(normal, d)")));
 #endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ptr->operator=(Plane(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1])));
+		tmp = Plane(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::PLANE)
-				ptr->operator=(*bind->getPlane());
+				tmp = *bind->getPlane();
 		}
 	}
 ''',
 		"Quat": '''
 	if (argc == 4) {
-		ptr->x = QuickJSBinder::js_to_number(ctx, argv[0]);
-		ptr->y = QuickJSBinder::js_to_number(ctx, argv[1]);
-		ptr->z = QuickJSBinder::js_to_number(ctx, argv[2]);
-		ptr->w = QuickJSBinder::js_to_number(ctx, argv[3]);
+		tmp.x = QuickJSBinder::js_to_number(ctx, argv[0]);
+		tmp.y = QuickJSBinder::js_to_number(ctx, argv[1]);
+		tmp.z = QuickJSBinder::js_to_number(ctx, argv[2]);
+		tmp.w = QuickJSBinder::js_to_number(ctx, argv[3]);
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Quat(axis, angle)")));
 #endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ptr->operator=(Quat(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1])));
+		tmp = Quat(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::QUAT) {
-				ptr->operator=(*bind->getQuat());
+				tmp = *bind->getQuat();
 			} else if (bind->type == Variant::BASIS) {
-				ptr->operator=(*bind->getBasis());
+				tmp = *bind->getBasis();
 			} else if (bind->type == Variant::VECTOR3) {
-				ptr->set_euler(*bind->getVector3());
+				tmp.set_euler(*bind->getVector3());
 			}
 		}
 	}
@@ -320,22 +324,22 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
-		ptr->elements[0].operator=(*param0->getVector2());
-		ptr->elements[1].operator=(*param1->getVector2());
-		ptr->elements[2].operator=(*param2->getVector2());
+		tmp.elements[0].operator=(*param0->getVector2());
+		tmp.elements[1].operator=(*param1->getVector2());
+		tmp.elements[2].operator=(*param2->getVector2());
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Transform2D(rotation, position)")));
 #endif
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ptr->set_origin(*param1->getVector2());
-		ptr->set_rotation(QuickJSBinder::js_to_number(ctx, argv[0]));
+		tmp.set_origin(*param1->getVector2());
+		tmp.set_rotation(QuickJSBinder::js_to_number(ctx, argv[0]));
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::TRANSFORM2D)
-				ptr->operator=(*bind->getTransform2D());
+				tmp = *bind->getTransform2D();
 			else if (Variant::can_convert(bind->type, Variant::TRANSFORM2D)) {
-				ptr->operator=(bind->get_value());
+				tmp = bind->get_value();
 			}
 		}
 	}
@@ -350,23 +354,23 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
-		ptr->elements[0].operator=(*param0->getVector3());
-		ptr->elements[1].operator=(*param1->getVector3());
-		ptr->elements[2].operator=(*param2->getVector3());
+		tmp.elements[0].operator=(*param0->getVector3());
+		tmp.elements[1].operator=(*param1->getVector3());
+		tmp.elements[2].operator=(*param2->getVector3());
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Basis(axis, phi)")));
 #endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ptr->set_axis_angle(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
+		tmp.set_axis_angle(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::VECTOR3) {
-				ptr->set_euler(*bind->getVector3());
+				tmp.set_euler(*bind->getVector3());
 			} else if (bind->type == Variant::QUAT) {
-				ptr->set_quat(*bind->getQuat());
+				tmp.set_quat(*bind->getQuat());
 			} else if (bind->type == Variant::BASIS) {
-				ptr->operator=(*bind->getBasis());
+				tmp.operator=(*bind->getBasis());
 			}
 		}
 	}
@@ -384,10 +388,10 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
 		ECMAScriptGCHandler *param3 = BINDING_DATA_FROM_JS(ctx, argv[3]);
 
-		ptr->basis.elements[0].operator=(*param0->getVector3());
-		ptr->basis.elements[1].operator=(*param1->getVector3());
-		ptr->basis.elements[2].operator=(*param2->getVector3());
-		ptr->origin.operator=(*param3->getVector3());
+		tmp.basis.elements[0].operator=(*param0->getVector3());
+		tmp.basis.elements[1].operator=(*param1->getVector3());
+		tmp.basis.elements[2].operator=(*param2->getVector3());
+		tmp.origin.operator=(*param3->getVector3());
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::BASIS, argv[0]), (JS_ThrowTypeError(ctx, "Basis expected for argument 0 of Transform(basis, origin)")));
@@ -395,14 +399,14 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 #endif
 		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ptr->basis.operator=(*param0->getBasis());
-		ptr->origin.operator=(*param1->getVector3());
+		tmp.basis.operator=(*param0->getBasis());
+		tmp.origin.operator=(*param1->getVector3());
 	} else if (argc == 1) {
 		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::TRANSFORM) {
-				ptr->operator=(*bind->getTransform());
+				tmp.operator=(*bind->getTransform());
 			} else if (Variant::can_convert(bind->type, Variant::TRANSFORM)) {
-				ptr->operator=(bind->get_value());
+				tmp.operator=(bind->get_value());
 			}
 		}
 	}

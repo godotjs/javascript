@@ -14,83 +14,122 @@ QuickJSBuiltinBinder::~QuickJSBuiltinBinder() {
 	memdelete_arr(builtin_class_map);
 }
 
-JSValue QuickJSBuiltinBinder::bind_builtin_object(Variant::Type p_type, const void *p_object) {
+void QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, JSValue target, Variant::Type p_type, const void *p_object) {
 
-	const QuickJSBuiltinBinder::BuiltinClass &cls = binder->builtin_binder.get_class(p_type);
-	JSValue obj = JS_NewObjectProtoClass(ctx, cls.class_prototype, binder->get_origin_class_id());
-
-	size_t size = 0;
+	void *ptr = NULL;
+	ECMAScriptGCHandler *bind = NULL;
 	switch (p_type) {
 		case Variant::VECTOR2:
-			size += sizeof(Vector2);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Vector2));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Vector2(*static_cast<const Vector2 *>(p_object)));
 			break;
 		case Variant::RECT2:
-			size += sizeof(Rect2);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Rect2));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Rect2(*static_cast<const Rect2 *>(p_object)));
 			break;
 		case Variant::COLOR:
-			size += sizeof(Color);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Color));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Color(*static_cast<const Color *>(p_object)));
 			break;
 		case Variant::VECTOR3:
-			size += sizeof(Vector3);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Vector3));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Vector3(*static_cast<const Vector3 *>(p_object)));
 			break;
 		case Variant::BASIS:
-			size += sizeof(Basis);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Basis));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Basis(*static_cast<const Basis *>(p_object)));
 			break;
 		case Variant::QUAT:
-			size += sizeof(Quat);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Quat));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Quat(*static_cast<const Quat *>(p_object)));
 			break;
 		case Variant::PLANE:
-			size += sizeof(Plane);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Plane));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Plane(*static_cast<const Plane *>(p_object)));
 			break;
 		case Variant::TRANSFORM2D:
-			size += sizeof(Transform2D);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Transform2D));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Transform2D(*static_cast<const Transform2D *>(p_object)));
 			break;
 		case Variant::_RID:
-			size += sizeof(RID);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(RID));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, RID(*static_cast<const RID *>(p_object)));
 			break;
 		case Variant::TRANSFORM:
-			size += sizeof(Transform);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Transform));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, Transform(*static_cast<const Transform *>(p_object)));
 			break;
 		case Variant::AABB:
-			size += sizeof(AABB);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(AABB));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, AABB(*static_cast<const AABB *>(p_object)));
 			break;
 		case Variant::POOL_INT_ARRAY:
-			size += sizeof(PoolIntArray);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolIntArray));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolIntArray(*static_cast<const PoolIntArray *>(p_object)));
 			break;
 		case Variant::POOL_BYTE_ARRAY:
-			size += sizeof(PoolByteArray);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolByteArray));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolByteArray(*static_cast<const PoolByteArray *>(p_object)));
 			break;
 		case Variant::POOL_REAL_ARRAY:
-			size += sizeof(PoolRealArray);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolRealArray));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolRealArray(*static_cast<const PoolRealArray *>(p_object)));
 			break;
 		case Variant::POOL_COLOR_ARRAY:
-			size += sizeof(PoolColorArray);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolColorArray));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolColorArray(*static_cast<const PoolColorArray *>(p_object)));
 			break;
 		case Variant::POOL_STRING_ARRAY:
-			size += sizeof(PoolStringArray);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolStringArray));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolStringArray(*static_cast<const PoolStringArray *>(p_object)));
 			break;
 		case Variant::POOL_VECTOR2_ARRAY:
-			size += sizeof(PoolVector2Array);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolVector2Array));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolVector2Array(*static_cast<const PoolVector2Array *>(p_object)));
 			break;
 		case Variant::POOL_VECTOR3_ARRAY:
-			size += sizeof(PoolVector3Array);
+			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PoolVector3Array));
+			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			memnew_placement(bind + 1, PoolVector3Array(*static_cast<const PoolVector3Array *>(p_object)));
 			break;
 		default:
 			break;
 	}
-	void *ptr = memalloc(sizeof(ECMAScriptGCHandler) + size);
-	ECMAScriptGCHandler *bind = memnew_placement(ptr, ECMAScriptGCHandler);
+	ERR_FAIL_NULL(bind);
+
 	bind->context = ctx;
 	bind->type = p_type;
 	bind->flags |= ECMAScriptGCHandler::FLAG_BUILTIN_CLASS;
 	bind->godot_builtin_object_ptr = bind + 1;
-	copymem(bind->godot_builtin_object_ptr, p_object, size);
-	JS_SetOpaque(obj, bind);
-
+	bind->ecma_object = JS_VALUE_GET_PTR(target);
+	JS_SetOpaque(target, bind);
 #ifdef DUMP_LEAKS
-	QuickJSBinder::add_debug_binding_info(ctx, obj, bind);
+	QuickJSBinder::add_debug_binding_info(ctx, target, bind);
 #endif
+}
 
+JSValue QuickJSBuiltinBinder::create_builtin_value(JSContext *ctx, Variant::Type p_type, const void *p_val) {
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	const QuickJSBuiltinBinder::BuiltinClass &cls = binder->builtin_binder.get_class(p_type);
+	JSValue obj = JS_NewObjectProtoClass(ctx, cls.class_prototype, binder->get_origin_class_id());
+	bind_builtin_object(ctx, obj, p_type, p_val);
 	return obj;
 }
 
@@ -435,104 +474,158 @@ void QuickJSBuiltinBinder::uninitialize() {
 	JS_FreeAtom(ctx, js_key_to_string);
 }
 
-JSValue QuickJSBuiltinBinder::bind_builtin_object_static(JSContext *ctx, Variant::Type p_type, const void *p_object) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(p_type, p_object);
-}
-
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Variant &p_val) {
-	const GodotVariantParser *p = reinterpret_cast<const GodotVariantParser *>(&p_val);
-	const void *ptr = NULL;
-	switch (p_val.get_type()) {
-		case Variant::Type::AABB:
-			ptr = p->data._aabb;
-			break;
-		case Variant::Type::BASIS:
-			ptr = p->data._basis;
-			break;
-		case Variant::Type::TRANSFORM:
-			ptr = p->data._transform;
-			break;
-		case Variant::Type::TRANSFORM2D:
-			ptr = p->data._transform2d;
-			break;
+	Variant::Type type = p_val.get_type();
+	JSValue obj = JS_UNDEFINED;
+	switch (type) {
+		case Variant::VECTOR2: {
+			Vector2 tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::RECT2: {
+			Rect2 tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::COLOR: {
+			Color tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::VECTOR3: {
+			Vector3 tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::BASIS: {
+			Basis tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::QUAT: {
+			Quat tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::PLANE: {
+			Plane tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::TRANSFORM2D: {
+			Transform2D tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::_RID: {
+			RID tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::TRANSFORM: {
+			Transform tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::AABB: {
+			AABB tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_INT_ARRAY: {
+			PoolIntArray tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_BYTE_ARRAY: {
+			PoolByteArray tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_REAL_ARRAY: {
+			PoolRealArray tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_COLOR_ARRAY: {
+			PoolColorArray tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_STRING_ARRAY: {
+			PoolStringArray tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_VECTOR2_ARRAY: {
+			PoolVector2Array tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
+		case Variant::POOL_VECTOR3_ARRAY: {
+			PoolVector3Array tmp = p_val;
+			obj = create_builtin_value(ctx, type, &tmp);
+		} break;
 		default:
-			ptr = p->data._mem;
 			break;
 	}
-	ERR_FAIL_NULL_V_MSG(ptr, JS_UNDEFINED, vformat("Cannot construct builtin type for %s", Variant::get_type_name(p_val.get_type())));
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(p_val.get_type(), ptr);
+	return obj;
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Vector2 &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::VECTOR2, &p_val);
+	return create_builtin_value(ctx, Variant::VECTOR2, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Vector3 &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::VECTOR3, &p_val);
+	return create_builtin_value(ctx, Variant::VECTOR3, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Rect2 &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::RECT2, &p_val);
+	return create_builtin_value(ctx, Variant::RECT2, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Color &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::COLOR, &p_val);
+	return create_builtin_value(ctx, Variant::COLOR, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Transform2D &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::TRANSFORM2D, &p_val);
+	return create_builtin_value(ctx, Variant::TRANSFORM2D, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Transform &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::TRANSFORM, &p_val);
+	return create_builtin_value(ctx, Variant::TRANSFORM, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Quat &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::QUAT, &p_val);
+	return create_builtin_value(ctx, Variant::QUAT, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Plane &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::PLANE, &p_val);
+	return create_builtin_value(ctx, Variant::PLANE, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const RID &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::_RID, &p_val);
+	return create_builtin_value(ctx, Variant::_RID, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const AABB &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::AABB, &p_val);
+	return create_builtin_value(ctx, Variant::AABB, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const Basis &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::BASIS, &p_val);
+	return create_builtin_value(ctx, Variant::BASIS, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolIntArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_INT_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_INT_ARRAY, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolByteArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_BYTE_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_BYTE_ARRAY, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolRealArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_REAL_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_REAL_ARRAY, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolColorArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_COLOR_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_COLOR_ARRAY, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolStringArray &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_STRING_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_STRING_ARRAY, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector2Array &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_VECTOR2_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_VECTOR2_ARRAY, &p_val);
 }
 
 JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector3Array &p_val) {
-	return QuickJSBinder::get_context_binder(ctx)->builtin_binder.bind_builtin_object(Variant::POOL_VECTOR3_ARRAY, &p_val);
+	return create_builtin_value(ctx, Variant::POOL_VECTOR3_ARRAY, &p_val);
 }
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
