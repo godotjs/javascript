@@ -1164,20 +1164,22 @@ void QuickJSBinder::add_godot_globals() {
 		JS_FreeAtom(ctx, singleton_name);
 		godot_singletons.push_back(obj);
 
-		if (ClassDB::ClassInfo *cls = ClassDB::classes.getptr(s.ptr->get_class_name())) {
+		ClassDB::ClassInfo *gdcls = ClassDB::classes.getptr(s.name);
+		gdcls = gdcls == NULL ? ClassDB::classes.getptr(s.ptr->get_class_name()) : gdcls;
+		if (gdcls) {
 			// constants
-			for (const StringName *const_key = cls->constant_map.next(NULL); const_key; const_key = cls->constant_map.next(const_key)) {
+			for (const StringName *const_key = gdcls->constant_map.next(NULL); const_key; const_key = gdcls->constant_map.next(const_key)) {
 				JSAtom const_name = get_atom(ctx, *const_key);
-				JS_DefinePropertyValue(ctx, obj, const_name, variant_to_var(ctx, cls->constant_map.get(*const_key)), QuickJSBinder::PROP_DEF_DEFAULT);
+				JS_DefinePropertyValue(ctx, obj, const_name, variant_to_var(ctx, gdcls->constant_map.get(*const_key)), QuickJSBinder::PROP_DEF_DEFAULT);
 				JS_FreeAtom(ctx, const_name);
 			}
 			// enumrations
-			for (const StringName *enum_key = cls->enum_map.next(NULL); enum_key; enum_key = cls->enum_map.next(enum_key)) {
-				const List<StringName> &consts = cls->enum_map.get(*enum_key);
+			for (const StringName *enum_key = gdcls->enum_map.next(NULL); enum_key; enum_key = gdcls->enum_map.next(enum_key)) {
+				const List<StringName> &consts = gdcls->enum_map.get(*enum_key);
 				JSValue enum_obj = JS_NewObject(ctx);
 				for (const List<StringName>::Element *E = consts.front(); E; E = E->next()) {
 					JSAtom const_name = get_atom(ctx, E->get());
-					JS_DefinePropertyValue(ctx, enum_obj, const_name, variant_to_var(ctx, cls->constant_map.get(E->get())), QuickJSBinder::PROP_DEF_DEFAULT);
+					JS_DefinePropertyValue(ctx, enum_obj, const_name, variant_to_var(ctx, gdcls->constant_map.get(E->get())), QuickJSBinder::PROP_DEF_DEFAULT);
 					JS_FreeAtom(ctx, const_name);
 				}
 				JSAtom enum_name = get_atom(ctx, *enum_key);
