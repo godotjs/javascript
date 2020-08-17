@@ -630,6 +630,70 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector3A
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 
+	{ // Color
+		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			const Color *ptr = bind->getColor();
+			switch (magic) {
+				case 0:
+					return QuickJSBinder::to_js_number(ctx, Math::round(ptr->r * 255));
+				case 1:
+					return QuickJSBinder::to_js_number(ctx, Math::round(ptr->g * 255));
+				case 2:
+					return QuickJSBinder::to_js_number(ctx, Math::round(ptr->b * 255));
+				case 3:
+					return QuickJSBinder::to_js_number(ctx, Math::round(ptr->a * 255));
+				case 4:
+					return QuickJSBinder::to_js_number(ctx, ptr->get_h());
+				case 5:
+					return QuickJSBinder::to_js_number(ctx, ptr->get_s());
+				case 6:
+					return QuickJSBinder::to_js_number(ctx, ptr->get_v());
+			}
+			return JS_UNDEFINED;
+		};
+
+		JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			Color *ptr = bind->getColor();
+#ifdef DEBUG_METHODS_ENABLED
+			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::REAL, argv[0]), (JS_ThrowTypeError(ctx, "number value expected")));
+#endif
+			real_t value = QuickJSBinder::js_to_number(ctx, argv[0]);
+			switch (magic) {
+				case 0:
+					ptr->r = value / 255.0;
+					break;
+				case 1:
+					ptr->g = value / 255.0;
+					break;
+				case 2:
+					ptr->b = value / 255.0;
+					break;
+				case 3:
+					ptr->a = value / 255.0;
+					break;
+				case 4:
+					ptr->set_hsv(value, ptr->get_s(), ptr->get_v(), ptr->a);
+					break;
+				case 5:
+					ptr->set_hsv(ptr->get_h(), value, ptr->get_v(), ptr->a);
+					break;
+				case 6:
+					ptr->set_hsv(ptr->get_h(), ptr->get_s(), value, ptr->a);
+					break;
+			}
+			return JS_DupValue(ctx, argv[0]);
+		};
+		binder->get_builtin_binder().register_property(Variant::COLOR, "r8", getter, setter, 0);
+		binder->get_builtin_binder().register_property(Variant::COLOR, "g8", getter, setter, 1);
+		binder->get_builtin_binder().register_property(Variant::COLOR, "b8", getter, setter, 2);
+		binder->get_builtin_binder().register_property(Variant::COLOR, "a8", getter, setter, 3);
+		binder->get_builtin_binder().register_property(Variant::COLOR, "h", getter, setter, 4);
+		binder->get_builtin_binder().register_property(Variant::COLOR, "s", getter, setter, 5);
+		binder->get_builtin_binder().register_property(Variant::COLOR, "v", getter, setter, 6);
+	}
+
 	{ // PoolByteArray
 		// PoolByteArray.prototype.compress
 		binder->get_builtin_binder().register_method(

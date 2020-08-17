@@ -900,25 +900,25 @@ declare module godot {
 		a: number;
 
 		/** HSV hue value (range 0 to 1). */
-		// h: number;
+		h: number;
 
 		/** HSV saturation value (range 0 to 1). */
-		// s: number;
+		s: number;
 
 		/** HSV value (range 0 to 1). */
-		// v: number;
+		v: number;
 
 		/** Red value (range 0 to 255). */
-		// r8: number;
+		r8: number;
 
 		/** Green value (range 0 to 255). */
-		// g8: number;
+		g8: number;
 
 		/** Blue value (range 0 to 255). */
-		// b8: number;
+		b8: number;
 
 		/** Alpha value (range 0 to 255). */
-		// a8: number;
+		a8: number;
 
 
 		/** Returns a new color resulting from blending this color over another. If the color is opaque, the result is also opaque. The second color may have a range of alpha values.
