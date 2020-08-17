@@ -694,6 +694,50 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 		binder->get_builtin_binder().register_property(Variant::COLOR, "v", getter, setter, 6);
 	}
 
+	{ // Rect2
+		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			const Rect2 *ptr = bind->getRect2();
+			switch (magic) {
+				case 0:
+					return QuickJSBinder::variant_to_var(ctx, ptr->size + ptr->position);
+			}
+			return JS_UNDEFINED;
+		};
+		JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			Rect2 *ptr = bind->getRect2();
+			switch (magic) {
+				case 0:
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0]), (JS_ThrowTypeError(ctx, "Vector2 expected for Rect2.end")));
+#endif
+					ptr->size = Vector2(QuickJSBinder::var_to_variant(ctx, argv[0])) - ptr->position;
+					break;
+			}
+			return JS_DupValue(ctx, argv[0]);
+		};
+		binder->get_builtin_binder().register_property(Variant::RECT2, "end", getter, setter, 0);
+
+		binder->get_builtin_binder().register_method(
+				Variant::RECT2,
+				"grow_margin",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Rect2.grow_margin")));
+#endif
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Rect2 *ptr = bind->getRect2();
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of Rect2.grow_margin")));
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::REAL, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 1 of Rect2.grow_margin")));
+#endif
+					Rect2 ret = ptr->grow_margin(Margin(QuickJSBinder::js_to_int(ctx, argv[0])), QuickJSBinder::js_to_number(ctx, argv[1]));
+					return QuickJSBinder::variant_to_var(ctx, ret);
+				},
+				2);
+	}
+
 	{ // PoolByteArray
 		// PoolByteArray.prototype.compress
 		binder->get_builtin_binder().register_method(

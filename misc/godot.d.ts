@@ -421,7 +421,7 @@ declare module godot {
 		size: Vector2;
 		
 		/** Ending corner. */
-		// end: Vector2;
+		end: Vector2;
 
 		/** Returns a `Rect2` with equivalent position and area, modified so that the top-left corner is the origin and `width` and `height` are positive. */
 		abs() : Rect2;
@@ -445,7 +445,7 @@ declare module godot {
 		grow_individual(left: number, top: number, right: number,  bottom: number) : Rect2;
 
 		/** Returns a copy of the `Rect2` grown a given amount of units towards the `Margin` direction. */
-		// grow_margin(margin: number, by: number) : Rect2;
+		grow_margin(margin: Margin, by: number) : Rect2;
 
 		/** Returns `true` if the `Rect2` is flat or empty. */
 		has_no_area() : boolean;
