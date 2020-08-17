@@ -25,18 +25,6 @@ private:
 	JSValue to_string_function;
 	JSAtom js_key_to_string;
 
-	struct GodotVariantParser {
-		Variant::Type type;
-		union {
-			Transform2D *_transform2d;
-			::AABB *_aabb;
-			Basis *_basis;
-			Transform *_transform;
-			void *_ptr; //generic pointer
-			uint8_t _mem[sizeof(real_t)];
-		} data GCC_ALIGNED_8;
-	};
-
 public:
 	void builtin_finalizer(ECMAScriptGCHandler *p_bind);
 
