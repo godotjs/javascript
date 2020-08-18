@@ -64,7 +64,7 @@ ScriptLanguage *ECMAScriptInstance::get_language() {
 ECMAScriptInstance::ECMAScriptInstance() {
 	owner = NULL;
 	binder = NULL;
-	ecma_object.clear();
+	ecma_class = NULL;
 }
 
 ECMAScriptInstance::~ECMAScriptInstance() {

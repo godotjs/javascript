@@ -56,6 +56,7 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	instance->owner = p_this;
 	instance->binder = binder;
 	instance->ecma_object = ecma_instance;
+	instance->ecma_class = cls;
 	instance->owner->set_script_instance(instance);
 	instances.insert(p_this);
 	return instance;
@@ -99,6 +100,7 @@ Error ECMAScript::reload(bool p_keep_state) {
 	} else {
 #ifdef TOOLS_ENABLED
 		set_last_modified_time(FileAccess::get_modified_time(script_path));
+		p_keep_state = true;
 
 		for (Set<Object *>::Element *E = instances.front(); E; E = E->next()) {
 			Object *owner = E->get();
