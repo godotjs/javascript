@@ -985,10 +985,27 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 				if (Map<StringName, JSValue>::Element *E = methods.find(prop.setter)) {
 					setter = E->get();
 					JS_DupValue(ctx, setter);
+				} else if (MethodBind *mb = prop._setptr) {
+					if (godot_methods.size() >= internal_godot_method_id) {
+						godot_methods.resize(godot_methods.size() + 1);
+					}
+					godot_methods.write[internal_godot_method_id] = mb;
+					String setter_name = prop.setter;
+					setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, setter_name.ascii().get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
+					++internal_godot_method_id;
 				}
+
 				if (Map<StringName, JSValue>::Element *E = methods.find(prop.getter)) {
 					getter = E->get();
 					JS_DupValue(ctx, getter);
+				} else if (MethodBind *mb = prop._getptr) {
+					if (godot_methods.size() >= internal_godot_method_id) {
+						godot_methods.resize(godot_methods.size() + 1);
+					}
+					godot_methods.write[internal_godot_method_id] = mb;
+					String getter_name = prop.getter;
+					getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, getter_name.ascii().get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
+					++internal_godot_method_id;
 				}
 			}
 
