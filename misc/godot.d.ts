@@ -673,7 +673,7 @@ declare module godot {
 		inverse() : Basis;
 
 		/**  */
-		// is_equal_approx(b: Basis, epsilon?: number) : boolean;
+		is_equal_approx(b: Basis) : boolean;
 
 		/** Returns the orthonormalized version of the matrix (useful to call from time to time to avoid rounding error for orthogonal matrices). This performs a Gram-Schmidt orthonormalization on the basis of the matrix. */
 		orthonormalized() : Basis;
@@ -772,11 +772,10 @@ declare module godot {
 		translated(ofs: Vector3) : Transform;
 
 		/** Transforms the given `Vector3`, `Plane`, `AABB`, or `PoolVector3Array` by this transform. */
-		// xform(v: any) : any;
+		xform<T extends Vector3|Plane|AABB >(v: T) : T;
 
 		/** Inverse-transforms the given `Vector3`, `Plane`, `AABB`, or `PoolVector3Array` by this transform. */
-		// xform_inv(v: any) : any;
-
+		xform_inv<T extends Vector3|Plane|AABB >(v: T) : T;
 	}
 
 	namespace Transform {
@@ -856,10 +855,10 @@ declare module godot {
 		translated(offset: Vector2) : Transform2D;
 
 		/** Transforms the given `Vector2`, `Rect2`, or `PoolVector2Array` by this transform. */
-		// xform(v: any) : any;
+		xform<T extends Vector2 | Rect2 >(v: T) : T;
 
 		/** Inverse-transforms the given `Vector2`, `Rect2`, or `PoolVector2Array` by this transform. */
-		// xform_inv(v: any) : any;
+		xform_inv<T extends Vector2 | Rect2 >(v: T) : T;
 
 	}
 
@@ -1698,13 +1697,13 @@ declare module godot {
 		has_point(point: Vector3, epsilon?: number) : boolean;
 
 		/** Returns the intersection point of the three planes `b`, `c` and this plane. If no intersection is found, `null` is returned. */
-		// intersect_3(b: Plane, c: Plane) : Vector3;
+		intersect_3(b: Plane, c: Plane) : Vector3;
 
 		/** Returns the intersection point of a ray consisting of the position `from` and the direction normal `dir` with this plane. If no intersection is found, `null` is returned. */
-		// intersects_ray(p_from: Vector3, dir: Vector3) : Vector3;
+		intersects_ray(p_from: Vector3, dir: Vector3) : Vector3;
 
 		/** Returns the intersection point of a segment from position `begin` to position `end` with this plane. If no intersection is found, `null` is returned. */
-		// intersects_segment(begin: Vector3, end: Vector3) : Vector3;
+		intersects_segment(begin: Vector3, end: Vector3) : Vector3;
 
 		/**  */
 		is_equal_approx(plane: Plane) : boolean;
@@ -1820,8 +1819,7 @@ declare module godot {
 		size: Vector3;
 
 		/** Ending corner. */
-		// end: Vector3;
-
+		end: Vector3;
 
 		/** Returns `true` if this `AABB` completely encloses another one. */
 		encloses(p_with: AABB) : boolean;

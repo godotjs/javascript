@@ -738,6 +738,204 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				2);
 	}
 
+	{ // Transform2D
+		binder->get_builtin_binder().register_method(
+				Variant::TRANSFORM2D,
+				"xform",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform2D.xform")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Transform2D *ptr = bind->getTransform2D();
+					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0])) {
+						Vector2 ret = ptr->xform(Vector2(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::RECT2, argv[0])) {
+						Rect2 ret = ptr->xform(Rect2(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::POOL_VECTOR2_ARRAY, argv[0])) {
+						PoolVector2Array ret = ptr->xform(PoolVector2Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector2, Rect2 or PoolVector2Array expected for argument #0 of Transform2D.xform"));
+				},
+				1);
+		binder->get_builtin_binder().register_method(
+				Variant::TRANSFORM2D,
+				"xform_inv",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform2D.xform_inv")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Transform2D *ptr = bind->getTransform2D();
+					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0])) {
+						Vector2 ret = ptr->xform_inv(Vector2(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::RECT2, argv[0])) {
+						Rect2 ret = ptr->xform_inv(Rect2(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::POOL_VECTOR2_ARRAY, argv[0])) {
+						PoolVector2Array ret = ptr->xform_inv(PoolVector2Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector2, Rect2 or PoolVector2Array expected for argument #0 of Transform2D.xform_inv"));
+				},
+				1);
+	}
+
+	{ // Basis
+		binder->get_builtin_binder().register_method(
+				Variant::BASIS,
+				"is_equal_approx",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Basis.is_equal_approx")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Basis *ptr = bind->getBasis();
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::BASIS, argv[0]), (JS_ThrowTypeError(ctx, "Basis expected for Basis.is_equal_approx")));
+#endif
+					ECMAScriptGCHandler *argv_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					bool ret = ptr->is_equal_approx(*argv_bind->getBasis());
+					return QuickJSBinder::to_js_bool(ctx, ret);
+				},
+				1);
+	}
+
+	{ // AABB
+		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			const AABB *ptr = bind->getAABB();
+			switch (magic) {
+				case 0:
+					return QuickJSBinder::variant_to_var(ctx, ptr->size + ptr->position);
+			}
+			return JS_UNDEFINED;
+		};
+		JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
+			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			AABB *ptr = bind->getAABB();
+			switch (magic) {
+				case 0:
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for AABB.end")));
+#endif
+					ptr->size = Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])) - ptr->position;
+					break;
+			}
+			return JS_DupValue(ctx, argv[0]);
+		};
+		binder->get_builtin_binder().register_property(Variant::AABB, "end", getter, setter, 0);
+	}
+
+	{ // Plane
+		binder->get_builtin_binder().register_method(
+				Variant::PLANE,
+				"intersect_3",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Plane.intersect_3")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Plane *ptr = bind->getPlane();
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0]), (JS_ThrowTypeError(ctx, "Plane expected for arguments #0 Plane.intersect_3")));
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[1]), (JS_ThrowTypeError(ctx, "Plane expected for arguments #1 Plane.intersect_3")));
+#endif
+					Vector3 ret;
+					ECMAScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					ECMAScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+					if (ptr->intersect_3(*argv0_bind->getPlane(), *argv1_bind->getPlane(), &ret)) {
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					return JS_NULL;
+				},
+				2);
+		binder->get_builtin_binder().register_method(
+				Variant::PLANE,
+				"intersects_ray",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Plane.intersects_ray")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Plane *ptr = bind->getPlane();
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #0 Plane.intersects_ray")));
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #1 Plane.intersects_ray")));
+#endif
+					Vector3 ret;
+					ECMAScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					ECMAScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+					if (ptr->intersects_ray(*argv0_bind->getVector3(), *argv1_bind->getVector3(), &ret)) {
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					return JS_NULL;
+				},
+				2);
+		binder->get_builtin_binder().register_method(
+				Variant::PLANE,
+				"intersects_segment",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Plane.intersects_segment")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Plane *ptr = bind->getPlane();
+#ifdef DEBUG_METHODS_ENABLED
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #0 Plane.intersects_segment")));
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #1 Plane.intersects_segment")));
+#endif
+					Vector3 ret;
+					ECMAScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					ECMAScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+					if (ptr->intersects_segment(*argv0_bind->getVector3(), *argv1_bind->getVector3(), &ret)) {
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					return JS_NULL;
+				},
+				2);
+	}
+	{ // Transform
+		binder->get_builtin_binder().register_method(
+				Variant::TRANSFORM,
+				"xform",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform.xform")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Transform *ptr = bind->getTransform();
+					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
+						Vector3 ret = ptr->xform(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0])) {
+						Plane ret = ptr->xform(Plane(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::AABB, argv[0])) {
+						AABB ret = ptr->xform(AABB(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::POOL_VECTOR3_ARRAY, argv[0])) {
+						PoolVector3Array ret = ptr->xform(PoolVector3Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector3, Plane, AABB or PoolVector3Array expected for argument #0 of Transform.xform"));
+				},
+				1);
+		binder->get_builtin_binder().register_method(
+				Variant::TRANSFORM,
+				"xform_inv",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform.xform_inv")));
+					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Transform *ptr = bind->getTransform();
+					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
+						Vector3 ret = ptr->xform_inv(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0])) {
+						Plane ret = ptr->xform_inv(Plane(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::AABB, argv[0])) {
+						AABB ret = ptr->xform_inv(AABB(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::POOL_VECTOR3_ARRAY, argv[0])) {
+						PoolVector3Array ret = ptr->xform_inv(PoolVector3Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector3, Plane, AABB or PoolVector3Array expected for argument #0 of Transform.xform_inv"));
+				},
+				1);
+	}
+
 	{ // PoolByteArray
 		// PoolByteArray.prototype.compress
 		binder->get_builtin_binder().register_method(
