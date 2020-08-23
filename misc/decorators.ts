@@ -112,3 +112,61 @@ export function enumeration<T extends godot.Object>(enumeration: string[], defau
 		return descriptor;
 	}
 }
+
+function makeRpcModeConfigDecorator(mode: godot.MultiplayerAPI.RPCMode) {
+	return function <T extends godot.Node>(target: T, property: string, descriptor?: any) {
+		const isMethod = typeof target[property] === 'function';
+		const originalReady = target._ready;
+		target._ready = function (this: godot.Node) {
+			if (isMethod) this.rpc_config(property, mode);
+			else this.rset_config(property, mode);
+			if (originalReady) return originalReady.call(this);
+		};
+		return descriptor;
+	}
+}
+
+/**
+ * Used with `Node.rpc_config` or `Node.rset_config` to set a method to be called or
+ * a property to be changed only on the remote end, not locally.
+ * Analogous to the `remote` keyword. Calls and property changes are accepted from all
+ * remote peers, no matter if they are node's master or puppets.
+ */
+export const remote = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_REMOTE)
+/**
+ * Used with `Node.rpc_config` or `Node.rset_config` to set a method to be called or
+ * a property to be changed only on the network master for this node.
+ * Analogous to the `master` keyword. Only accepts calls or property changes from the
+ * node's network puppets, see `Node.set_network_master`.
+ */
+export const master = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_MASTER)
+/**
+ * Used with `Node.rpc_config` or `Node.rset_config` to set a method to be called or
+ * a property to be changed only on puppets for this node.
+ * Analogous to the `puppet` keyword. Only accepts calls or property changes from the
+ * node's network master, see `Node.set_network_master`.
+ */
+export const puppet = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_PUPPET)
+/**
+ * @deprecated Use `RPC_MODE_PUPPET` (@puppet) instead. Analogous to the `slave` keyword.
+ */
+export const slave = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_SLAVE)
+/**
+ * Behave like `RPC_MODE_REMOTE` (@remote) but also make the call or property change locally.
+ * Analogous to the `remotesync` keyword.
+ */
+export const remote_sync = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_REMOTESYNC)
+/**
+ * @deprecated Use `RPC_MODE_REMOTESYNC` (@remote_sync) instead. Analogous to the `sync` keyword
+ */
+export const sync = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_REMOTESYNC)
+/**
+ * Behave like `RPC_MODE_MASTER` (@master) but also make the call or property change locally.
+ * Analogous to the `mastersync` keyword.
+ */
+export const master_sync = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_MASTERSYNC)
+/**
+ * Behave like `RPC_MODE_PUPPET` (@puppet) but also make the call or property change locally.
+ * Analogous to the `puppetsync` keyword.
+ */
+export const puppet_sync = makeRpcModeConfigDecorator(godot.MultiplayerAPI.RPC_MODE_PUPPETSYNC)
