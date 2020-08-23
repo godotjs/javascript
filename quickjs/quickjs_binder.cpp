@@ -395,7 +395,7 @@ bool QuickJSBinder::validate_type(JSContext *ctx, Variant::Type p_type, JSValueC
 			return JS_IsArray(ctx, p_val);
 		default: {
 			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, p_val);
-			return bind != NULL && bind->type == bind->type;
+			return bind != NULL && bind->type == p_type;
 		}
 	}
 }
