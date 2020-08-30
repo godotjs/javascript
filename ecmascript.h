@@ -8,11 +8,11 @@
 #include "scene/resources/text_file.h"
 
 #define EXT_JSCLASS "jsx"
-#define EXT_JSCLASS_BYTECODE "jsxb"
-#define EXT_JSCLASS_ENCRYPTED "jsxe"
+#define EXT_JSCLASS_BYTECODE EXT_JSCLASS "b"
+#define EXT_JSCLASS_ENCRYPTED EXT_JSCLASS "e"
 #define EXT_JSMODULE "js"
-#define EXT_JSMODULE_BYTECODE "jsb"
-#define EXT_JSMODULE_ENCRYPTED "jse"
+#define EXT_JSMODULE_BYTECODE EXT_JSMODULE "b"
+#define EXT_JSMODULE_ENCRYPTED EXT_JSMODULE "e"
 #define EXT_JSON "json"
 
 class ECMAScript : public Script {

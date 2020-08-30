@@ -77,7 +77,7 @@ JSValue QuickJSWorker::global_import_scripts(JSContext *ctx, JSValue this_val, i
 	for (int i = 0; i < argc; i++) {
 		if (JS_IsString(argv[i])) {
 			Error err;
-			String path = js_to_string(ctx, argv[0]);
+			String path = resolve_module_file(js_to_string(ctx, argv[0]));
 			String source = FileAccess::get_file_as_string(path, &err);
 			QuickJSBinder *bind = get_context_binder(ctx);
 			ECMAScriptGCHandler eval_ret;

@@ -128,10 +128,6 @@ void QuickJSBinder::add_global_console() {
 }
 
 void QuickJSBinder::add_global_properties() {
-	// globalThis.require
-	JSValue js_func_require = JS_NewCFunction(ctx, require_function, "require", 1);
-	JS_DefinePropertyValueStr(ctx, global_object, "require", js_func_require, PROP_DEF_DEFAULT);
-
 	// globalThis.requestAnimationFrame
 	JSValue js_func_requestAnimationFrame = JS_NewCFunction(ctx, global_request_animation_frame, "requestAnimationFrame", 1);
 	JS_DefinePropertyValueStr(ctx, global_object, "requestAnimationFrame", js_func_requestAnimationFrame, PROP_DEF_DEFAULT);
@@ -579,7 +575,7 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 
 static HashMap<String, String> resolve_path_cache;
 
-static String resolve_module_file(const String &file, bool allow_node_module = false) {
+String QuickJSBinder::resolve_module_file(const String &file) {
 	if (const String *ptr = resolve_path_cache.getptr(file)) {
 		return *ptr;
 	}
@@ -604,34 +600,6 @@ static String resolve_module_file(const String &file, bool allow_node_module = f
 			return path;
 		}
 	}
-
-	if (allow_node_module && !file.begins_with(".")) {
-		String package_file = "node_modules/" + file + "/package.json";
-		bool package_found = false;
-		if (FileAccess::exists("user://" + package_file)) {
-			package_file = "user://" + package_file;
-			package_found = true;
-		} else if (FileAccess::exists("res://" + package_file)) {
-			package_file = "res://" + package_file;
-			package_found = true;
-		}
-		if (package_found) {
-			Error err;
-			String package_content = FileAccess::get_file_as_string(package_file, &err);
-			ERR_FAIL_COND_V_MSG(err != OK, "", "Fail to load module package: " + package_file);
-			Variant package_parse_ret;
-			String package_parse_err;
-			int error_line;
-			if (OK != JSON::parse(package_content, package_parse_ret, package_parse_err, error_line)) {
-				ERR_FAIL_V_MSG("", "Fail to parse module package:" + package_file + ENDL + package_parse_err + ENDL + "At " + itos(error_line));
-			}
-			Dictionary dict = package_parse_ret;
-			String entry = dict.has("main") ? dict["main"] : "index.js";
-			entry = "node_modules/" + file + "/" + entry;
-			ERR_FAIL_COND_V_MSG(!FileAccess::exists(entry), "", "Module entry does not exists: " + entry);
-			return entry;
-		}
-	}
 	return "";
 }
 
@@ -642,7 +610,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 	String resolving_file;
 	resolving_file.parse_utf8(module_name);
 
-	String file = resolve_module_file(resolving_file, false);
+	String file = resolve_module_file(resolving_file);
 	ERR_FAIL_COND_V_MSG(file.empty(), NULL, "Failed to resolve module: '" + resolving_file + "'.");
 	resolve_path_cache.set(resolving_file, file);
 
@@ -684,14 +652,9 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 				JS_ThrowReferenceError(ctx, "Could not load module '%s'", file.utf8().get_data());
 				return NULL;
 			}
-			// hack the quick module to make the resource value as default entry
-			m = JS_NewCModule(ctx, file.utf8().get_data(), resource_module_initializer);
-			JS_AddModuleExport(ctx, m, "default");
-			JSValue func = JS_MKPTR(JS_TAG_MODULE, m);
-			JS_DupValue(ctx, func);
-			JS_EvalFunction(ctx, func);
 			JSValue val = variant_to_var(ctx, res);
-			JS_SetModuleExport(ctx, m, "default", val);
+			m = js_make_module(ctx, file, val);
+			JS_FreeValue(ctx, val);
 
 			ModuleCache module;
 			Variant hash_var = res;
@@ -701,11 +664,21 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			module.res->reference(); // Avoid auto release as module don't release automaticly
 			module.res_value = val;
 			module.flags = MODULE_FLAG_RESOURCE;
-			module.module = static_cast<JSModuleDef *>(JS_VALUE_GET_PTR(func));
+			module.module = m;
 			binder->module_cache.set(file, module);
 		}
 	}
 
+	return m;
+}
+
+JSModuleDef *QuickJSBinder::js_make_module(JSContext *ctx, const String &p_id, const JSValue &p_value) {
+	JSModuleDef *m = JS_NewCModule(ctx, p_id.utf8().get_data(), resource_module_initializer);
+	JS_AddModuleExport(ctx, m, "default");
+	JSValue func = JS_MKPTR(JS_TAG_MODULE, m);
+	JS_DupValue(ctx, func);
+	JS_EvalFunction(ctx, func);
+	JS_SetModuleExport(ctx, m, "default", JS_DupValue(ctx, p_value));
 	return m;
 }
 
@@ -820,91 +793,6 @@ Error QuickJSBinder::js_evalute_module(JSContext *ctx, QuickJSBinder::ModuleCach
 
 int QuickJSBinder::resource_module_initializer(JSContext *ctx, JSModuleDef *m) {
 	return JS_SetModuleExport(ctx, m, "default", JS_UNDEFINED);
-}
-
-JSValue QuickJSBinder::require_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
-	ERR_FAIL_COND_V(argc < 1 || !validate_type(ctx, Variant::STRING, argv[0]), JS_ThrowTypeError(ctx, "A string argument expected for require"));
-	String file = js_to_string(ctx, argv[0]);
-	if (file.begins_with(".")) {
-		JSValue func = JS_GetStackFunction(ctx, 1);
-		JSValue filename = JS_GetProperty(ctx, func, JS_ATOM_fileName);
-		String caller_path = js_to_string(ctx, filename);
-		JS_FreeValue(ctx, filename);
-		JS_FreeValue(ctx, func);
-		file = ECMAScriptLanguage::globalize_relative_path(file, caller_path.get_base_dir());
-	}
-	String resolving_file = file;
-	file = resolve_module_file(file, true);
-	ERR_FAIL_COND_V_MSG(file.empty(), (JS_UNDEFINED), "Failed to resolve module '" + resolving_file + "'.");
-	resolve_path_cache.set(resolving_file, file);
-
-	if (NULL != compiling_modules.find(file)) {
-		String chain;
-		for (List<String>::Element *E = compiling_modules.front(); E; E = E->next()) {
-			chain += E->get();
-			if (E->next() != NULL) {
-				chain += " <- ";
-			}
-		}
-		return JS_ThrowTypeError(ctx, "Cyclic module import detected:\r\n  %s", chain.utf8().get_data());
-	}
-
-	JSValue ret = JS_UNDEFINED;
-	String md5 = FileAccess::get_md5(file);
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
-	if (CommonJSModule *ptr = binder->commonjs_module_cache.getptr(md5)) {
-		ret = JS_DupValue(ctx, ptr->exports);
-	} else {
-		CommonJSModule m;
-		m.md5 = md5;
-		m.exports = JS_UNDEFINED;
-		List<String> extensions;
-		ECMAScriptLanguage::get_singleton()->get_recognized_extensions(&extensions);
-		if (extensions.find(file.get_extension()) != NULL) {
-			Error err;
-			Ref<ECMAScriptModule> em = ResourceFormatLoaderECMAScriptModule::load_static(file, "", &err);
-			ERR_FAIL_COND_V(err != OK || em.is_null(), JS_ThrowTypeError(ctx, "Error to load module file %s", file.utf8().get_data()));
-			String text = em->get_source_code();
-			if (!text.empty()) {
-				if (file.ends_with(EXT_JSON)) {
-					CharString utf8code = text.utf8();
-					ret = JS_ParseJSON(ctx, utf8code.get_data(), utf8code.length(), file.utf8().get_data());
-				} else {
-					String code = "(function() {"
-								  "  const module = {"
-								  "    exports: {}"
-								  "  };"
-								  "  let exports = module.exports;"
-								  "  (function(){ " +
-								  text +
-								  "    }"
-								  "  )();"
-								  "  return module.exports;"
-								  "})();";
-					CharString utf8code = code.utf8();
-					compiling_modules.push_back(file);
-					ret = JS_Eval(ctx, utf8code.get_data(), utf8code.length(), file.utf8().get_data(), JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT);
-					compiling_modules.pop_back();
-				}
-			} else {
-				// TODO: require module from bytecode
-			}
-			m.exports = JS_DupValue(ctx, ret);
-			m.flags = MODULE_FLAG_SCRIPT;
-		} else {
-			RES res = ResourceLoader::load(file);
-			if (!res.is_null()) {
-				ret = variant_to_var(ctx, res);
-				m.exports = ret;
-				m.flags = MODULE_FLAG_RESOURCE;
-				m.res = res;
-			} else {
-				ret = JS_ThrowReferenceError(ctx, "Cannot load resource from '%s'", file.utf8().get_data());
-			}
-		}
-		binder->commonjs_module_cache.set(md5, m);
-	}
-	return ret;
 }
 
 JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
@@ -1392,7 +1280,6 @@ void QuickJSBinder::initialize() {
 	add_global_console();
 	// binding script
 	String script_binding_error;
-
 	ECMAScriptGCHandler eval_ret;
 	if (OK == safe_eval_text(ECMAScriptBinder::BINDING_SCRIPT_CONTENT, ECMAScriptBinder::EVAL_TYPE_GLOBAL, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
 #ifdef TOOLS_ENABLED

@@ -55,8 +55,9 @@ public:
 
 	enum ECMAScriptModuleFlags {
 		MODULE_FLAG_SCRIPT = 1,
-		MODULE_FLAG_EVALUATED = 1 << 1,
-		MODULE_FLAG_RESOURCE = 1 << 2,
+		MODULE_FLAG_NATIVE = 2,
+		MODULE_FLAG_EVALUATED = 1 << 3,
+		MODULE_FLAG_RESOURCE = 1 << 4,
 	};
 
 	struct ModuleCache {
@@ -121,14 +122,14 @@ protected:
 	}
 	_FORCE_INLINE_ static void *js_binder_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
 
+	static String resolve_module_file(const String &file);
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
+	static JSModuleDef *js_make_module(JSContext *ctx, const String &p_id, const JSValueConst &p_value);
 	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const Vector<uint8_t> &p_bytecode, const String &p_filename, ECMAscriptScriptError *r_error);
 	ModuleCache js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
 	static Error js_evalute_module(JSContext *ctx, ModuleCache *p_module, ECMAscriptScriptError *r_error);
-
 	static int resource_module_initializer(JSContext *ctx, JSModuleDef *m);
-	static JSValue require_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv);
 
 	struct ClassBindData {
 		JSClassID class_id;
