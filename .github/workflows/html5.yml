@@ -1,0 +1,77 @@
+name: 🌐 HTML5 Builds
+# TODO: Investigate making this on tag instead of push since builds take so long
+on: [push]
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: '3.2.2-stable'
+  BASE_BRANCH: master
+  SCONS_CACHE_LIMIT: 4096
+  EM_VERSION: 1.39.20
+  EM_CACHE_FOLDER: 'emsdk-cache'
+
+jobs:
+  html5-template:
+    runs-on: ubuntu-latest
+    name: HTML5 Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: html5-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      # Additional cache for Emscripten generated system libraries
+      - name: Load Emscripten cache
+        id: html5-template-emscripten-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{env.EM_CACHE_FOLDER}}
+          key: ${{env.EM_VERSION}}-${{github.job}}
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v6
+        with:
+          version: ${{env.EM_VERSION}}
+          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+
+      - name: Verify Emscripten setup
+        run: |
+          emcc -v
+
+      - name: Build godot with ECMAScript module for HTML5 platform
+        run: |
+          scons p=javascript tools=no target=release -j8
+          scons p=javascript tools=no target=release_debug -j8
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: webassembly_release
+          path: bin/godot.javascript.opt.zip
+
+      - name: Publish artifact (debug)
+        uses: actions/upload-artifact@v2
+        with:
+          name: webassembly_debug
+          path: bin/godot.javascript.opt.debug.zip

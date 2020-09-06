@@ -1,0 +1,109 @@
+name: 🍎 macOS Builds
+# TODO: Investigate making this on tag instead of push since builds take so long
+on: [push]
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: '3.2.2-stable'
+  BASE_BRANCH: master
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  macos-editor:
+    runs-on: macos-latest
+    name: macOS Editor
+    steps:
+      - name: Get dependencies
+        run: |
+          brew install scons yasm
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: macos-editor-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for macOS
+        run: |
+          scons p=osx arch=x86_64 target=release_debug -j8
+          strip bin/godot.osx.opt.tools.x86_64
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: godot.javascript.osx.opt.tools.x86_64
+          path: bin/godot.osx.opt.tools.x86_64
+
+  macos-template:
+    runs-on: macos-latest
+    name: macOS Template
+    steps:
+      - name: Get dependencies
+        run: |
+          brew install scons yasm
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: macos-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for macOS (release)
+        run: |
+          scons p=osx arch=x86_64 tools=no target=release -j8
+          scons p=osx arch=arm64 tools=no target=release -j8
+          lipo -create bin/godot.osx.opt.x86_64 bin/godot.osx.opt.arm64 -output bin/godot.osx.opt.64
+          strip bin/godot.osx.64
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: osx_release.64
+          path: bin/godot.osx.opt.64
+
+      - name: Build godot with ECMAScript module for macOS (debug)
+        run: |
+          scons p=osx arch=x86_64 tools=no target=release_debug -j8
+          scons p=osx arch=arm64 tools=no target=release_debug -j8
+          lipo -create bin/godot.osx.x86_64 bin/godot.osx.arm64 -output bin/godot.osx.64
+          strip bin/godot.osx.64
+
+      - name: Publish artifact (debug)
+        uses: actions/upload-artifact@v2
+        with:
+          name: osx_debug.64
+          path: bin/godot.osx.64

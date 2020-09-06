@@ -1,0 +1,113 @@
+name: 🐧 Linux Builds
+# TODO: Investigate making this on tag instead of push since builds take so long
+on: [push]
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: '3.2.2-stable'
+  BASE_BRANCH: master
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  linux-editor:
+    runs-on: ubuntu-latest
+    name: Linux Editor
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: linux-editor-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for Linux
+        run: |
+          scons p=x11 target=release_debug -j8
+          strip bin/godot.x11.opt.tools.64
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: godot.x11.opt.tools.64
+          path: bin/godot.x11.opt.tools.64
+
+  linux-template:
+    runs-on: ubuntu-latest
+    name: Linux Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: linux-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for Linux
+        run: |
+          scons p=x11 bits=64 tools=no target=release -j8
+          scons p=x11 bits=64 tools=no target=release_debug -j8
+          scons p=x11 bits=32 tools=no target=release -j8
+          scons p=x11 bits=32 tools=no target=release_debug -j8
+          strip bin/*
+
+      - name: Publish artifact (release/64)
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_64_release
+          path: bin/godot.x11.opt.64
+
+      - name: Publish artifact (debug/64)
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_64_debug
+          path: bin/godot.x11.opt.debug.64
+
+      - name: Publish artifact (release/32)
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_32_release
+          path: bin/godot.x11.opt.32
+
+      - name: Publish artifact (debug/32)
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_32_debug
+          path: bin/godot.x11.opt.debug.32
