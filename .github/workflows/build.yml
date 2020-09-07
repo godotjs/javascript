@@ -1,0 +1,493 @@
+name: Build Godot with ECMAScript
+# TODO: Investigate making this on tag instead of push since builds take so long
+on: [push]
+
+# Global Cache Settings
+env:
+  GODOT_BASE_BRANCH: '3.2.2-stable'
+  BASE_BRANCH: master
+  SCONS_CACHE_LIMIT: 4096
+
+jobs:
+  android-template:
+    runs-on: ubuntu-latest
+    name: 🤖 Android Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Get dependencies
+        run: |
+          apt-get update
+          apt-get install -y openjdk-8-jdk curl unzip
+          echo "::set-env name=JAVA_HOME::/usr/lib/jvm/java-8-openjdk-amd64"
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: android-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Install Android SDK and NDK
+        run: |
+          echo "::set-env name=PATH::/usr/lib/jvm/java-8-openjdk-amd64/jre/bin:$(pwd)/godot-dev/build-tools/android-sdk/tools:$(pwd)/godot-dev/build-tools/android-sdk/tools/bin:${PATH}"
+          echo "::set-env name=ANDROID_HOME::$(pwd)/godot-dev/build-tools/android-sdk"
+          echo "::set-env name=ANDROID_NDK_ROOT::$(pwd)/godot-dev/build-tools/android-ndk"
+          wget https://raw.githubusercontent.com/godotengine/godot/431930b/misc/ci/android-tools-linux.sh
+          chmod +x android-tools-linux.sh
+          ./android-tools-linux.sh
+
+      - name: Build godot with ECMAScript module for Android (release)
+        run: |
+          scons p=android android_arch=armv7 tools=no target=release -j8
+          scons p=android android_arch=arm64v8 tools=no target=release -j8
+          scons p=android android_arch=x86 tools=no target=release -j8
+          scons p=android android_arch=x86_64 tools=no target=release -j8
+          cd platform/android/java
+          ./gradlew generateGodotTemplates
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: android_release
+          path: bin/
+
+      - name: Remove Previous Build
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{github.workspace}}/bin/
+
+      - name: Build godot with ECMAScript module for Android (debug)
+        run: |
+          scons p=android android_arch=armv7 tools=no target=release_debug -j8
+          scons p=android android_arch=arm64v8 tools=no target=release_debug -j8
+          scons p=android android_arch=x86 tools=no target=release_debug -j8
+          scons p=android android_arch=x86_64 tools=no target=release_debug -j8
+          cd platform/android/java
+          ./gradlew generateGodotTemplates
+
+      - name: Publish artifact (debug)
+        uses: actions/upload-artifact@v2
+        with:
+          name: android_debug
+          path: bin/
+
+  html5-template:
+    runs-on: ubuntu-latest
+    name: 🌐 HTML5 Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: html5-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for HTML5 platform
+        shell: bash
+        run: |
+          /emsdk/emsdk activate latest
+          source /emsdk/emsdk_env.sh
+          scons p=javascript tools=no target=release -j8
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: webassembly_release
+          path: bin/godot.javascript.opt.zip
+
+      # - name: Publish artifact (debug)
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: webassembly_debug
+      #     path: bin/godot.javascript.opt.debug.zip
+
+  ios-template:
+    runs-on: macos-latest
+    name: 🍏 iOS Template
+    steps:
+      - name: Get dependencies
+        run: |
+          brew install scons yasm
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: ios-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for iOS (release)
+        run: |
+          scons p=iphone arch=arm tools=no target=release -j8
+          scons p=iphone arch=arm64 tools=no target=release -j8
+          scons p=iphone arch=x86_64 tools=no target=release -j8
+          lipo -create bin/libgodot.iphone.opt.arm.a bin/libgodot.iphone.opt.arm64.a bin/libgodot.iphone.opt.x86_64.a -output bin/libgodot.iphone.fat.a
+          lipo -create bin/libgodot_camera_module.iphone.opt.arm.a bin/libgodot_camera_module.iphone.opt.arm64.a bin/libgodot_camera_module.iphone.opt.x86_64.a -output bin/libgodot_camera_module.iphone.fat.a
+          lipo -create bin/libgodot_arkit_module.iphone.opt.arm.a bin/libgodot_arkit_module.iphone.opt.arm64.a bin/libgodot_arkit_module.iphone.opt.x86_64.a -output bin/libgodot_arkit_module.iphone.fat.a
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: iphone_release
+          path: bin/*.iphone.fat.a
+
+      - name: Remove Previous Build
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{github.workspace}}/bin/
+
+      - name: Build godot with ECMAScript module for iOS (debug)
+        run: |
+          scons p=iphone arch=arm tools=no target=release_debug -j8
+          scons p=iphone arch=arm64 tools=no target=release_debug -j8
+          scons p=iphone arch=x86_64 tools=no target=release_debug -j8
+          lipo -create bin/libgodot.iphone.opt.debug.arm.a bin/libgodot.iphone.opt.debug.arm64.a bin/libgodot.iphone.opt.debug.x86_64.a -output bin/libgodot.iphone.fat.a
+          lipo -create bin/libgodot_camera_module.iphone.opt.debug.arm.a bin/libgodot_camera_module.iphone.opt.debug.arm64.a bin/libgodot_camera_module.iphone.opt.debug.x86_64.a -output bin/libgodot_camera_module.iphone.fat.a
+          lipo -create bin/libgodot_arkit_module.iphone.opt.debug.arm.a bin/libgodot_arkit_module.iphone.opt.debug.arm64.a bin/libgodot_arkit_module.iphone.opt.debug.x86_64.a -output bin/libgodot_arkit_module.iphone.fat.a
+
+      - name: Publish artifact (debug)
+        uses: actions/upload-artifact@v2
+        with:
+          name: iphone_debug
+          path: bin/*.iphone.fat.a
+
+  linux-editor:
+    runs-on: ubuntu-latest
+    name: 🐧 Linux Editor
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: linux-editor-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for Linux
+        run: |
+          scons p=x11 target=release_debug -j8
+          strip bin/godot.x11.opt.tools.64
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_64_editor
+          path: bin/godot.x11.opt.tools.64
+
+  linux-template:
+    runs-on: ubuntu-latest
+    name: 🐧 Linux Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: linux-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for Linux
+        run: |
+          scons p=x11 bits=64 tools=no target=release -j8
+          scons p=x11 bits=64 tools=no target=release_debug -j8
+          strip bin/*
+
+      - name: Publish artifact (release/64)
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_64_release
+          path: bin/godot.x11.opt.64
+
+      - name: Publish artifact (debug/64)
+        uses: actions/upload-artifact@v2
+        with:
+          name: linux_x11_64_debug
+          path: bin/godot.x11.opt.debug.64
+
+  macos-editor:
+    runs-on: macos-latest
+    name: 🍎 macOS Editor
+    steps:
+      - name: Get dependencies
+        run: |
+          brew install scons yasm
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: macos-editor-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for macOS
+        run: |
+          scons p=osx arch=x86_64 target=release_debug -j8
+          strip bin/godot.osx.opt.tools.x86_64
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: osx_editor.64
+          path: bin/godot.osx.opt.tools.x86_64
+
+  macos-template:
+    runs-on: macos-latest
+    name: 🍎 macOS Template
+    steps:
+      - name: Get dependencies
+        run: |
+          brew install scons yasm
+
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: macos-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for macOS (release)
+        run: |
+          scons p=osx arch=x86_64 tools=no target=release -j8
+          strip bin/godot.osx.opt.x86_64
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: osx_release.64
+          path: bin/godot.osx.opt.x86_64
+
+      - name: Build godot with ECMAScript module for macOS (debug)
+        run: |
+          scons p=osx arch=x86_64 tools=no target=release_debug -j8
+          strip bin/godot.osx.opt.debug.x86_64
+
+      - name: Publish artifact (debug)
+        uses: actions/upload-artifact@v2
+        with:
+          name: osx_debug.64
+          path: bin/godot.osx.opt.debug.x86_64
+
+  windows-editor:
+    runs-on: ubuntu-latest
+    name: 🏁 Windows Editor
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: windows-editor-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Build godot with ECMAScript module for Windows
+        run: |
+          update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+          scons p=windows bits=64 target=release_debug -j8
+          strip bin/godot.windows.opt.tools.64.exe
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows_64_editor
+          path: bin/godot.windows.opt.tools.64.exe
+
+  windows-template:
+    runs-on: ubuntu-latest
+    name: 🏁 Windows Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: 'godotengine/godot'
+          ref: ${{ env.GODOT_BASE_BRANCH }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/ECMAScript/
+
+      # Upload cache on completion and check it out now
+      - name: Load .scons_cache directory
+        id: windows-template-cache
+        uses: actions/cache@v2
+        with:
+          path: ${{github.workspace}}/.scons_cache/
+          key: ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+          restore-keys: |
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}-${{github.sha}}
+            ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
+            ${{github.job}}-${{env.BASE_BRANCH}}
+
+      - name: Setup MinGW
+        run: |
+          update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix
+          update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix
+
+      - name: Build godot with ECMAScript module for Windows (release)
+        run: |
+          scons p=windows bits=64 tools=no target=release -j8
+          strip bin/godot.windows.opt.64.exe
+
+      - name: Publish artifact (release)
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows_64_release
+          path: bin/godot.windows.opt.64.exe
+
+      - name: Build godot with ECMAScript module for Windows (debug)
+        run: |
+          scons p=windows bits=64 tools=no target=release_debug -j8
+          strip bin/godot.windows.opt.debug.64.exe
+
+      - name: Publish artifact (debug)
+        uses: actions/upload-artifact@v2
+        with:
+          name: windows_64_debug
+          path: bin/godot.windows.opt.debug.64.exe
