@@ -7,8 +7,6 @@ env:
   GODOT_BASE_BRANCH: '3.2.2-stable'
   BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
-  EM_VERSION: 1.39.20
-  EM_CACHE_FOLDER: 'emsdk-cache'
 
 jobs:
   html5-template:
@@ -41,28 +39,12 @@ jobs:
             ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.BASE_BRANCH}}
 
-      # Additional cache for Emscripten generated system libraries
-      - name: Load Emscripten cache
-        id: html5-template-emscripten-cache
-        uses: actions/cache@v2
-        with:
-          path: ${{env.EM_CACHE_FOLDER}}
-          key: ${{env.EM_VERSION}}-${{github.job}}
-
-      - name: Set up Emscripten
-        uses: mymindstorm/setup-emsdk@v6
-        with:
-          version: ${{env.EM_VERSION}}
-          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
-
-      - name: Verify Emscripten setup
-        run: |
-          emcc -v
-
       - name: Build godot with ECMAScript module for HTML5 platform
+        shell: bash
         run: |
+          /emsdk/emsdk activate latest
+          source /emsdk/emsdk_env.sh
           scons p=javascript tools=no target=release -j8
-          scons p=javascript tools=no target=release_debug -j8
 
       - name: Publish artifact (release)
         uses: actions/upload-artifact@v2
@@ -70,8 +52,8 @@ jobs:
           name: webassembly_release
           path: bin/godot.javascript.opt.zip
 
-      - name: Publish artifact (debug)
-        uses: actions/upload-artifact@v2
-        with:
-          name: webassembly_debug
-          path: bin/godot.javascript.opt.debug.zip
+      # - name: Publish artifact (debug)
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: webassembly_debug
+      #     path: bin/godot.javascript.opt.debug.zip

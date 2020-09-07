@@ -12,11 +12,15 @@ jobs:
   android-template:
     runs-on: ubuntu-latest
     name: Android Template
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
     steps:
       - name: Get dependencies
         run: |
-          sudo apt-get install openjdk-8-jdk
-          echo "::set-env name=JAVA_HOME::usr/lib/jvm/java-8-openjdk-amd64"
+          apt-get update
+          apt-get install -y openjdk-8-jdk curl unzip
+          echo "::set-env name=JAVA_HOME::/usr/lib/jvm/java-8-openjdk-amd64"
 
       - name: Checkout Godot
         uses: actions/checkout@v2
@@ -43,12 +47,12 @@ jobs:
 
       - name: Install Android SDK and NDK
         run: |
-          echo "::set-env name=PATH::/usr/lib/jvm/java-8-openjdk-amd64/jre/bin:${PATH}"
-          java -version
+          echo "::set-env name=PATH::/usr/lib/jvm/java-8-openjdk-amd64/jre/bin:$(pwd)/godot-dev/build-tools/android-sdk/tools:$(pwd)/godot-dev/build-tools/android-sdk/tools/bin:${PATH}"
           echo "::set-env name=ANDROID_HOME::$(pwd)/godot-dev/build-tools/android-sdk"
           echo "::set-env name=ANDROID_NDK_ROOT::$(pwd)/godot-dev/build-tools/android-ndk"
-          ${{github.workspace}}/misc/ci/android-tools-linux.sh
-          source ~/.bashrc
+          wget https://raw.githubusercontent.com/godotengine/godot/431930b/misc/ci/android-tools-linux.sh
+          chmod +x android-tools-linux.sh
+          ./android-tools-linux.sh
 
       - name: Build godot with ECMAScript module for Android (release)
         run: |
@@ -65,9 +69,13 @@ jobs:
           name: android_release
           path: bin/
 
+      - name: Remove Previous Build
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{github.workspace}}/bin/
+
       - name: Build godot with ECMAScript module for Android (debug)
         run: |
-          rm bin -r
           scons p=android android_arch=armv7 tools=no target=release_debug -j8
           scons p=android android_arch=arm64v8 tools=no target=release_debug -j8
           scons p=android android_arch=x86 tools=no target=release_debug -j8

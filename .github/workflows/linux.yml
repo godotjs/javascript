@@ -84,8 +84,6 @@ jobs:
         run: |
           scons p=x11 bits=64 tools=no target=release -j8
           scons p=x11 bits=64 tools=no target=release_debug -j8
-          scons p=x11 bits=32 tools=no target=release -j8
-          scons p=x11 bits=32 tools=no target=release_debug -j8
           strip bin/*
 
       - name: Publish artifact (release/64)
@@ -99,15 +97,3 @@ jobs:
         with:
           name: linux_x11_64_debug
           path: bin/godot.x11.opt.debug.64
-
-      - name: Publish artifact (release/32)
-        uses: actions/upload-artifact@v2
-        with:
-          name: linux_x11_32_release
-          path: bin/godot.x11.opt.32
-
-      - name: Publish artifact (debug/32)
-        uses: actions/upload-artifact@v2
-        with:
-          name: linux_x11_32_debug
-          path: bin/godot.x11.opt.debug.32

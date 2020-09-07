@@ -55,9 +55,13 @@ jobs:
           name: iphone_release
           path: bin/*.iphone.fat.a
 
+      - name: Remove Previous Build
+        uses: JesseTG/rm@v1.0.2
+        with:
+          path: ${{github.workspace}}/bin/
+
       - name: Build godot with ECMAScript module for iOS (debug)
         run: |
-          rm bin -r
           scons p=iphone arch=arm tools=no target=release_debug -j8
           scons p=iphone arch=arm64 tools=no target=release_debug -j8
           scons p=iphone arch=x86_64 tools=no target=release_debug -j8
