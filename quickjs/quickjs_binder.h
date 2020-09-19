@@ -80,7 +80,7 @@ public:
 	};
 
 	enum {
-		JS_ATOM_NULL,
+		__JS_ATOM_NULL = JS_ATOM_NULL,
 #if !defined(EMSCRIPTEN)
 #define CONFIG_ATOMICS
 #endif

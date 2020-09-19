@@ -4,7 +4,7 @@ on: [push]
 
 # Global Cache Settings
 env:
-  GODOT_BASE_BRANCH: '3.2.2-stable'
+  GODOT_BASE_BRANCH: '3.2.3-stable'
   BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
 
