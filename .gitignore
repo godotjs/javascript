@@ -8,3 +8,5 @@
 *.gen.cpp
 *.gen.json
 .vscode
+docs
+node_modules

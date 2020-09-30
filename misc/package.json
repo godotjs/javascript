@@ -1,9 +1,14 @@
 {
+	"name": "godot-ecmascript",
+    "version": "3.2.3",
+    "private": true,
 	"scripts": {
 		"watch": "tsc -w -p .",
-		"compile": "tsc -p ."
+		"compile": "tsc -p .",
+		"generatedocs": "typedoc --mode modules --ignoreCompilerErrors --includeDeclarations --excludeExternals —-out docs ./godot.d.ts"
 	},
 	"devDependencies": {
+        "typedoc": "0.19.2",
 		"typescript": "^3.9.7"
 	}
 }
