@@ -8,9 +8,9 @@ This module implements JavaScript/TypeScript language support for the godot game
 - Almost complete ES2020 support
 - All godot api avaliable
 - Operator overriding for builtin types (Vector3, Color, etc)
-- Using thirdpart libraries directly from npm
+- TypeScript support 
+- [Using thirdpart libraries from npm](https://github.com/GodotExplorer/ECMAScriptDemos/tree/master/npm_module)
 - Multi-thread support with Worker API
-- Full TypeScript workflow support
 - Full code completion support for all godot APIs including signals and enumerations
 - Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug)
 
