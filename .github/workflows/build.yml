@@ -4,6 +4,7 @@ on: [push]
 
 # Global Cache Settings
 env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
   GODOT_BASE_BRANCH: '3.2.3-stable'
   BASE_BRANCH: master
   SCONS_CACHE_LIMIT: 4096
