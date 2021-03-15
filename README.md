@@ -70,6 +70,32 @@ export default class MySprite extends godot.Sprite {
 godot.register_property(MySprite, 'direction', new godot.Vector2(1, 0));
 ```
 
+There are 2 ways of using the `godot.register_property`, the thrid param can either be
+a default value for the property you're trying to export or an object giving a more detailed
+description on how the editor should show it.
+
+```js
+function register_property(target: GodotClass | godot.Object, name: string, value: any);
+function register_property(target: GodotClass | godot.Object, name: string, info: PropertyInfo);
+```
+
+So calling the register_property like this:
+```js
+godot.register_property(MyClass, 'number_value', 3.14);
+```
+
+Is the simplified version of:
+```js
+godot.register_property(MyClass, 'number_value',  {
+	type: godot.TYPE_REAL,
+	hint: godot.PropertyHint.PROPERTY_HINT_NONE,
+	hint_string: "",
+	default: 3.14
+});
+```
+
+For more detail on how to use it, [click here](https://github.com/GodotExplorer/ECMAScript/issues/24#issuecomment-655584829).
+
 #### About the API
 
 All of godots api's are defined within the `godot` namespace.
