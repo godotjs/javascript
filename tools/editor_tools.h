@@ -8,7 +8,7 @@ class ECMAScriptPlugin : public EditorPlugin {
 	GDCLASS(ECMAScriptPlugin, EditorPlugin);
 
 	enum MenuItem {
-		ITEM_GEN_DECLAR_FILE,
+		ITEM_GEN_DECLARE_FILE,
 		ITEM_GEN_TYPESCRIPT_PROJECT,
 		ITEM_GEN_ENUM_BINDING_SCRIPT,
 	};
@@ -18,7 +18,7 @@ class ECMAScriptPlugin : public EditorPlugin {
 	const Dictionary *modified_api;
 
 protected:
-	static String BUILTIN_DECLEARATION_TEXT;
+	static String BUILTIN_DECLARATION_TEXT;
 	static String TSCONFIG_CONTENT;
 	static String TS_DECORATORS_CONTENT;
 	static String PACKAGE_JSON_CONTENT;

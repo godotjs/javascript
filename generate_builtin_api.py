@@ -331,7 +331,7 @@ OPERATOR_METHODS = {
 	]
 }
 
-def apply_parttern(template, values):
+def apply_pattern(template, values):
 	for key in values:
 		template = template.replace( '${' + key + '}', values[key])
 	return template
@@ -405,7 +405,7 @@ def parse_class(cls):
 		if class_name in IGNORED_PROPS and const_name in IGNORED_PROPS[class_name]:
 			continue
 		constants.append(dict(c.attrib))
-	return json.loads(apply_parttern(json.dumps(ret), {
+	return json.loads(apply_pattern(json.dumps(ret), {
 		'class_name': class_name,
 	}))
 
@@ -413,7 +413,7 @@ def generate_api_json(MODULE_DIR):
 	DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
 	if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
 		DOCS_DIR = sys.argv[-1]
-	OUTPUT_FILE = os.path.join(MODULE_DIR, "buitin_api.gen.json");
+	OUTPUT_FILE = os.path.join(MODULE_DIR, "builtin_api.gen.json")
 
 	classes = []
 	for cls in BUILTIN_CLASSES:

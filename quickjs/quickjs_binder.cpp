@@ -1153,7 +1153,7 @@ void QuickJSBinder::add_godot_globals() {
 		}
 	}
 
-	// buitin functions
+	// builtin functions
 	for (int i = 0; i < Expression::FUNC_MAX; ++i) {
 		Expression::BuiltinFunc func = (Expression::BuiltinFunc)i;
 		String name = Expression::get_func_name(func);
