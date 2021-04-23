@@ -16,8 +16,9 @@
 #include "editor/editor_settings.h"
 #endif
 
-uint32_t QuickJSBinder::global_context_id = 0;
-uint64_t QuickJSBinder::global_transfer_id = 0;
+SafeNumeric<uint32_t> QuickJSBinder::global_context_id;
+SafeNumeric<uint64_t> QuickJSBinder::global_transfer_id;
+
 HashMap<uint64_t, Variant> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 List<String> compiling_modules;
@@ -1211,7 +1212,7 @@ void QuickJSBinder::add_godot_globals() {
 }
 
 QuickJSBinder::QuickJSBinder() {
-	context_id = global_context_id++;
+	context_id = QuickJSBinder::global_context_id.increment();
 	internal_godot_method_id = 0;
 	internal_godot_indexed_property_id = 0;
 	godot_allocator.js_malloc = QuickJSBinder::js_binder_malloc;
@@ -2320,7 +2321,7 @@ JSValue QuickJSBinder::godot_abandon_value(JSContext *ctx, JSValue this_val, int
 
 	uint64_t id = 0;
 	if (valid) {
-		id = atomic_increment(&global_transfer_id);
+		id = QuickJSBinder::global_transfer_id.increment();
 		GLOBAL_LOCK_FUNCTION
 		transfer_deopot.set(id, gd_value);
 	}

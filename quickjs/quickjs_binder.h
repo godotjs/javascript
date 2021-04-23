@@ -30,8 +30,8 @@ class QuickJSBinder : public ECMAScriptBinder {
 	QuickJSBuiltinBinder builtin_binder;
 
 protected:
-	static uint32_t global_context_id;
-	static uint64_t global_transfer_id;
+	static SafeNumeric<uint32_t> global_context_id;
+	static SafeNumeric<uint64_t> global_transfer_id;
 	JSRuntime *runtime;
 	JSContext *ctx;
 	JSMallocFunctions godot_allocator;
