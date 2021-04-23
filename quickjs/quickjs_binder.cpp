@@ -188,7 +188,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		}
 		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
-		ret = JS_ThrowTypeError(ctx, err_message.utf8().get_data());
+		ret = JS_ThrowTypeError(ctx, "%s", err_message.utf8().get_data());
 	}
 #endif
 
@@ -805,7 +805,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 	if (class_remap.has(p_cls->name)) {
 		data.class_name = class_remap[p_cls->name];
 		data.jsclass.class_name = class_remap[p_cls->name];
-		if (data.jsclass.class_name == "") {
+		if (strcmp(data.jsclass.class_name, "") == 0) {
 			return 0;
 		}
 	} else {
@@ -2215,7 +2215,7 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 	if (!JS_IsFunction(ctx, default_entry)) {
 		String err = "Failed parse ECMAClass from script " + p_path + ENDL "\t" + "Default export entry must be a godot class!";
 		ERR_PRINTS(err);
-		JS_ThrowTypeError(ctx, err.utf8().get_data());
+		JS_ThrowTypeError(ctx, "%s", err.utf8().get_data());
 		goto fail;
 	}
 	ecma_class = register_ecma_class(default_entry, p_path);

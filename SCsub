@@ -19,7 +19,7 @@ def dump_text_file_to_cpp(file):
 	length = len(lines)
 	for i in range(length):
 		line = lines[i].replace('"', '\\"')
-		line = '\t"' + line + '\\n"';
+		line = '\t"' + line + '\\n"'
 		if i < length -1:
 			line += "\n"
 		source += line
