@@ -5,7 +5,7 @@
 #include "quickjs_binder.h"
 
 class QuickJSWorker : public QuickJSBinder {
-	Thread *thread;
+	Thread thread;
 	bool running = false;
 	static void thread_main(void *p_self);
 	String entry_script;

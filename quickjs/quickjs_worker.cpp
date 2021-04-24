@@ -89,7 +89,6 @@ JSValue QuickJSWorker::global_import_scripts(JSContext *ctx, JSValue this_val, i
 
 QuickJSWorker::QuickJSWorker(const QuickJSBinder *p_host_context) :
 		QuickJSBinder() {
-	thread = NULL;
 	running = false;
 	host_context = p_host_context;
 }
@@ -156,16 +155,14 @@ void QuickJSWorker::post_message_from_host(const Variant &p_message) {
 }
 
 void QuickJSWorker::start(const String &p_path) {
-	ERR_FAIL_COND(running || thread != NULL);
+	ERR_FAIL_COND(running || thread.is_started());
 	entry_script = p_path;
-	thread = Thread::create(thread_main, this);
+	thread.start(thread_main, this);
 }
 
 void QuickJSWorker::stop() {
-	if (thread != NULL) {
+	if (thread.is_started()) {
 		running = false;
-		Thread::wait_to_finish(thread);
-		memdelete(thread);
-		thread = NULL;
+		thread.wait_to_finish();
 	}
 }

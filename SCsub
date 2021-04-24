@@ -19,7 +19,7 @@ def dump_text_file_to_cpp(file):
 	length = len(lines)
 	for i in range(length):
 		line = lines[i].replace('"', '\\"')
-		line = '\t"' + line + '\\n"';
+		line = '\t"' + line + '\\n"'
 		if i < length -1:
 			line += "\n"
 		source += line
@@ -57,7 +57,7 @@ sources = [
 
 if env['tools']:
 	with open_file("tools/godot.d.ts.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLEARATION_TEXT = \n${source};';
+		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLARATION_TEXT = \n${source};'
 		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.d.ts")))
 	with open_file("tools/tsconfig.json.gen.cpp", "w") as f:
 		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TSCONFIG_CONTENT = \n${source};'
@@ -71,5 +71,4 @@ if env['tools']:
 	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
-env_module.Append(CXXFLAGS=["-std=c++11"])
 env_module.add_source_files(env.modules_sources, sources)

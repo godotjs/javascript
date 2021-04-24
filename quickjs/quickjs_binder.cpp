@@ -16,8 +16,9 @@
 #include "editor/editor_settings.h"
 #endif
 
-uint32_t QuickJSBinder::global_context_id = 0;
-uint64_t QuickJSBinder::global_transfer_id = 0;
+SafeNumeric<uint32_t> QuickJSBinder::global_context_id;
+SafeNumeric<uint64_t> QuickJSBinder::global_transfer_id;
+
 HashMap<uint64_t, Variant> QuickJSBinder::transfer_deopot;
 Map<String, const char *> QuickJSBinder::class_remap;
 List<String> compiling_modules;
@@ -187,7 +188,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		}
 		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
-		ret = JS_ThrowTypeError(ctx, err_message.utf8().get_data());
+		ret = JS_ThrowTypeError(ctx, "%s", err_message.utf8().get_data());
 	}
 #endif
 
@@ -804,7 +805,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 	if (class_remap.has(p_cls->name)) {
 		data.class_name = class_remap[p_cls->name];
 		data.jsclass.class_name = class_remap[p_cls->name];
-		if (data.jsclass.class_name == "") {
+		if (strcmp(data.jsclass.class_name, "") == 0) {
 			return 0;
 		}
 	} else {
@@ -1152,7 +1153,7 @@ void QuickJSBinder::add_godot_globals() {
 		}
 	}
 
-	// buitin functions
+	// builtin functions
 	for (int i = 0; i < Expression::FUNC_MAX; ++i) {
 		Expression::BuiltinFunc func = (Expression::BuiltinFunc)i;
 		String name = Expression::get_func_name(func);
@@ -1211,7 +1212,7 @@ void QuickJSBinder::add_godot_globals() {
 }
 
 QuickJSBinder::QuickJSBinder() {
-	context_id = global_context_id++;
+	context_id = QuickJSBinder::global_context_id.increment();
 	internal_godot_method_id = 0;
 	internal_godot_indexed_property_id = 0;
 	godot_allocator.js_malloc = QuickJSBinder::js_binder_malloc;
@@ -2214,7 +2215,7 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 	if (!JS_IsFunction(ctx, default_entry)) {
 		String err = "Failed parse ECMAClass from script " + p_path + ENDL "\t" + "Default export entry must be a godot class!";
 		ERR_PRINTS(err);
-		JS_ThrowTypeError(ctx, err.utf8().get_data());
+		JS_ThrowTypeError(ctx, "%s", err.utf8().get_data());
 		goto fail;
 	}
 	ecma_class = register_ecma_class(default_entry, p_path);
@@ -2320,7 +2321,7 @@ JSValue QuickJSBinder::godot_abandon_value(JSContext *ctx, JSValue this_val, int
 
 	uint64_t id = 0;
 	if (valid) {
-		id = atomic_increment(&global_transfer_id);
+		id = QuickJSBinder::global_transfer_id.increment();
 		GLOBAL_LOCK_FUNCTION
 		transfer_deopot.set(id, gd_value);
 	}

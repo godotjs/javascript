@@ -21,7 +21,7 @@ You can also get the binaries with lastest commits from the [github build action
 ### Compilation
 * Clone the source code of [godot](https://github.com/godotengine/godot)
 * Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
-* [Recompile the godot engine](https://docs.godotengine.org/en/3.2/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
+* [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
 ![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
 
