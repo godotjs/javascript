@@ -1011,7 +1011,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 						PoolByteArray::Read r = ptr->read();
 						CharString cs;
 						cs.resize(ptr->size() + 1);
-						copymem(cs.ptrw(), r.ptr(), ptr->size());
+						memcpy(cs.ptrw(), r.ptr(), ptr->size());
 						cs[ptr->size()] = 0;
 						ret = cs.get_data();
 					}

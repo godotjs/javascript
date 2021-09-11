@@ -1536,7 +1536,7 @@ Error QuickJSBinder::compile_to_bytecode(const String &p_code, const String &p_f
 		size_t size;
 		if (uint8_t *buf = JS_WriteObject(ctx, &size, module, JS_WRITE_OBJ_BYTECODE | JS_WRITE_OBJ_REFERENCE | JS_WRITE_OBJ_SAB)) {
 			r_bytecode.resize(size);
-			copymem(r_bytecode.ptrw(), buf, size);
+			memcpy(r_bytecode.ptrw(), buf, size);
 			js_free(ctx, buf);
 			JS_FreeValue(ctx, module);
 		} else {

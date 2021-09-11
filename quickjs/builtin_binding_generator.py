@@ -147,7 +147,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 					ERR_PRINTS("Length of the ArrayBuffer does not match for ${class}");
 				}
 				tmp.resize(size / sizeof(${element}));
-				copymem(tmp.write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
+				memcpy(tmp.write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
 			}
 		} else if (JS_IsDataView(argv[0])) {
 			JSValue byte_length = JS_GetPropertyStr(ctx, argv[0], "byteLength");
@@ -164,7 +164,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 			JS_FreeValue(ctx, arraybuffer);
 			if (length) {
 				tmp.resize(length / sizeof(${element}));
-				copymem(tmp.write().ptr(), buffer + offset, length / sizeof(${element}) * sizeof(${element}));
+				memcpy(tmp.write().ptr(), buffer + offset, length / sizeof(${element}) * sizeof(${element}));
 			}
 		} else {
 #ifdef DEBUG_METHODS_ENABLED
