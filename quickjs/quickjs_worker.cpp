@@ -118,10 +118,8 @@ void QuickJSWorker::uninitialize() {
 }
 
 bool QuickJSWorker::frame_of_host(QuickJSBinder *host, const JSValueConst &value) {
-
 	JSValue onmessage_callback = JS_GetPropertyStr(host->ctx, value, "onmessage");
 	if (JS_IsFunction(host->ctx, onmessage_callback)) {
-
 		List<Variant> messages;
 		{
 			GLOBAL_LOCK_FUNCTION

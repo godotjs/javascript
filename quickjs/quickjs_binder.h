@@ -24,7 +24,6 @@
 class QuickJSWorker;
 
 class QuickJSBinder : public ECMAScriptBinder {
-
 	friend class QuickJSBuiltinBinder;
 	friend class QuickJSWorker;
 	QuickJSBuiltinBinder builtin_binder;
@@ -118,7 +117,8 @@ protected:
 
 	_FORCE_INLINE_ static void *js_binder_malloc(JSMallocState *s, size_t size) { return memalloc(size); }
 	_FORCE_INLINE_ static void js_binder_free(JSMallocState *s, void *ptr) {
-		if (ptr) memfree(ptr);
+		if (ptr)
+			memfree(ptr);
 	}
 	_FORCE_INLINE_ static void *js_binder_realloc(JSMallocState *s, void *ptr, size_t size) { return memrealloc(ptr, size); }
 

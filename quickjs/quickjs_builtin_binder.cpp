@@ -15,7 +15,6 @@ QuickJSBuiltinBinder::~QuickJSBuiltinBinder() {
 }
 
 void QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, JSValue target, Variant::Type p_type, const void *p_object) {
-
 	void *ptr = NULL;
 	ECMAScriptGCHandler *bind = NULL;
 	switch (p_type) {
@@ -629,7 +628,6 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PoolVector3A
 }
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
-
 	{ // Color
 		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
 			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);

@@ -6,7 +6,6 @@
 #include <core/script_language.h>
 
 class ECMAScriptInstance : public ScriptInstance {
-
 	friend class ECMAScript;
 	friend class QuickJSBinder;
 

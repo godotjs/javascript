@@ -40,7 +40,6 @@
 void editor_init_callback();
 
 class EditorExportECMAScript : public EditorExportPlugin {
-
 	GDCLASS(EditorExportECMAScript, EditorExportPlugin);
 
 public:
@@ -129,7 +128,6 @@ Ref<ResourceFormatSaverECMAScriptModule> resource_saver_ecmascript_module;
 static ECMAScriptLanguage *script_language_js = NULL;
 
 void register_ECMAScript_types() {
-
 	ClassDB::register_class<ECMAScript>();
 	ClassDB::register_class<ECMAScriptModule>();
 

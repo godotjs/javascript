@@ -16,7 +16,6 @@ ECMAScript::~ECMAScript() {
 }
 
 bool ECMAScript::can_instance() const {
-
 #ifdef TOOLS_ENABLED
 	return is_valid() && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -32,7 +31,6 @@ StringName ECMAScript::get_instance_base_type() const {
 }
 
 ScriptInstance *ECMAScript::instance_create(Object *p_this) {
-
 	ECMAScriptBinder *binder = ECMAScriptLanguage::get_thread_binder(Thread::get_caller_id());
 	ERR_FAIL_NULL_V_MSG(binder, NULL, "Cannot create instance from this thread");
 	const ECMAClassInfo *cls = NULL;
@@ -155,7 +153,8 @@ void ECMAScript::_placeholder_erased(PlaceHolderScriptInstance *p_placeholder) {
 #endif
 
 bool ECMAScript::has_method(const StringName &p_method) const {
-	if (!ecma_class) return false;
+	if (!ecma_class)
+		return false;
 	return ecma_class->methods.getptr(p_method) != NULL;
 }
 
@@ -169,12 +168,14 @@ MethodInfo ECMAScript::get_method_info(const StringName &p_method) const {
 }
 
 bool ECMAScript::is_tool() const {
-	if (!ecma_class) return false;
+	if (!ecma_class)
+		return false;
 	return ecma_class->tool;
 }
 
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
-	if (!ecma_class) return;
+	if (!ecma_class)
+		return;
 	const StringName *key = ecma_class->methods.next(NULL);
 	while (key) {
 		p_list->push_back(ecma_class->methods.get(*key));
@@ -183,7 +184,8 @@ void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 }
 
 void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
-	if (!ecma_class) return;
+	if (!ecma_class)
+		return;
 	for (const StringName *name = ecma_class->properties.next(NULL); name; name = ecma_class->properties.next(name)) {
 		const ECMAProperyInfo &pi = ecma_class->properties.get(*name);
 		p_list->push_back(pi);
@@ -203,9 +205,9 @@ bool ECMAScript::get_property_default_value(const StringName &p_property, Varian
 }
 
 void ECMAScript::update_exports() {
-
 #ifdef TOOLS_ENABLED
-	if (!ecma_class) return;
+	if (!ecma_class)
+		return;
 
 	List<PropertyInfo> props;
 	Map<StringName, Variant> values;
@@ -222,12 +224,14 @@ void ECMAScript::update_exports() {
 }
 
 bool ECMAScript::has_script_signal(const StringName &p_signal) const {
-	if (!ecma_class) return false;
+	if (!ecma_class)
+		return false;
 	return ecma_class->signals.has(p_signal);
 }
 
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
-	if (!ecma_class) return;
+	if (!ecma_class)
+		return;
 	for (const StringName *name = ecma_class->signals.next(NULL); name; name = ecma_class->signals.next(name)) {
 		r_signals->push_back(ecma_class->signals.get(*name));
 	}
@@ -243,7 +247,8 @@ void ECMAScript::_bind_methods() {
 RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
 	Error err = OK;
 	Ref<ECMAScriptModule> module = ResourceFormatLoaderECMAScriptModule::load_static(p_path, p_original_path, &err);
-	if (r_error) *r_error = err;
+	if (r_error)
+		*r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load script file '" + p_path + "'.");
 	Ref<ECMAScript> script;
 	script.instance();
@@ -251,7 +256,8 @@ RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_o
 	script->bytecode = module->get_bytecode();
 	script->set_source_code(module->get_source_code());
 	err = script->reload();
-	if (r_error) *r_error = err;
+	if (r_error)
+		*r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, RES(), "Parse source code from file '" + p_path + "' failed.");
 #ifdef TOOLS_ENABLED
 	ECMAScriptLanguage::get_singleton()->get_scripts().insert(script);
@@ -275,12 +281,12 @@ bool ResourceFormatLoaderECMAScript::handles_type(const String &p_type) const {
 
 String ResourceFormatLoaderECMAScript::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == EXT_JSCLASS || el == EXT_JSCLASS_BYTECODE || el == EXT_JSCLASS_ENCRYPTED) return ECMAScript::get_class_static();
+	if (el == EXT_JSCLASS || el == EXT_JSCLASS_BYTECODE || el == EXT_JSCLASS_ENCRYPTED)
+		return ECMAScript::get_class_static();
 	return "";
 }
 
 Error ResourceFormatSaverECMAScript::save(const String &p_path, const RES &p_resource, uint32_t p_flags) {
-
 	Ref<ECMAScript> script = p_resource;
 	ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
 
@@ -346,7 +352,8 @@ bool ResourceFormatLoaderECMAScriptModule::handles_type(const String &p_type) co
 
 String ResourceFormatLoaderECMAScriptModule::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == EXT_JSMODULE || el == EXT_JSMODULE_BYTECODE || el == EXT_JSMODULE_ENCRYPTED) return ECMAScriptModule::get_class_static();
+	if (el == EXT_JSMODULE || el == EXT_JSMODULE_BYTECODE || el == EXT_JSMODULE_ENCRYPTED)
+		return ECMAScriptModule::get_class_static();
 	return "";
 }
 
@@ -357,12 +364,14 @@ RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, cons
 	module->set_script_path(p_path);
 	if (p_path.ends_with("." EXT_JSMODULE) || p_path.ends_with("." EXT_JSCLASS) || p_path.ends_with("." EXT_JSON)) {
 		String code = FileAccess::get_file_as_string(p_path, &err);
-		if (r_error) *r_error = err;
+		if (r_error)
+			*r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load source code from file '" + p_path + "'.");
 		module->set_source_code(code);
 	} else if (p_path.ends_with("." EXT_JSMODULE_BYTECODE) || p_path.ends_with("." EXT_JSCLASS_BYTECODE)) {
 		module->set_bytecode(FileAccess::get_file_as_array(p_path, &err));
-		if (r_error) *r_error = err;
+		if (r_error)
+			*r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load bytecode from file '" + p_path + "'.");
 	} else if (p_path.ends_with("." EXT_JSMODULE_ENCRYPTED) || p_path.ends_with("." EXT_JSCLASS_ENCRYPTED)) {
 		FileAccess *fa = FileAccess::open(p_path, FileAccess::READ);
@@ -398,7 +407,8 @@ RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, cons
 			err = ERR_CANT_OPEN;
 		}
 	}
-	if (r_error) *r_error = err;
+	if (r_error)
+		*r_error = err;
 	ERR_FAIL_COND_V(err != OK, RES());
 	return module;
 }

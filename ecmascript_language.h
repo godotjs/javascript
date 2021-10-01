@@ -8,7 +8,6 @@
 /*********************** ECMAScriptLanguage ***********************/
 class ECMAScriptBinder;
 class ECMAScriptLanguage : public ScriptLanguage {
-
 	friend class ECMAScriptBinder;
 	friend class ECMAScript;
 	friend class ECMAScriptInstance;
@@ -21,7 +20,7 @@ private:
 	int language_index;
 	HashMap<Thread::ID, ECMAScriptBinder *> thread_binder_map;
 #ifdef TOOLS_ENABLED
-	Set<Ref<ECMAScript> > scripts;
+	Set<Ref<ECMAScript>> scripts;
 #endif
 
 public:
@@ -39,7 +38,7 @@ public:
 	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
 
 #ifdef TOOLS_ENABLED
-	_FORCE_INLINE_ Set<Ref<ECMAScript> > &get_scripts() { return scripts; }
+	_FORCE_INLINE_ Set<Ref<ECMAScript>> &get_scripts() { return scripts; }
 #endif
 	/* LANGUAGE FUNCTIONS */
 
@@ -106,7 +105,7 @@ public:
 	/* LOADER FUNCTIONS */
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;
 	/* TODO */ virtual void get_public_functions(List<MethodInfo> *p_functions) const {}
-	/* TODO */ virtual void get_public_constants(List<Pair<String, Variant> > *p_constants) const {}
+	/* TODO */ virtual void get_public_constants(List<Pair<String, Variant>> *p_constants) const {}
 
 	/* TODO */ virtual void profiling_start() {}
 	/* TODO */ virtual void profiling_stop() {}

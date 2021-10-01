@@ -134,7 +134,6 @@ struct ECMAScriptGCHandler {
 		return context != NULL && ecma_object != NULL && !is_finalized();
 	}
 
-
 	_FORCE_INLINE_ void clear() {
 		type = Variant::NIL;
 		godot_object = NULL;

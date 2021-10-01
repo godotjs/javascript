@@ -26,7 +26,6 @@ Error ECMAScriptLanguage::execute_file(const String &p_path) {
 }
 
 void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
-
 	static const char *_reserved_words[] = {
 		"null",
 		"false",
@@ -143,7 +142,6 @@ void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
 	const char **w = _reserved_words;
 
 	while (*w) {
-
 		p_words->push_back(*w);
 		w++;
 	}
@@ -161,7 +159,6 @@ void ECMAScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const
 }
 
 Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const String &p_base_class_name) const {
-
 	String script_template = "export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
 							 "    \n"
 							 "    // Declare member variables here. Examples:\n"
@@ -215,7 +212,7 @@ Script *ECMAScriptLanguage::create_script() const {
 
 void ECMAScriptLanguage::reload_all_scripts() {
 #ifdef TOOLS_ENABLED
-	for (Set<Ref<ECMAScript> >::Element *E = scripts.front(); E; E = E->next()) {
+	for (Set<Ref<ECMAScript>>::Element *E = scripts.front(); E; E = E->next()) {
 		reload_script(E->get(), true);
 	}
 #endif
@@ -296,14 +293,14 @@ String ECMAScriptLanguage::globalize_relative_path(const String &p_relative, con
 				break;
 			}
 		}
-		if (!base_dir.ends_with("/")) base_dir += "/";
+		if (!base_dir.ends_with("/"))
+			base_dir += "/";
 		file = base_dir + file_path;
 	}
 	return file;
 }
 
 ECMAScriptLanguage::ECMAScriptLanguage() {
-
 	ERR_FAIL_COND(singleton);
 	singleton = this;
 	main_binder = memnew(QuickJSBinder);
