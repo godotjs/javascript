@@ -144,7 +144,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 			uint8_t *buffer = JS_GetArrayBuffer(ctx, &size, argv[0]);
 			if (size) {
 				if (size % sizeof(${element}) != 0) {
-					ERR_PRINTS("Length of the ArrayBuffer does not match for ${class}");
+					ERR_PRINT("Length of the ArrayBuffer does not match for ${class}");
 				}
 				tmp.resize(size / sizeof(${element}));
 				memcpy(tmp.write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));
@@ -436,7 +436,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 
 def generate_property_bindings(cls):
 	class_name = cls['name']
-	TemplateDeclar = 'static void bind_${class}_properties(JSContext *ctx);\n'
+	TemplateDeclar = 'static void bind_${class}_properties(JSContext *octx);\n'
 	TemplateBind = '\tbind_${class}_properties(ctx);\n'
 	def generate_members(cls):
 		Template = '''
@@ -580,8 +580,8 @@ ${arg_declares}
 			${target_class} *target = bind1->get${target_class}();\
 '''
 		OperatorTemplate = '''
-	JS_SetPropertyStr(ctx, base_operators, "${js_op}",
-		JS_NewCFunction(ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+	JS_SetPropertyStr(octx, base_operators, "${js_op}",
+		JS_NewCFunction(octx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 			${class} *ptr = bind->get${class}();\
 ${target_declare}
@@ -595,7 +595,7 @@ ${target_declare}
 		TemplateReturnValue = '${godot_type} ret = '
 		bindings = '''\
 	Vector<JSValue> operators;
-	JSValue base_operators = JS_NewObject(ctx);
+	JSValue base_operators = JS_NewObject(octx);
 '''
 		for o in cls['operators']:
 			op = o['native_method']
@@ -637,8 +637,8 @@ ${target_declare}
 		return bindings
 	
 	TemplateBindDefine = '''
-static void bind_${class}_properties(JSContext *ctx) {
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+static void bind_${class}_properties(JSContext *octx) {
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(octx);
 ${members}
 ${operators}
 ${constants}

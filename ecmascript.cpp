@@ -94,7 +94,7 @@ Error ECMAScript::reload(bool p_keep_state) {
 
 	if (!ecma_class) {
 		err = ERR_PARSE_ERROR;
-		ERR_PRINTS(binder->error_to_string(ecma_err));
+		ERR_PRINT(binder->error_to_string(ecma_err));
 	} else {
 #ifdef TOOLS_ENABLED
 		set_last_modified_time(FileAccess::get_modified_time(script_path));
