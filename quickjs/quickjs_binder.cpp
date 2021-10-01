@@ -1022,6 +1022,7 @@ void QuickJSBinder::add_godot_classes() {
 		JS_DefinePropertyValueStr(ctx, godot_object, data.jsclass.class_name, data.constructor, flags);
 		if (data.base_class) {
 			JS_SetPrototype(ctx, data.prototype, data.base_class->prototype);
+			JS_SetPrototype(ctx, data.constructor, data.base_class->constructor);
 		} else {
 			JS_SetPrototype(ctx, data.prototype, godot_origin_class.prototype);
 		}
