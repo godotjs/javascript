@@ -186,7 +186,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		if (binder->get_stacks(stacks) == OK) {
 			stack_message = binder->get_backtrace_message(stacks);
 		}
-		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
+		ERR_PRINT(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
 		ret = JS_ThrowTypeError(ctx, "%s", err_message.utf8().get_data());
 	}
@@ -478,7 +478,7 @@ Dictionary QuickJSBinder::js_to_dictionary(JSContext *ctx, const JSValue &p_val,
 					uint64_t i;
 				} u;
 				u.p = ptr;
-				ERR_PRINTS(vformat("Property '%s' circular reference to 0x%X", E->get(), u.i));
+				ERR_PRINT(vformat("Property '%s' circular reference to 0x%X", E->get(), u.i));
 				JS_FreeValue(ctx, v);
 				continue;
 			} else {
@@ -1307,10 +1307,10 @@ void QuickJSBinder::initialize() {
 				String address = E->next()->get();
 				Error err = debugger->connect(ctx, address);
 				if (err != OK) {
-					ERR_PRINTS(vformat("Failed to connect to JavaScript debugger at %s", address));
+					ERR_PRINT(vformat("Failed to connect to JavaScript debugger at %s", address));
 				}
 			} else {
-				ERR_PRINTS("Invalid debugger address");
+				ERR_PRINT("Invalid debugger address");
 			}
 		} else if (List<String>::Element *E = args.find("--js-debugger-listen")) {
 			if (E->next() && E->next()->get().find(":") != -1) {
@@ -1319,10 +1319,10 @@ void QuickJSBinder::initialize() {
 				if (err == OK) {
 					print_line(vformat("JavaScript debugger started at %s", address));
 				} else {
-					ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
+					ERR_PRINT(vformat("Failed to start JavaScript debugger at %s", address));
 				}
 			} else {
-				ERR_PRINTS("Invalid debugger address");
+				ERR_PRINT("Invalid debugger address");
 			}
 		} else if (default_server_enabled) {
 			String address = vformat("0.0.0.0:%d", default_port);
@@ -1330,7 +1330,7 @@ void QuickJSBinder::initialize() {
 			if (err == OK) {
 				print_line(vformat("JavaScript debugger started at %s", address));
 			} else {
-				ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
+				ERR_PRINT(vformat("Failed to start JavaScript debugger at %s", address));
 			}
 		}
 	} else {
@@ -1458,7 +1458,7 @@ void QuickJSBinder::frame() {
 				ECMAscriptScriptError script_err;
 				JSValue e = JS_GetException(ctx1);
 				dump_exception(ctx1, e, &script_err);
-				ERR_PRINTS(error_to_string(script_err));
+				ERR_PRINT(error_to_string(script_err));
 				JS_FreeValue(ctx1, e);
 			}
 			break;
@@ -1484,7 +1484,7 @@ void QuickJSBinder::frame() {
 			JSValue e = JS_GetException(ctx);
 			ECMAscriptScriptError err;
 			dump_exception(ctx, e, &err);
-			ERR_PRINTS("Error in requestAnimationFrame:" ENDL + error_to_string(err));
+			ERR_PRINT("Error in requestAnimationFrame:" ENDL + error_to_string(err));
 			JS_FreeValue(ctx, e);
 		}
 		id = frame_callbacks.next(id);
@@ -1499,7 +1499,7 @@ Error QuickJSBinder::eval_string(const String &p_source, EvalType type, const St
 	String error;
 	Error err = safe_eval_text(p_source, type, p_path, error, r_ret);
 	if (err != OK && !error.empty()) {
-		ERR_PRINTS(error);
+		ERR_PRINT(error);
 	}
 	return err;
 }
@@ -1717,7 +1717,7 @@ void QuickJSBinder::initialize_properties(JSContext *ctx, const ECMAClassInfo *p
 			ECMAscriptScriptError error;
 			dump_exception(ctx, e, &error);
 			JS_FreeValue(ctx, e);
-			ERR_PRINTS(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, binder->error_to_string(error)));
+			ERR_PRINT(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, binder->error_to_string(error)));
 		}
 		JS_FreeAtom(ctx, pname);
 		prop_name = p_class->properties.next(prop_name);
@@ -2005,7 +2005,7 @@ Error QuickJSBinder::define_operators(JSContext *ctx, JSValue p_prototype, JSVal
 		JSValue e = JS_GetException(ctx);
 		dump_exception(ctx, e, &error);
 		JS_FreeValue(ctx, e);
-		ERR_PRINTS(binder->error_to_string(error));
+		ERR_PRINT(binder->error_to_string(error));
 		return FAILED;
 	}
 	JS_DefinePropertyValue(ctx, p_prototype, JS_ATOM_Symbol_operatorSet, operators, PROP_DEF_DEFAULT);
@@ -2013,8 +2013,10 @@ Error QuickJSBinder::define_operators(JSContext *ctx, JSValue p_prototype, JSVal
 }
 
 JSValue QuickJSBinder::godot_set_script_meta(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
-	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"))
-	ERR_FAIL_COND_V(!JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "godot class expected for argument #0"));
+	
+	// ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"))
+	// ERR_FAIL_COND_V(!JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "godot class expected for argument #0"));
+
 	JSValue constructor = argv[0];
 	QuickJSBinder *binder = get_context_binder(ctx);
 	switch (magic) {
@@ -2123,7 +2125,7 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 		JSValue exception = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, exception, &err);
-		ERR_PRINTS(error_to_string(err));
+		ERR_PRINT(error_to_string(err));
 		JS_Throw(ctx, exception);
 	} else {
 		r_error.error = Variant::CallError::CALL_OK;
@@ -2214,7 +2216,7 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 	}
 	if (!JS_IsFunction(ctx, default_entry)) {
 		String err = "Failed parse ECMAClass from script " + p_path + ENDL "\t" + "Default export entry must be a godot class!";
-		ERR_PRINTS(err);
+		ERR_PRINT(err);
 		JS_ThrowTypeError(ctx, "%s", err.utf8().get_data());
 		goto fail;
 	}

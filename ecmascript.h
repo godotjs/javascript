@@ -63,6 +63,9 @@ public:
 
 	virtual bool is_tool() const;
 	virtual bool is_valid() const;
+	// 3.4
+	bool inherits_script(const Ref<Script> &p_script) const;
+
 
 	virtual void get_script_method_list(List<MethodInfo> *p_list) const;
 	virtual void get_script_property_list(List<PropertyInfo> *p_list) const;

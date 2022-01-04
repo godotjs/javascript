@@ -144,7 +144,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 			uint8_t *buffer = JS_GetArrayBuffer(ctx, &size, argv[0]);
 			if (size) {
 				if (size % sizeof(${element}) != 0) {
-					ERR_PRINTS("Length of the ArrayBuffer does not match for ${class}");
+					ERR_PRINT("Length of the ArrayBuffer does not match for ${class}");
 				}
 				tmp.resize(size / sizeof(${element}));
 				memcpy(tmp.write().ptr(), buffer, size / sizeof(${element}) * sizeof(${element}));

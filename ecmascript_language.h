@@ -67,6 +67,9 @@ public:
 	virtual String validate_path(const String &p_path) const { return ""; }
 	virtual Script *create_script() const;
 
+	// 3.4
+	virtual bool is_control_flow_keyword(String p_keywords) const;
+
 	/* TODO */ virtual int find_function(const String &p_function, const String &p_code) const { return -1; }
 	/* TODO */ virtual String make_function(const String &p_class, const String &p_name, const PoolStringArray &p_args) const { return ""; }
 	/* TODO */ virtual Error open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) { return ERR_UNAVAILABLE; }
@@ -78,7 +81,7 @@ public:
 	/* TODO */ virtual void add_global_constant(const StringName &p_variable, const Variant &p_value) {}
 	/* TODO */ virtual void add_named_global_constant(const StringName &p_name, const Variant &p_value) {}
 	/* TODO */ virtual void remove_named_global_constant(const StringName &p_name) {}
-
+	
 	/* MULTITHREAD FUNCTIONS */
 
 	//some VMs need to be notified of thread creation/exiting to allocate a stack

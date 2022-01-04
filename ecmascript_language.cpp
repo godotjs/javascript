@@ -312,3 +312,17 @@ ECMAScriptLanguage::ECMAScriptLanguage() {
 ECMAScriptLanguage::~ECMAScriptLanguage() {
 	memdelete(main_binder);
 }
+
+
+// 3.4 控制流关键词
+bool ECMAScriptLanguage::is_control_flow_keyword(String p_keyword) const {
+	return p_keyword == "break" ||
+			p_keyword == "continue" ||
+			p_keyword == "if" ||
+			p_keyword == "else" ||
+			p_keyword == "for" ||
+			p_keyword == "switch" ||
+			p_keyword == "default" ||
+			p_keyword == "return" ||
+			p_keyword == "while";
+}

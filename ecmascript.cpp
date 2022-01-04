@@ -96,7 +96,7 @@ Error ECMAScript::reload(bool p_keep_state) {
 
 	if (!ecma_class) {
 		err = ERR_PARSE_ERROR;
-		ERR_PRINTS(binder->error_to_string(ecma_err));
+		ERR_PRINT(binder->error_to_string(ecma_err));
 	} else {
 #ifdef TOOLS_ENABLED
 		set_last_modified_time(FileAccess::get_modified_time(script_path));
@@ -426,4 +426,9 @@ void ResourceFormatSaverECMAScriptModule::get_recognized_extensions(const RES &p
 
 bool ResourceFormatSaverECMAScriptModule::recognize(const RES &p_resource) const {
 	return Object::cast_to<ECMAScriptModule>(*p_resource) != NULL;
+}
+
+// 3.4
+bool ECMAScript::inherits_script(const Ref<Script> &p_script) const {
+	return false;
 }
