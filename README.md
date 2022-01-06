@@ -113,7 +113,7 @@ Dictionary | Object
 NodePath | string
 Object | godot.Object
 Resource | godot.Resource
-Vector2 | godot.Vecotor2
+Vector2 | godot.Vector2
 Color | godot.Color
 sin(v)| godot.sin(v)
 print(v)| godot.print(v)
