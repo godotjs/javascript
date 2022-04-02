@@ -983,7 +983,6 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 					return QuickJSBinder::variant_to_var(ctx, decompressed);
 				},
 				1);
-
 		// PoolByteArray.prototype.get_string_from_utf8
 		binder->get_builtin_binder().register_method(
 				Variant::POOL_BYTE_ARRAY,

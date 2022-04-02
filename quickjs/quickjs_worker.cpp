@@ -36,7 +36,7 @@ void QuickJSWorker::thread_main(void *p_this) {
 							JSValue e = JS_GetException(self->ctx);
 							ECMAscriptScriptError err;
 							dump_exception(self->ctx, e, &err);
-							ERR_PRINTS(String("Error in worker onmessage callback") + ENDL + self->error_to_string(err));
+							ERR_PRINT(String("Error in worker onmessage callback") + ENDL + self->error_to_string(err));
 							JS_FreeValue(self->ctx, e);
 						}
 						JS_FreeValue(self->ctx, argv[0]);
@@ -46,10 +46,10 @@ void QuickJSWorker::thread_main(void *p_this) {
 			}
 			JS_FreeValue(self->ctx, onmessage_callback);
 		} else {
-			ERR_PRINTS("Failed to eval entry script:" + self->entry_script + "\nError:" + err_text);
+			ERR_PRINT("Failed to eval entry script:" + self->entry_script + "\nError:" + err_text);
 		}
 	} else {
-		ERR_PRINTS("Failed to load entry script:" + self->entry_script);
+		ERR_PRINT("Failed to load entry script:" + self->entry_script);
 	}
 
 	self->uninitialize();
@@ -138,7 +138,7 @@ bool QuickJSWorker::frame_of_host(QuickJSBinder *host, const JSValueConst &value
 				JSValue e = JS_GetException(host->ctx);
 				ECMAscriptScriptError err;
 				dump_exception(host->ctx, e, &err);
-				ERR_PRINTS(String("Error in worker onmessage callback") + ENDL + error_to_string(err));
+				ERR_PRINT(String("Error in worker onmessage callback") + ENDL + error_to_string(err));
 				JS_FreeValue(host->ctx, e);
 			}
 			JS_FreeValue(host->ctx, argv[0]);
