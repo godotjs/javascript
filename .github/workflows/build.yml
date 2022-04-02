@@ -34,6 +34,11 @@ jobs:
         with:
           path: ${{github.workspace}}/modules/ECMAScript/
 
+      - name: Set up Java 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
         id: android-template-cache
@@ -46,15 +51,6 @@ jobs:
             ${{github.job}}-${{env.BASE_BRANCH}}-${{github.ref}}
             ${{github.job}}-${{env.BASE_BRANCH}}
 
-      - name: Install Android SDK and NDK
-        run: |
-          echo "::set-env name=PATH::/usr/lib/jvm/java-8-openjdk-amd64/jre/bin:$(pwd)/godot-dev/build-tools/android-sdk/tools:$(pwd)/godot-dev/build-tools/android-sdk/tools/bin:${PATH}"
-          echo "::set-env name=ANDROID_HOME::$(pwd)/godot-dev/build-tools/android-sdk"
-          echo "::set-env name=ANDROID_NDK_ROOT::$(pwd)/godot-dev/build-tools/android-ndk"
-          wget https://raw.githubusercontent.com/godotengine/godot/431930b/misc/ci/android-tools-linux.sh
-          chmod +x android-tools-linux.sh
-          ./android-tools-linux.sh
-
       - name: Build godot with ECMAScript module for Android (release)
         run: |
           scons p=android android_arch=armv7 tools=no target=release -j8
@@ -65,7 +61,7 @@ jobs:
           ./gradlew generateGodotTemplates
 
       - name: Publish artifact (release)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: android_release
           path: bin/
@@ -85,7 +81,7 @@ jobs:
           ./gradlew generateGodotTemplates
 
       - name: Publish artifact (debug)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: android_debug
           path: bin/
@@ -128,13 +124,13 @@ jobs:
           scons p=javascript tools=no target=release -j8
 
       - name: Publish artifact (release)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: webassembly_release
           path: bin/godot.javascript.opt.zip
 
       # - name: Publish artifact (debug)
-      #   uses: actions/upload-artifact@v2
+      #   uses: actions/upload-artifact@v3
       #   with:
       #     name: webassembly_debug
       #     path: bin/godot.javascript.opt.debug.zip
@@ -180,7 +176,7 @@ jobs:
           lipo -create bin/libgodot_arkit_module.iphone.opt.arm.a bin/libgodot_arkit_module.iphone.opt.arm64.a bin/libgodot_arkit_module.iphone.opt.x86_64.a -output bin/libgodot_arkit_module.iphone.fat.a
 
       - name: Publish artifact (release)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: iphone_release
           path: bin/*.iphone.fat.a
@@ -200,7 +196,7 @@ jobs:
           lipo -create bin/libgodot_arkit_module.iphone.opt.debug.arm.a bin/libgodot_arkit_module.iphone.opt.debug.arm64.a bin/libgodot_arkit_module.iphone.opt.debug.x86_64.a -output bin/libgodot_arkit_module.iphone.fat.a
 
       - name: Publish artifact (debug)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: iphone_debug
           path: bin/*.iphone.fat.a
@@ -241,7 +237,7 @@ jobs:
           strip bin/godot.x11.opt.tools.64
 
       - name: Publish artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: linux_x11_64_editor
           path: bin/godot.x11.opt.tools.64
@@ -283,13 +279,13 @@ jobs:
           strip bin/*
 
       - name: Publish artifact (release/64)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: linux_x11_64_release
           path: bin/godot.x11.opt.64
 
       - name: Publish artifact (debug/64)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: linux_x11_64_debug
           path: bin/godot.x11.opt.debug.64
@@ -331,7 +327,7 @@ jobs:
           strip bin/godot.osx.opt.tools.x86_64
 
       - name: Publish artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: osx_editor.64
           path: bin/godot.osx.opt.tools.x86_64
@@ -373,7 +369,7 @@ jobs:
           strip bin/godot.osx.opt.x86_64
 
       - name: Publish artifact (release)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: osx_release.64
           path: bin/godot.osx.opt.x86_64
@@ -384,7 +380,7 @@ jobs:
           strip bin/godot.osx.opt.debug.x86_64
 
       - name: Publish artifact (debug)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: osx_debug.64
           path: bin/godot.osx.opt.debug.x86_64
@@ -429,7 +425,7 @@ jobs:
           strip bin/godot.windows.opt.tools.64.exe
 
       - name: Publish artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: windows_64_editor
           path: bin/godot.windows.opt.tools.64.exe
@@ -477,7 +473,7 @@ jobs:
           strip bin/godot.windows.opt.64.exe
 
       - name: Publish artifact (release)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: windows_64_release
           path: bin/godot.windows.opt.64.exe
@@ -488,7 +484,7 @@ jobs:
           strip bin/godot.windows.opt.debug.64.exe
 
       - name: Publish artifact (debug)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: windows_64_debug
           path: bin/godot.windows.opt.debug.64.exe
