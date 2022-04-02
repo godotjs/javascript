@@ -1,6 +1,9 @@
-name: Build Godot with ECMAScript
-# TODO: Investigate making this on tag instead of push since builds take so long
-on: [tag]
+name: tag Godot with ECMAScript
+on:
+  workflow_run:
+    workflows: ["build"]
+    types:
+      - completed
 
 # Global Cache Settings
 env:
@@ -15,6 +18,7 @@ jobs:
     container: 
       # See how this image is built at https://github.com/Flux159/godot-docker
       image: flux159/godot:1.0.0
+    steps:
       - name: Download artifact android_release
         uses: actions/download-artifact@v3
         with:
