@@ -1,5 +1,141 @@
-
-name: Publish Godot with ECMAScript
+name: Build Godot with ECMAScript
+# TODO: Investigate making this on tag instead of push since builds take so long
 on: [tag]
 
+# Global Cache Settings
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  GODOT_BASE_BRANCH: '3.4-stable'
+  BASE_BRANCH: master
+  SCONS_CACHE_LIMIT: 4096
+
 jobs:
+  collect-template:
+    runs-on: ubuntu-latest
+    container: 
+      # See how this image is built at https://github.com/Flux159/godot-docker
+      image: flux159/godot:1.0.0
+      - name: Download artifact android_release
+        uses: actions/download-artifact@v3
+        with:
+          name: android_release
+          path: bin/android_release
+
+      - name: Download artifacts android_debug
+        uses: actions/download-artifact@v3
+        with:
+          name: android_debug
+          path: bin/android_debug
+
+      - name: Download wasm artifact (release)
+        uses: actions/download-artifact@v3
+        with:
+          name: webassembly_release
+          path: bin/godot.javascript.opt.zip
+
+      - name: Download wasm artifact (release)
+        uses: actions/download-artifact@v3
+        with:
+          name: webassembly_release
+          path: bin/godot.javascript.opt.zip
+
+      - name: Download iphone artifact (release)
+        uses: actions/download-artifact@v3
+        with:
+          name: iphone_release
+          path: bin/iphone_bin_release.zip
+
+      - name: Download iphone artifact (debug)
+        uses: actions/download-artifact@v3
+        with:
+          name: iphone_debug
+          path: bin/iphone_bin_debug.zip
+
+      - name: Download android artifact (release)
+        uses: actions/download-artifact@v3
+        with:
+          name: android_release
+          path: bin/android_release
+
+      - name: Download android artifact (debug)
+        uses: actions/download-artifact@v3
+        with:
+          name: android_release
+          path: bin/android_release
+
+      - name: Download win64 artifact (release)
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_64_release
+          path: bin/godot.windows.opt.64.exe
+
+      - name: Download win64 artifact (debug)
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_64_debug
+          path: bin/godot.windows.opt.debug.64.exe
+
+      - name: Download win64 editor artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: windows_64_editor
+          path: bin/godot.windows.opt.tools.64.exe
+
+      - name: Download osx artifact (release)
+        uses: actions/download-artifact@v3
+        with:
+          name: osx_release.64
+          path: bin/godot.osx.opt.x86_64
+
+      - name: Download osx artifact (debug)
+        uses: actions/download-artifact@v3
+        with:
+          name: osx_debug.64
+          path: bin/godot.osx.opt.debug.x86_64
+
+      - name: Download osx editor artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: osx_editor.64
+          path: bin/godot.osx.opt.tools.x86_64
+
+      - name: Download linux editor artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: linux_x11_64_editor
+          path: bin/godot.x11.opt.tools.64
+
+      - name: Download x11 artifact (release/64)
+        uses: actions/download-artifact@3
+        with:
+          name: linux_x11_64_release
+          path: bin/godot.x11.opt.64
+
+      - name: Download x11 artifact (debug/64)
+        uses: actions/download-artifact@v3
+        with:
+          name: linux_x11_64_debug
+          path: bin/godot.x11.opt.debug.64
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            bin/android_release
+            bin/android_debug
+            bin/godot.javascript.opt.zip
+            bin/godot.javascript.opt.zip
+            bin/iphone_bin_release.zip
+            bin/iphone_bin_debug.zip
+            bin/android_release
+            bin/android_release
+            bin/godot.windows.opt.64.exe
+            bin/godot.windows.opt.debug.64.exe
+            bin/godot.windows.opt.tools.64.exe
+            bin/godot.osx.opt.x86_64
+            bin/godot.osx.opt.debug.x86_64
+            bin/godot.osx.opt.tools.x86_64
+            bin/godot.x11.opt.64
+            bin/godot.x11.opt.debug.64
+            bin/godot.x11.opt.tools.64
