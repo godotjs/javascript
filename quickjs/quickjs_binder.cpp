@@ -186,7 +186,7 @@ JSValue QuickJSBinder::object_method(JSContext *ctx, JSValueConst this_val, int 
 		if (binder->get_stacks(stacks) == OK) {
 			stack_message = binder->get_backtrace_message(stacks);
 		}
-		ERR_PRINTS(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
+		ERR_PRINT(obj->get_class() + "." + mb->get_name() + ENDL + err_message + ENDL + stack_message);
 		JS_FreeValue(ctx, ret);
 		ret = JS_ThrowTypeError(ctx, "%s", err_message.utf8().get_data());
 	}
@@ -248,7 +248,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 		case Variant::ARRAY: {
 			Array arr = p_var;
 			JSValue js_arr = JS_NewArray(ctx);
-			for (uint32_t i = 0; i < arr.size(); i++) {
+			for (int i = 0; i < arr.size(); i++) {
 				JS_SetPropertyUint32(ctx, js_arr, i, variant_to_var(ctx, arr[int(i)]));
 			}
 			return js_arr;
@@ -291,7 +291,7 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 			if (length != -1) { // Array
 				Array arr;
 				arr.resize(length);
-				for (uint32_t i = 0; i < length; i++) {
+				for (int i = 0; i < length; i++) {
 					JSValue val = JS_GetPropertyUint32(ctx, p_val, i);
 					arr[int(i)] = var_to_variant(ctx, val);
 					JS_FreeValue(ctx, val);
@@ -478,7 +478,7 @@ Dictionary QuickJSBinder::js_to_dictionary(JSContext *ctx, const JSValue &p_val,
 					uint64_t i;
 				} u;
 				u.p = ptr;
-				ERR_PRINTS(vformat("Property '%s' circular reference to 0x%X", E->get(), u.i));
+				ERR_PRINT(vformat("Property '%s' circular reference to 0x%X", E->get(), u.i));
 				JS_FreeValue(ctx, v);
 				continue;
 			} else {
@@ -1026,7 +1026,7 @@ void QuickJSBinder::add_godot_classes() {
 		}
 		JS_DefinePropertyValueStr(ctx, godot_object, data.jsclass.class_name, data.constructor, flags);
 		if (data.base_class) {
-			JS_SetPrototype(ctx, data.prototype, data.base_class->prototype);
+			JS_SetPrototype(ctx, data.constructor, data.base_class->constructor);
 		} else {
 			JS_SetPrototype(ctx, data.prototype, godot_origin_class.prototype);
 		}
@@ -1083,9 +1083,9 @@ void QuickJSBinder::add_godot_globals() {
 			for (const StringName *enum_key = gdcls->enum_map.next(NULL); enum_key; enum_key = gdcls->enum_map.next(enum_key)) {
 				const List<StringName> &consts = gdcls->enum_map.get(*enum_key);
 				JSValue enum_obj = JS_NewObject(ctx);
-				for (const List<StringName>::Element *E = consts.front(); E; E = E->next()) {
-					JSAtom const_name = get_atom(ctx, E->get());
-					JS_DefinePropertyValue(ctx, enum_obj, const_name, variant_to_var(ctx, gdcls->constant_map.get(E->get())), QuickJSBinder::PROP_DEF_DEFAULT);
+				for (const List<StringName>::Element *E2 = consts.front(); E2; E2 = E2->next()) {
+					JSAtom const_name = get_atom(ctx, E2->get());
+					JS_DefinePropertyValue(ctx, enum_obj, const_name, variant_to_var(ctx, gdcls->constant_map.get(E2->get())), QuickJSBinder::PROP_DEF_DEFAULT);
 					JS_FreeAtom(ctx, const_name);
 				}
 				JSAtom enum_name = get_atom(ctx, *enum_key);
@@ -1126,7 +1126,7 @@ void QuickJSBinder::add_godot_globals() {
 		{ "SQRT2", Math_SQRT2 },
 		{ "SQRT12", Math_SQRT12 },
 	};
-	for (int i = 0; i < sizeof(consts) / sizeof(GlobalNumberConstant); i++) {
+	for (uint32_t i = 0; i < sizeof(consts) / sizeof(GlobalNumberConstant); i++) {
 		const GlobalNumberConstant &c = consts[i];
 		JSAtom js_const_name = get_atom(ctx, c.name);
 		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_NewFloat64(ctx, c.value), QuickJSBinder::PROP_DEF_DEFAULT);
@@ -1307,22 +1307,22 @@ void QuickJSBinder::initialize() {
 				String address = E->next()->get();
 				Error err = debugger->connect(ctx, address);
 				if (err != OK) {
-					ERR_PRINTS(vformat("Failed to connect to JavaScript debugger at %s", address));
+					ERR_PRINT(vformat("Failed to connect to JavaScript debugger at %s", address));
 				}
 			} else {
-				ERR_PRINTS("Invalid debugger address");
+				ERR_PRINT("Invalid debugger address");
 			}
-		} else if (List<String>::Element *E = args.find("--js-debugger-listen")) {
-			if (E->next() && E->next()->get().find(":") != -1) {
-				String address = E->next()->get();
+		} else if (List<String>::Element *E2 = args.find("--js-debugger-listen")) {
+			if (E2->next() && E2->next()->get().find(":") != -1) {
+				String address = E2->next()->get();
 				Error err = debugger->listen(ctx, address);
 				if (err == OK) {
 					print_line(vformat("JavaScript debugger started at %s", address));
 				} else {
-					ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
+					ERR_PRINT(vformat("Failed to start JavaScript debugger at %s", address));
 				}
 			} else {
-				ERR_PRINTS("Invalid debugger address");
+				ERR_PRINT("Invalid debugger address");
 			}
 		} else if (default_server_enabled) {
 			String address = vformat("0.0.0.0:%d", default_port);
@@ -1330,7 +1330,7 @@ void QuickJSBinder::initialize() {
 			if (err == OK) {
 				print_line(vformat("JavaScript debugger started at %s", address));
 			} else {
-				ERR_PRINTS(vformat("Failed to start JavaScript debugger at %s", address));
+				ERR_PRINT(vformat("Failed to start JavaScript debugger at %s", address));
 			}
 		}
 	} else {
@@ -1450,15 +1450,14 @@ void QuickJSBinder::language_finalize() {
 
 void QuickJSBinder::frame() {
 	JSContext *ctx1;
-	int err;
 	for (;;) {
-		err = JS_ExecutePendingJob(JS_GetRuntime(ctx), &ctx1);
+		int err = JS_ExecutePendingJob(JS_GetRuntime(ctx), &ctx1);
 		if (err <= 0) {
 			if (err < 0) {
 				ECMAscriptScriptError script_err;
 				JSValue e = JS_GetException(ctx1);
 				dump_exception(ctx1, e, &script_err);
-				ERR_PRINTS(error_to_string(script_err));
+				ERR_PRINT(error_to_string(script_err));
 				JS_FreeValue(ctx1, e);
 			}
 			break;
@@ -1484,7 +1483,7 @@ void QuickJSBinder::frame() {
 			JSValue e = JS_GetException(ctx);
 			ECMAscriptScriptError err;
 			dump_exception(ctx, e, &err);
-			ERR_PRINTS("Error in requestAnimationFrame:" ENDL + error_to_string(err));
+			ERR_PRINT("Error in requestAnimationFrame:" ENDL + error_to_string(err));
 			JS_FreeValue(ctx, e);
 		}
 		id = frame_callbacks.next(id);
@@ -1499,7 +1498,7 @@ Error QuickJSBinder::eval_string(const String &p_source, EvalType type, const St
 	String error;
 	Error err = safe_eval_text(p_source, type, p_path, error, r_ret);
 	if (err != OK && !error.empty()) {
-		ERR_PRINTS(error);
+		ERR_PRINT(error);
 	}
 	return err;
 }
@@ -1605,7 +1604,7 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 	if (!bind_ptr) {
 		bind_ptr = Object::cast_to<Reference>(p_object) == NULL ? &binder->godot_object_class : &binder->godot_reference_class;
 #ifdef DEBUG_ENABLED
-		WARN_PRINTS("Class " + p_object->get_class_name() + " is not registed to ClassDB");
+		WARN_PRINT("Class " + p_object->get_class_name() + " is not registed to ClassDB");
 #endif
 	}
 	if (bind_ptr) {
@@ -1717,7 +1716,7 @@ void QuickJSBinder::initialize_properties(JSContext *ctx, const ECMAClassInfo *p
 			ECMAscriptScriptError error;
 			dump_exception(ctx, e, &error);
 			JS_FreeValue(ctx, e);
-			ERR_PRINTS(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, binder->error_to_string(error)));
+			ERR_PRINT(vformat("Cannot initialize property '%s' of class '%s'\n%s", *prop_name, p_class->class_name, binder->error_to_string(error)));
 		}
 		JS_FreeAtom(ctx, pname);
 		prop_name = p_class->properties.next(prop_name);
@@ -2005,7 +2004,7 @@ Error QuickJSBinder::define_operators(JSContext *ctx, JSValue p_prototype, JSVal
 		JSValue e = JS_GetException(ctx);
 		dump_exception(ctx, e, &error);
 		JS_FreeValue(ctx, e);
-		ERR_PRINTS(binder->error_to_string(error));
+		ERR_PRINT(binder->error_to_string(error));
 		return FAILED;
 	}
 	JS_DefinePropertyValue(ctx, p_prototype, JS_ATOM_Symbol_operatorSet, operators, PROP_DEF_DEFAULT);
@@ -2013,7 +2012,7 @@ Error QuickJSBinder::define_operators(JSContext *ctx, JSValue p_prototype, JSVal
 }
 
 JSValue QuickJSBinder::godot_set_script_meta(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
-	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"))
+	ERR_FAIL_COND_V(argc < 2, JS_ThrowTypeError(ctx, "Two or more arguments expected"));
 	ERR_FAIL_COND_V(!JS_IsFunction(ctx, argv[0]), JS_ThrowTypeError(ctx, "godot class expected for argument #0"));
 	JSValue constructor = argv[0];
 	QuickJSBinder *binder = get_context_binder(ctx);
@@ -2123,7 +2122,7 @@ Variant QuickJSBinder::call_method(const ECMAScriptGCHandler &p_object, const St
 		JSValue exception = JS_GetException(ctx);
 		ECMAscriptScriptError err;
 		dump_exception(ctx, exception, &err);
-		ERR_PRINTS(error_to_string(err));
+		ERR_PRINT(error_to_string(err));
 		JS_Throw(ctx, exception);
 	} else {
 		r_error.error = Variant::CallError::CALL_OK;
@@ -2214,7 +2213,7 @@ const ECMAClassInfo *QuickJSBinder::parse_ecma_class_from_module(ModuleCache *p_
 	}
 	if (!JS_IsFunction(ctx, default_entry)) {
 		String err = "Failed parse ECMAClass from script " + p_path + ENDL "\t" + "Default export entry must be a godot class!";
-		ERR_PRINTS(err);
+		ERR_PRINT(err);
 		JS_ThrowTypeError(ctx, "%s", err.utf8().get_data());
 		goto fail;
 	}
@@ -2342,7 +2341,6 @@ JSValue QuickJSBinder::godot_adopt_value(JSContext *ctx, JSValue this_val, int a
 		}
 	}
 	ERR_FAIL_NULL_V(value, JS_UNDEFINED);
-	Object *obj = value;
 	return variant_to_var(ctx, value);
 }
 

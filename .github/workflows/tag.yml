@@ -1,0 +1,5 @@
+
+name: Publish Godot with ECMAScript
+on: [tag]
+
+jobs:

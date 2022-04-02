@@ -43,6 +43,7 @@ protected:
 public:
 	virtual bool can_instance() const;
 
+	virtual bool inherits_script(const Ref<Script> &p_script) const { return false; }
 	virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
 	virtual StringName get_instance_base_type() const;
 

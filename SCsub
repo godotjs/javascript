@@ -32,13 +32,14 @@ if JS_ENGINE == 'quickjs':
 	import quickjs.builtin_binding_generator
 	quickjs.builtin_binding_generator.generate_builtin_bindings()
 	# build quickjs source
-	version = open('quickjs/quickjs/VERSION', 'r').read().split('\n')[0]
+	version = open('quickjs/quickjs/VERSION.txt', 'r').read().split('\n')[0]
 	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
 	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
 	if env_module['target'] != 'release':
 		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
 		env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
 	env_module.Append(CPPPATH=["quickjs/quickjs"])
+	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs_builtin_binder.gen.cpp')
 	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
 	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
 
@@ -48,6 +49,7 @@ with open("misc/godot.binding_script.gen.cpp", "w") as f:
 	f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
 
 sources = [
+	'tools/editor_tools.cpp',
 	'register_types.cpp',
 	'ecmascript_language.cpp',
 	'ecmascript_instance.cpp',
@@ -56,19 +58,16 @@ sources = [
 ]
 
 if env['tools']:
-	with open_file("tools/godot.d.ts.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::BUILTIN_DECLARATION_TEXT = \n${source};'
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/godot.d.ts")))
-	with open_file("tools/tsconfig.json.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TSCONFIG_CONTENT = \n${source};'
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/tsconfig.json")))
-	with open_file("tools/decorators.ts.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::TS_DECORATORS_CONTENT = \n${source};'
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/decorators.ts")))
-	with open_file("tools/package.json.gen.cpp", "w") as f:
-		text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::PACKAGE_JSON_CONTENT = \n${source};'
-		f.write(text.replace('${source}', dump_text_file_to_cpp("misc/package.json")))
-	env_module.add_source_files(env.modules_sources, 'tools/*.cpp')
+	base_text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::{} = \n{};'
+	tool_fns = {"tools/godot.d.ts.gen.cpp": ("BUILTIN_DECLARATION_TEXT", dump_text_file_to_cpp("misc/godot.d.ts")),
+		"tools/tsconfig.json.gen.cpp": ("TSCONFIG_CONTENT", dump_text_file_to_cpp("misc/tsconfig.json")),
+		"tools/decorators.ts.gen.cpp": ("TS_DECORATORS_CONTENT", dump_text_file_to_cpp("misc/decorators.ts")),
+		"tools/package.json.gen.cpp": ("PACKAGE_JSON_CONTENT", dump_text_file_to_cpp("misc/package.json")),
+	}
+	for fn, subs in tool_fns.items():
+		with open_file(fn, "w") as fh:
+			fh.write(base_text.format(*subs))
+		env_module.add_source_files(env.modules_sources, fn)
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.add_source_files(env.modules_sources, sources)
