@@ -1,0 +1,56 @@
+name: "\U0001F310 JavaScript Builds"
+true:
+- push
+- pull_request
+env:
+  EM_CACHE_FOLDER: emsdk-cache
+  EM_VERSION: 2.0.25
+  GODOT_BASE_BRANCH: 3.4-stable
+  SCONSFLAG: ''
+  SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
+concurrency:
+  cancel-in-progress: true
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-javascript
+jobs:
+  javascript-template:
+    name: Template (target=release, tools=no)
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout Godot
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ env.GODOT_BASE_BRANCH }}
+        repository: godotengine/godot
+    - name: Checkout ECMSAScript
+      uses: actions/checkout@v2
+      with:
+        path: ${{github.workspace}}/modules/ECMAScript/
+    - id: javascript-template-emscripten-cache
+      name: Load Emscripten cache
+      uses: actions/cache@v2
+      with:
+        key: ${{env.EM_VERSION}}-${{github.job}}
+        path: ${{env.EM_CACHE_FOLDER}}
+    - name: Set up Emscripten latest
+      uses: mymindstorm/setup-emsdk@v10
+      with:
+        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+        version: ${{env.EM_VERSION}}
+    - name: Verify Emscripten setup
+      run: 'emcc -v
+
+        '
+    - continue-on-error: true
+      name: Setup Godot build cache
+      uses: ./.github/actions/godot-cache
+    - name: Setup python and scons
+      uses: ./.github/actions/godot-deps
+    - name: Compilation
+      uses: ./.github/actions/godot-build
+      with:
+        platform: javascript
+        sconsflags: ${{ env.SCONSFLAGS }}
+        target: release
+        tools: false
+    - name: Upload artifact
+      uses: ./.github/actions/upload-artifact

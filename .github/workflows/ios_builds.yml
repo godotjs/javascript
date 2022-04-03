@@ -1,0 +1,39 @@
+name: "\U0001F34F iOS Builds"
+true:
+- push
+- pull_request
+env:
+  GODOT_BASE_BRANCH: 3.4-stable
+  SCONSFLAG: ''
+  SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
+concurrency:
+  cancel-in-progress: true
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-ios
+jobs:
+  ios-template:
+    name: Template (target=release, tools=no)
+    runs-on: macos-latest
+    steps:
+    - name: Checkout Godot
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ env.GODOT_BASE_BRANCH }}
+        repository: godotengine/godot
+    - name: Checkout ECMSAScript
+      uses: actions/checkout@v2
+      with:
+        path: ${{github.workspace}}/modules/ECMAScript/
+    - continue-on-error: true
+      name: Setup Godot build cache
+      uses: ./.github/actions/godot-cache
+    - name: Setup python and scons
+      uses: ./.github/actions/godot-deps
+    - name: Compilation (armv7)
+      uses: ./.github/actions/godot-build
+      with:
+        platform: iphone
+        sconsflags: ${{ env.SCONSFLAGS }}
+        target: release
+        tools: false
+    - name: Upload artifact
+      uses: ./.github/actions/upload-artifact
