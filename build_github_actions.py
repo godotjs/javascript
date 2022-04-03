@@ -95,8 +95,17 @@ def main():
         only_template_name = list(data["jobs"].keys())[0]
         new_steps = []
         for step in data["jobs"][only_template_name]["steps"]:
-            if "javascript" in full_fn:
-                print(step)
+            if "windows" in wf_base_fn:
+                windows_cmd_lines = [
+                    "apt-get update",
+                    "apt-get install mingw-w64",
+                    "update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix",
+                    "update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix",
+                    "update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix",
+                    "update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix",
+                ]
+                windows_setup_step = {"name": "Install windows pre-reqs", "run": "\n".join(windows_cmd_lines)}
+                new_steps.append(windows_setup_step)
             if "uses" in step and "checkout" in step["uses"]:
                 checkout_godot = {
                     "name": "Checkout Godot",
