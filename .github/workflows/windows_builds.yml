@@ -6,6 +6,7 @@ env:
   GODOT_BASE_BRANCH: '3.4'
   SCONSFLAGS: '  verbose=yes   debug_symbols=no'
   SCONS_CACHE_MSVC_CONFIG: true
+  CXXFLAGS: /std:c++20
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
   cancel-in-progress: true

@@ -11,7 +11,8 @@ import argparse
 import yaml
 import os
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Dict
 
 # https://stackoverflow.com/a/33300001 + some changes
 def str_presenter(dumper, data):
@@ -32,6 +33,7 @@ yaml.representer.SafeRepresenter.add_representer(str, str_presenter)
 class BuildOpts:
     SCONSFLAGS: str
     GODOT_BASE_BRANCH: str
+    ENV: Dict[str, str] = field(default_factory=dict)
 
     def add_to_flags(self, toadd: str) -> None:
         if not self.SCONSFLAGS.endswith(" "):
@@ -72,7 +74,7 @@ def main():
         "linux_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "macos_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "windows_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "windows_builds.yml": BuildOpts(basic_flags, args.godot_version, {"CXXFLAGS": "/std:c++20"}),
     }
     subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
     for wf_base_fn, build_opts in workflows.items():
@@ -82,6 +84,8 @@ def main():
         build_opts.add_to_flags(data["env"]["SCONSFLAGS"])
         data["env"]["SCONSFLAGS"] = build_opts.get_fixed_flags()
         data["env"]["GODOT_BASE_BRANCH"] = build_opts.GODOT_BASE_BRANCH
+        for k, v in build_opts.ENV.items():
+            data["env"][k] = v
 
         if True in data.keys():
             new_data = {"name": data["name"], "on": data[True]}
