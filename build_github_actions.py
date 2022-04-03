@@ -74,7 +74,9 @@ def main():
         "linux_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "macos_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "windows_builds.yml": BuildOpts(basic_flags, args.godot_version, {"CXXFLAGS": "/std:c++20"}),
+        "windows_builds.yml": BuildOpts(
+            basic_flags, args.godot_version, {"CXXFLAGS": "/std:c++20", "CCFLAGS": "/std:c++20"}
+        ),
     }
     subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
     for wf_base_fn, build_opts in workflows.items():
