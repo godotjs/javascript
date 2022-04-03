@@ -99,6 +99,9 @@ def main():
         only_template_name = list(data["jobs"].keys())[0]
 
         new_steps = []
+        if "windows" in wf_base_fn:
+            new_steps.append({"name": "Setup msys2", "uses": "msys2/setup-msys2@v2"})
+
         for step in data["jobs"][only_template_name]["steps"]:
             if "uses" in step and "checkout" in step["uses"]:
                 checkout_godot = {
