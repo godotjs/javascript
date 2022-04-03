@@ -93,19 +93,22 @@ def main():
             data = new_data
         assert len(data["jobs"]) == 1
         only_template_name = list(data["jobs"].keys())[0]
+
         new_steps = []
+
+        if "windows" in wf_base_fn:  # might be necessary for windows? might have to split into 2 steps
+            windows_cmd_lines = [
+                "apt-get update",
+                "apt-get install mingw-w64",
+                "update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix",
+                "update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix",
+                "update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix",
+                "update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix",
+            ]
+            windows_setup_step = {"name": "Install windows pre-reqs", "run": "\n".join(windows_cmd_lines)}
+            new_steps.append(windows_setup_step)
+
         for step in data["jobs"][only_template_name]["steps"]:
-            if "windows" in wf_base_fn:
-                windows_cmd_lines = [
-                    "apt-get update",
-                    "apt-get install mingw-w64",
-                    "update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix",
-                    "update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix",
-                    "update-alternatives --set i686-w64-mingw32-gcc /usr/bin/i686-w64-mingw32-gcc-posix",
-                    "update-alternatives --set i686-w64-mingw32-g++ /usr/bin/i686-w64-mingw32-g++-posix",
-                ]
-                windows_setup_step = {"name": "Install windows pre-reqs", "run": "\n".join(windows_cmd_lines)}
-                new_steps.append(windows_setup_step)
             if "uses" in step and "checkout" in step["uses"]:
                 checkout_godot = {
                     "name": "Checkout Godot",
