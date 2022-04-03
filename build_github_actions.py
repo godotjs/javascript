@@ -36,7 +36,7 @@ class BuildOpts:
     def add_to_flags(self, toadd: str) -> None:
         if not self.SCONSFLAGS.endswith(" "):
             toadd = f" {toadd}"
-        self.SCONSFLAGS = f"{self.SCONSFLAGS} toadd"
+        self.SCONSFLAGS = f"{self.SCONSFLAGS} {toadd}"
 
     def get_fixed_flags(self) -> str:
         todel = ["warnings=all", "werror=yes"]

@@ -4,7 +4,8 @@ name: ☁ Server Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: '3.4'
-  SCONSFLAGS: '  toadd'
+  SCONSFLAGS: '  verbose=yes   debug_symbols=no module_mono_enabled=yes mono_static=yes
+    mono_glue=no'
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-server
   cancel-in-progress: true
