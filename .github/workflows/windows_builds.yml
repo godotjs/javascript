@@ -4,7 +4,7 @@ name: 🏁 Windows Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: '3.4'
-  SCONSFLAGS: '  verbose=yes   debug_symbols=no'
+  SCONSFLAGS: '  use_mingw=yes  verbose=yes   debug_symbols=no'
   SCONS_CACHE_MSVC_CONFIG: true
   CXXFLAGS: /std:c++20
   CCFLAGS: /std:c++20
