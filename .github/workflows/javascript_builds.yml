@@ -3,7 +3,7 @@ name: 🌐 JavaScript Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: 3.4-stable
+  GODOT_BASE_BRANCH: '3.4'
   SCONSFLAGS: module_text_server_fb_enabled=yes verbose=yes
   EM_VERSION: 2.0.25
   EM_CACHE_FOLDER: emsdk-cache

@@ -3,7 +3,7 @@ name: 🏁 Windows Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: 3.4-stable
+  GODOT_BASE_BRANCH: '3.4'
   SCONSFLAGS: module_text_server_fb_enabled=yes verbose=yes
   SCONS_CACHE_MSVC_CONFIG: true
 concurrency:
