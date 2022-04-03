@@ -1,55 +1,53 @@
-name: "\U0001F310 JavaScript Builds"
-true:
+name: 🌐 JavaScript Builds
+'on':
 - push
 - pull_request
 env:
-  EM_CACHE_FOLDER: emsdk-cache
-  EM_VERSION: 2.0.25
   GODOT_BASE_BRANCH: 3.4-stable
-  SCONSFLAG: ''
-  SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
+  SCONSFLAGS: module_text_server_fb_enabled=yes verbose=yes
+  EM_VERSION: 2.0.25
+  EM_CACHE_FOLDER: emsdk-cache
 concurrency:
-  cancel-in-progress: true
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-javascript
+  cancel-in-progress: true
 jobs:
   javascript-template:
-    name: Template (target=release, tools=no)
     runs-on: ubuntu-20.04
+    name: Template (target=release, tools=no)
     steps:
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
-        ref: ${{ env.GODOT_BASE_BRANCH }}
         repository: godotengine/godot
-    - name: Checkout ECMSAScript
+        ref: ${{ env.GODOT_BASE_BRANCH }}
+    - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
         path: ${{github.workspace}}/modules/ECMAScript/
-    - id: javascript-template-emscripten-cache
-      name: Load Emscripten cache
+    - name: Load Emscripten cache
+      id: javascript-template-emscripten-cache
       uses: actions/cache@v2
       with:
-        key: ${{env.EM_VERSION}}-${{github.job}}
         path: ${{env.EM_CACHE_FOLDER}}
+        key: ${{env.EM_VERSION}}-${{github.job}}
     - name: Set up Emscripten latest
       uses: mymindstorm/setup-emsdk@v10
       with:
-        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
         version: ${{env.EM_VERSION}}
+        actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
     - name: Verify Emscripten setup
-      run: 'emcc -v
-
-        '
-    - continue-on-error: true
-      name: Setup Godot build cache
+      run: |
+        emcc -v
+    - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
+      continue-on-error: true
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
     - name: Compilation
       uses: ./.github/actions/godot-build
       with:
-        platform: javascript
         sconsflags: ${{ env.SCONSFLAGS }}
+        platform: javascript
         target: release
         tools: false
     - name: Upload artifact

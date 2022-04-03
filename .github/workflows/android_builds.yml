@@ -1,68 +1,60 @@
-name: "\U0001F916 Android Builds"
-true:
+name: 🤖 Android Builds
+'on':
 - push
 - pull_request
 env:
   GODOT_BASE_BRANCH: 3.4-stable
-  SCONSFLAG: verbose=yes debug_symbols=no
-  SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
+  SCONSFLAGS: module_text_server_fb_enabled=yes verbose=yes
 concurrency:
-  cancel-in-progress: true
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-android
+  cancel-in-progress: true
 jobs:
   android-template:
-    name: Template (target=release, tools=no)
     runs-on: ubuntu-20.04
+    name: Template (target=release, tools=no)
     steps:
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
-        ref: ${{ env.GODOT_BASE_BRANCH }}
         repository: godotengine/godot
-    - name: Checkout ECMSAScript
+        ref: ${{ env.GODOT_BASE_BRANCH }}
+    - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
         path: ${{github.workspace}}/modules/ECMAScript/
     - name: Make apt sources.list use the default Ubuntu repositories
-      run: 'sudo rm -f /etc/apt/sources.list.d/*
-
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/*
         sudo cp -f misc/ci/sources.list /etc/apt/sources.list
-
         sudo apt-get update
-
-        '
     - name: Set up Java 11
       uses: actions/setup-java@v1
       with:
         java-version: 11
-    - continue-on-error: true
-      name: Setup Godot build cache
+    - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
+      continue-on-error: true
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
     - name: Compilation (armv7)
       uses: ./.github/actions/godot-build
       with:
-        platform: android
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=armv7
+        platform: android
         target: release
         tools: false
     - name: Compilation (arm64v8)
       uses: ./.github/actions/godot-build
       with:
-        platform: android
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=arm64v8
+        platform: android
         target: release
         tools: false
     - name: Generate Godot templates
-      run: 'cd platform/android/java
-
+      run: |
+        cd platform/android/java
         ./gradlew generateGodotTemplates
-
         cd ../../..
-
         ls -l bin/
-
-        '
     - name: Upload artifact
       uses: ./.github/actions/upload-artifact

@@ -1,58 +1,57 @@
-name: "\U0001F3C1 Windows Builds"
-true:
+name: 🏁 Windows Builds
+'on':
 - push
 - pull_request
 env:
   GODOT_BASE_BRANCH: 3.4-stable
-  SCONSFLAG: ''
-  SCONSFLAGS: verbose=yes warnings=all werror=yes debug_symbols=no
+  SCONSFLAGS: module_text_server_fb_enabled=yes verbose=yes
   SCONS_CACHE_MSVC_CONFIG: true
 concurrency:
-  cancel-in-progress: true
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
+  cancel-in-progress: true
 jobs:
   build-windows:
-    name: ${{ matrix.name }}
     runs-on: windows-latest
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name: Editor (target=release_debug, tools=yes)
+          cache-name: windows-editor
+          target: release_debug
+          tools: true
+          bin: ./bin/godot.windows.opt.tools.64.exe
+        - name: Template (target=release, tools=no)
+          cache-name: windows-template
+          target: release
+          tools: false
     steps:
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
-        ref: ${{ env.GODOT_BASE_BRANCH }}
         repository: godotengine/godot
-    - name: Checkout ECMSAScript
+        ref: ${{ env.GODOT_BASE_BRANCH }}
+    - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
         path: ${{github.workspace}}/modules/ECMAScript/
-    - continue-on-error: true
-      name: Setup Godot build cache
+    - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
       with:
         cache-name: ${{ matrix.cache-name }}
+      continue-on-error: true
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
     - name: Compilation
       uses: ./.github/actions/godot-build
       with:
-        platform: windows
-        scons-cache-limit: 3072
         sconsflags: ${{ env.SCONSFLAGS }}
+        platform: windows
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
+        scons-cache-limit: 3072
     - name: Upload artifact
       uses: ./.github/actions/upload-artifact
       with:
         name: ${{ matrix.cache-name }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - bin: ./bin/godot.windows.opt.tools.64.exe
-          cache-name: windows-editor
-          name: Editor (target=release_debug, tools=yes)
-          target: release_debug
-          tools: true
-        - cache-name: windows-template
-          name: Template (target=release, tools=no)
-          target: release
-          tools: false
