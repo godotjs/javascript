@@ -3,7 +3,7 @@
 run this every time you upgrade the godot-base version to generate new matching github workflows
 
 usage:
-python build_github_actions.py --godot-version "3.4" --godot-github-folder ../../.github --ECMAS-github-folder .github
+python build_github_actions.py --godot-version "3.4.4-stable" --godot-github-folder ../../.github --ECMAS-github-folder .github
 
 """
 
