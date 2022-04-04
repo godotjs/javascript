@@ -3,7 +3,7 @@ name: 🌐 JavaScript Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: '3.4'
+  GODOT_BASE_BRANCH: 3.4.4-stable
   SCONSFLAGS: '  verbose=yes   debug_symbols=no'
   EM_VERSION: 2.0.25
   EM_CACHE_FOLDER: emsdk-cache

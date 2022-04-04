@@ -103,10 +103,9 @@ def main():
             # msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
             # if msvc_config_var in data["env"]:
             #     del data["env"][msvc_config_var]
-
-            data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
-                "latest", "2019"
-            )
+            # data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
+            #     "latest", "2019"
+            # )
             data["jobs"][only_template_name]["defaults"] = {"run": {"shell": "msys2 {0}"}}
             new_steps.append(
                 {
