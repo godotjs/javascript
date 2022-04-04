@@ -101,6 +101,9 @@ def main():
         new_steps = []
         if "windows" in wf_base_fn:
             new_steps.append({"name": "Setup msys2", "uses": "msys2/setup-msys2@v2"})
+            data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
+                "latest", "2019"
+            )
 
         for step in data["jobs"][only_template_name]["steps"]:
             if "uses" in step and "checkout" in step["uses"]:

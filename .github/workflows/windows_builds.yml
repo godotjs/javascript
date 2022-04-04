@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false
