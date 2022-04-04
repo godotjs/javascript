@@ -20,10 +20,6 @@ jobs:
       with:
         repository: godotengine/godot
         ref: ${{ env.GODOT_BASE_BRANCH }}
-    - name: Checkout ECMAScript
-      uses: actions/checkout@v2
-      with:
-        path: ${{github.workspace}}/modules/ECMAScript/
     - name: Load Emscripten cache
       id: javascript-template-emscripten-cache
       uses: actions/cache@v2

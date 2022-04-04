@@ -121,13 +121,13 @@ def main():
                     "uses": "actions/checkout@v2",
                     "with": {"repository": "godotengine/godot", "ref": "${{ env.GODOT_BASE_BRANCH }}"},
                 }
-                checkout_ecmas = {
-                    "name": "Checkout ECMAScript",
-                    "uses": "actions/checkout@v2",
-                    "with": {"path": "${{github.workspace}}/modules/ECMAScript/"},
-                }
+                # checkout_ecmas = {
+                #     "name": "Checkout ECMAScript",
+                #     "uses": "actions/checkout@v2",
+                #     "with": {"path": "${{github.workspace}}/modules/ECMAScript/"},
+                # }
                 new_steps.append(checkout_godot)
-                new_steps.append(checkout_ecmas)
+                # new_steps.append(checkout_ecmas)
             else:
                 new_steps.append(step)
         data["jobs"][only_template_name]["steps"] = new_steps

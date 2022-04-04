@@ -18,10 +18,6 @@ jobs:
       with:
         repository: godotengine/godot
         ref: ${{ env.GODOT_BASE_BRANCH }}
-    - name: Checkout ECMAScript
-      uses: actions/checkout@v2
-      with:
-        path: ${{github.workspace}}/modules/ECMAScript/
     - name: Make apt sources.list use the default Ubuntu repositories
       run: |
         sudo rm -f /etc/apt/sources.list.d/*
