@@ -103,10 +103,11 @@ def main():
             # msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
             # if msvc_config_var in data["env"]:
             #     del data["env"][msvc_config_var]
+            pass
 
-            data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
-                "latest", "2019"
-            )
+            # data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
+            #     "latest", "2019"
+            # )
 
         for step in data["jobs"][only_template_name]["steps"]:
             if "uses" in step and "checkout" in step["uses"]:
