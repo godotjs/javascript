@@ -99,10 +99,14 @@ def main():
         only_template_name = list(data["jobs"].keys())[0]
 
         new_steps = []
-        # if "windows" in wf_base_fn:
-        #     data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
-        #         "latest", "2019"
-        #     )
+        if "windows" in wf_base_fn:
+            msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
+            if msvc_config_var in data["env"]:
+                del data["env"][msvc_config_var]
+
+            data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
+                "latest", "2019"
+            )
 
         for step in data["jobs"][only_template_name]["steps"]:
             if "uses" in step and "checkout" in step["uses"]:
