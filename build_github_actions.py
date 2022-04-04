@@ -100,9 +100,9 @@ def main():
 
         new_steps = []
         if "windows" in wf_base_fn:
-            msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
-            if msvc_config_var in data["env"]:
-                del data["env"][msvc_config_var]
+            # msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
+            # if msvc_config_var in data["env"]:
+            #     del data["env"][msvc_config_var]
 
             data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
                 "latest", "2019"
