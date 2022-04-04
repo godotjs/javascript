@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false
@@ -27,6 +27,11 @@ jobs:
           target: release
           tools: false
     steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: mingw-w64-x86_64-cc
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -55,3 +60,6 @@ jobs:
       uses: ./.github/actions/upload-artifact
       with:
         name: ${{ matrix.cache-name }}
+    defaults:
+      run:
+        shell: msys2 {0}

@@ -103,11 +103,17 @@ def main():
             # msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
             # if msvc_config_var in data["env"]:
             #     del data["env"][msvc_config_var]
-            pass
 
-            # data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
-            #     "latest", "2019"
-            # )
+            data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
+                "latest", "2019"
+            )
+            data["jobs"][only_template_name]["defaults"] = {"run": {"shell": "msys2 {0}"}}
+            new_steps.append(
+                {
+                    "uses": "msys2/setup-msys2@v2",
+                    "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-cc"},
+                }
+            )
 
         for step in data["jobs"][only_template_name]["steps"]:
             if "uses" in step and "checkout" in step["uses"]:
