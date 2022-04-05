@@ -24,11 +24,11 @@ jobs:
           bin: ./bin/godot.x11.opt.tools.64.mono
           build-mono: true
           artifact: true
-        - name: Editor and sanitizers (target=debug, tools=yes, use_ubsan=yes)
+        - name: Editor and sanitizers (target=debug, tools=yes, use_asan=yes)
           cache-name: linux-editor-sanitizers
           target: debug
           tools: true
-          sconsflags: ' use_ubsan=yes'
+          sconsflags: 'use_asan=yes '
           test: true
           bin: ./bin/godot.x11.tools.64s
           build-mono: false
