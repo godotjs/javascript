@@ -31,7 +31,11 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: mingw-w64-x86_64-cc
+        install: >-
+          mingw-w64-x86_64-cc
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_32-cc
+          mingw-w64-x86_32-gcc
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -46,6 +50,10 @@ jobs:
       with:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
+    - name: testtt gcc
+      run: gcc --version
+    - name: testtt g++
+      run: g++ --version
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
     - name: Compilation
