@@ -75,7 +75,7 @@ if env['tools']:
 if env.msvc:
 	# MSVC doesn't have clear C standard support, /std only covers C++.
 	# We apply it to CCFLAGS (both C and C++ code) in case it impacts C features.
-	env_module.Append(CCFLAGS=["/std:c++latest"])
+	env_module.Append(CCFLAGS=["/std:c++20"])
 
 
 env_module.Append(CPPPATH=["#modules/ECMAScript"])
