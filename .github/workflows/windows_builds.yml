@@ -26,6 +26,10 @@ jobs:
           cache-name: windows-template
           target: release
           tools: false
+        - name: Template (target=debug, tools=no)
+          cache-name: windows-template
+          target: debug
+          tools: false
     steps:
     - uses: msys2/setup-msys2@v2
       with:
