@@ -39,8 +39,8 @@ if JS_ENGINE == 'quickjs':
 		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
 		env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
 	env_module.Append(CPPPATH=["quickjs/quickjs"])
-	env_module.Append(CXXFLAGS=["-std=c++20"])
-	env_module.Append(CCFLAGS=["-std=c++20"])
+	# env_module.Append(CXXFLAGS=["-std=c++20"])
+	# env_module.Append(CCFLAGS=["-std=c++20"])
 	if env['tools']:
 		env_module.add_source_files(env.modules_sources, 'tools/editor_tools.cpp')
 	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs_builtin_binder.gen.cpp')
