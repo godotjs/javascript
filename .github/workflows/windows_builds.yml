@@ -6,6 +6,7 @@ env:
   GODOT_BASE_BRANCH: 3.4.4-stable
   SCONSFLAGS: '  verbose=yes   debug_symbols=no'
   SCONS_CACHE_MSVC_CONFIG: true
+  CXX: "x86_64-w64-mingw32-g++"
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
   cancel-in-progress: true
@@ -31,8 +32,14 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        pacboy: >-
-          mingw
+        install: >-
+          base-devel
+          git
+          mingw-w64-i686-toolchain
+          mingw-w64-i686-gcc
+          mingw-w64-i686-g++
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-g++
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -47,10 +54,10 @@ jobs:
       with:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
-    - name: testtt gcc
-      run: gcc --version
-    - name: testtt g++
-      run: g++ --version
+    - shell: msys2 {0}
+      run: |
+        g++ --version
+        gcc --version
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
     - name: Compilation
