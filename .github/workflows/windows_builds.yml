@@ -26,23 +26,12 @@ jobs:
           cache-name: windows-template
           target: release
           tools: false
-        - name: Template (target=debug, tools=no)
-          cache-name: windows-template
-          target: debug
-          tools: false
     steps:
     - uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
         update: true
-        pacboy: >-
-          mingw-w64-x86_64-cc
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-python3-pip
-          mingw-w64-i686-gcc
-          mingw-w64-i686-cc
-          make
-
+        install: mingw-w64-x86_64-cc
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
