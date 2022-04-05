@@ -118,10 +118,10 @@ def main():
             for matrix_step in data["jobs"][only_template_name]["strategy"]["matrix"]["include"]:
                 if "name" in matrix_step and "Editor and sanitizers" in matrix_step["name"]:
                     # for get_rid_of in ["use_asan", "use_ubsan"]:
-                    for get_rid_of in ["use_ubsan=yes"]:
-                        # for get_rid_of in ["use_asan=yes"]:
-                        # for get_rid_of in ["use_ubsan=yes", "use_asan=yes"]:
-                        # for get_rid_of in []:
+                    # for get_rid_of in ["use_ubsan=yes"]:
+                    # for get_rid_of in ["use_asan=yes"]:
+                    # for get_rid_of in ["use_ubsan=yes", "use_asan=yes"]:
+                    for get_rid_of in []:
                         matrix_step["name"] = (
                             matrix_step["name"].replace(get_rid_of, "").replace(" , ", " ").replace(", )", ")")
                         )
