@@ -18,6 +18,10 @@ jobs:
       with:
         repository: godotengine/godot
         ref: ${{ env.GODOT_BASE_BRANCH }}
+    - name: Checkout ECMAScript
+      uses: actions/checkout@v2
+      with:
+        path: ${{github.workspace}}/modules/ECMAScript/
     - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
       continue-on-error: true

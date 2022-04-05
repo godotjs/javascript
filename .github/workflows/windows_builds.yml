@@ -4,7 +4,7 @@ name: 🏁 Windows Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: 3.4.4-stable
-  SCONSFLAGS: '  verbose=yes   debug_symbols=no'
+  SCONSFLAGS: '  use_mingw=yes  verbose=yes   debug_symbols=no'
   SCONS_CACHE_MSVC_CONFIG: true
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
@@ -37,6 +37,10 @@ jobs:
       with:
         repository: godotengine/godot
         ref: ${{ env.GODOT_BASE_BRANCH }}
+    - name: Checkout ECMAScript
+      uses: actions/checkout@v2
+      with:
+        path: ${{github.workspace}}/modules/ECMAScript/
     - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
       with:
