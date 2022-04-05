@@ -50,7 +50,6 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ${{github.workspace}}/modules/ECMAScript/
-    - uses: actions/checkout@v2
     - name: Linux dependencies
       shell: bash
       run: |

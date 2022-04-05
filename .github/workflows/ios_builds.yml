@@ -22,7 +22,6 @@ jobs:
       uses: actions/checkout@v2
       with:
         path: ${{github.workspace}}/modules/ECMAScript/
-    - uses: actions/checkout@v2
     - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
       continue-on-error: true

@@ -128,8 +128,9 @@ def main():
                 }
                 new_steps.append(checkout_godot)
                 new_steps.append(checkout_ecmas)
-            if "name" in step and "Editor and sanitizers" in step["name"] and "linux" in wf_base_fn:
-                for get_rid_of in ["use_asan", "use_ubsan"]:
+            elif "name" in step and "Editor and sanitizers" in step["name"] and "linux" in wf_base_fn:
+                # for get_rid_of in ["use_asan", "use_ubsan"]:
+                for get_rid_of in ["use_asan"]:
                     step["name"] = step["name"].replace(f"{get_rid_of}=yes, ", "")
                     step["sconsflags"] = step["name"].replace(f"{get_rid_of}=yes", "")
                 new_steps.append(step)
