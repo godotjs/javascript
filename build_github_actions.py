@@ -128,6 +128,11 @@ def main():
                 }
                 new_steps.append(checkout_godot)
                 new_steps.append(checkout_ecmas)
+            if "name" in step and "Editor and sanitizers" in step["name"] and "linux" in wf_base_fn:
+                for get_rid_of in ["use_asan", "use_ubsan"]:
+                    step["name"] = step["name"].replace(f"{get_rid_of}=yes, ", "")
+                    step["sconsflags"] = step["name"].replace(f"{get_rid_of}=yes", "")
+                new_steps.append(step)
             else:
                 new_steps.append(step)
         data["jobs"][only_template_name]["steps"] = new_steps
