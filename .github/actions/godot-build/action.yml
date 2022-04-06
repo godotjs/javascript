@@ -25,12 +25,15 @@ runs:
   using: "composite"
   steps:
     - name: Scons Build
-      shell: sh
+      shell: msys2 {0}
       env:
           SCONSFLAGS: ${{ inputs.sconsflags }}
           SCONS_CACHE: ${{ inputs.scons-cache }}
           SCONS_CACHE_LIMIT: ${{ inputs.scons-cache-limit }}
       run: |
+        grep -r "ENABLE_VIRTUAL_TERMINAL_PROCESSING" /
+        env
+        g++ --version
         echo "Building with flags:" ${{ env.SCONSFLAGS }}
         scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
         ls -l bin/
