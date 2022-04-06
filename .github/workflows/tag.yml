@@ -2,13 +2,13 @@ name: 🚢 Publish release
 'on':
   workflow_run:
     workflows:
-    - android_builds
-    - ios_builds
-    - javascript_builds
-    - linux_builds
-    - macos_builds
-    - server_builds
-    - windows_builds
+    - 🤖 Android Builds
+    - 🍏 iOS Builds
+    - 🌐 JavaScript Builds
+    - 🐧 Linux Builds
+    - 🍎 macOS Builds
+    - ☁ Server Builds
+    - 🏁 Windows Builds
     types:
     - completed
 jobs:

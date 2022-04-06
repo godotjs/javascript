@@ -108,10 +108,12 @@ def get_rid_of_ubsan_asan_linux(matrix_step: Dict[str, Any]) -> Dict[str, Any]:
 
 def fix_all_workflows(
     ECMAS_github_folder: str, workflows: Dict[str, BuildOpts], wf_actions_that_require_shell: List[str]
-) -> None:
+) -> List[str]:
+    wf_names: List[str] = []
     for wf_base_fn, build_opts in workflows.items():
         full_fn = os.path.join(ECMAS_github_folder, "workflows", wf_base_fn)
         data = yaml.safe_load(open(full_fn))
+        wf_names.append(data["name"])
 
         build_opts.add_to_flags(data["env"]["SCONSFLAGS"])
         data["env"]["SCONSFLAGS"] = build_opts.get_fixed_flags()
@@ -165,6 +167,7 @@ def fix_all_workflows(
         data["jobs"][only_template_name]["steps"] = new_steps
         with open(full_fn, "w") as fh:
             yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
+    return wf_names
 
 
 def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
@@ -251,11 +254,11 @@ def main():
         "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "windows_builds.yml": BuildOpts(f"{basic_flags} use_mingw=yes", args.godot_version),
     }
-    fix_all_workflows(args.ECMAS_github_folder, workflows, wf_actions_that_require_shell)
+    wf_names = fix_all_workflows(args.ECMAS_github_folder, workflows, wf_actions_that_require_shell)
     subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
 
     out_publish_fn = os.path.join(args.ECMAS_github_folder, "workflows", "tag.yml")
-    add_publish_workflow(out_publish_fn, [x.replace(".yml", "") for x in workflows.keys()])
+    add_publish_workflow(out_publish_fn, wf_names)
 
 
 if __name__ == "__main__":
