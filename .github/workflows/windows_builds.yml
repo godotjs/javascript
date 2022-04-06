@@ -48,6 +48,8 @@ jobs:
       continue-on-error: true
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
     - name: Compilation
       uses: ./.github/actions/godot-build
       with:
