@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
 run this every time you upgrade the godot-base version to generate new matching github workflows
+You must be in this directory, and in the modules subfolder of godot (just as if you would install this project into godot)
 
 usage:
 python build_github_actions.py --godot-version "3.4.4-stable" --godot-github-folder ../../.github --ECMAS-github-folder .github
@@ -53,6 +54,13 @@ def parseargs():
     parser.add_argument("--godot-github-folder", required=True)
     parser.add_argument("--ECMAS-github-folder", required=True)
     return parser.parse_args()
+
+
+def checkout_local_godot_install(tag: str):
+    cmd = ["git", "checkout", f"tags/{tag}"]
+    ret = subprocess.run(cmd, cwd="../../")
+    if ret.returncode != 0:
+        raise RuntimeError(f"godot not setup properly, could not checkout '{' '.join(cmd)}'")
 
 
 def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
@@ -171,6 +179,7 @@ def main():
     args = parseargs()
     assert os.path.isdir(args.godot_github_folder)
     assert os.path.isdir(args.ECMAS_github_folder)
+    checkout_local_godot_install(args.godot_version)
 
     for x in ["actions", "workflows"]:
         subprocess.call(["rm", "-rf", os.path.join(args.ECMAS_github_folder, x)])
