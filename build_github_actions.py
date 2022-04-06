@@ -203,6 +203,25 @@ def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
     return list(sorted([x.split("/")[1] for x in actions_that_require_shell_set]))
 
 
+def add_publish_workflow(out_fn: str, wf_name_list: List[str]):
+    # "on": {"tag":  "",   "workflow_run": {"workflows": wf_name_list, "types": ["completed"]}},
+    data = {
+        "name": "🚢 Publish release",
+        "on": {"workflow_run": {"workflows": wf_name_list, "types": ["completed"]}},
+        "jobs": {
+            "collect-template": {
+                "runs-on": "ubuntu-latest",
+                "steps": [
+                    {"name": "download artifacts", "uses": "actions/download-artifact@v3"},
+                    {"name": "show dir", "run": "ls -R && echo bob && ls */"},
+                ],
+            }
+        },
+    }
+    with open(out_fn, "w") as fh:
+        yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
+
+
 def main():
     args = parseargs()
     assert os.path.isdir(args.godot_github_folder)
@@ -234,6 +253,9 @@ def main():
     }
     fix_all_workflows(args.ECMAS_github_folder, workflows, wf_actions_that_require_shell)
     subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
+
+    out_publish_fn = os.path.join(args.ECMAS_github_folder, "workflows", "tag.yml")
+    add_publish_workflow(out_publish_fn, [x.replace(".yml", "") for x in workflows.keys()])
 
 
 if __name__ == "__main__":

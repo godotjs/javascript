@@ -1,0 +1,21 @@
+name: 🚢 Publish release
+'on':
+  workflow_run:
+    workflows:
+    - android_builds
+    - ios_builds
+    - javascript_builds
+    - linux_builds
+    - macos_builds
+    - server_builds
+    - windows_builds
+    types:
+    - completed
+jobs:
+  collect-template:
+    runs-on: ubuntu-latest
+    steps:
+    - name: download artifacts
+      uses: actions/download-artifact@v3
+    - name: show dir
+      run: ls -R && echo bob && ls */
