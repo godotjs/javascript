@@ -208,19 +208,51 @@ def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
 
 def add_publish_workflow(out_fn: str, wf_name_list: List[str]):
     # "on": {"tag":  "",   "workflow_run": {"workflows": wf_name_list, "types": ["completed"]}},
+    # run_id: ${{ github.event.workflow_run.id }},
+    # var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
+    #   return artifact.name == "pr"
+    # })[0];
+
+    script_text = """var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
+   owner: context.repo.owner,
+   repo: context.repo.repo,
+});
+for (const workflow of all_workflows) {
+    if (workflow.HeadSha == "${{ github.sha }}") {
+        var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: workflow.ID,
+               per_page: 100,
+        });
+        for (const artifact of artifacts) {
+            var download = await github.actions.downloadArtifact({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               artifact_id: artifact.id,
+               archive_format: 'zip',
+            });
+            var fs = require('fs');
+            fs.writeFileSync('${{github.workspace}}/' + artifact.name + '.zip', Buffer.from(download.data));
+        }
+    }
+}"""
+
     data = {
         "name": "🚢 Publish release",
-        "on": {"workflow_run": {"workflows": wf_name_list, "types": ["completed"]}},
+        "on": {"workflow_run": {"workflows": [x for x in wf_name_list if "Windows" in x], "types": ["completed"]}},
         "jobs": {
             "collect-template": {
                 "runs-on": "ubuntu-latest",
                 "steps": [
-                    {"name": "download artifacts", "uses": "actions/download-artifact@v3"},
+                    {"name": "show dir", "run": "sleep 900"},
+                    {"name": "download artifacts", "uses": "actions/github-script@v3.1.0", "with": script_text},
                     {"name": "show dir", "run": "ls -R && echo bob && ls */"},
                 ],
             }
         },
     }
+
     with open(out_fn, "w") as fh:
         yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
 

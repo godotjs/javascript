@@ -2,12 +2,6 @@ name: 🚢 Publish release
 'on':
   workflow_run:
     workflows:
-    - 🤖 Android Builds
-    - 🍏 iOS Builds
-    - 🌐 JavaScript Builds
-    - 🐧 Linux Builds
-    - 🍎 macOS Builds
-    - ☁ Server Builds
     - 🏁 Windows Builds
     types:
     - completed
@@ -15,9 +9,34 @@ jobs:
   collect-template:
     runs-on: ubuntu-latest
     steps:
-    - name: wait 10 min
+    - name: show dir
       run: sleep 900
     - name: download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/github-script@v3.1.0
+      with: |-
+        var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
+           owner: context.repo.owner,
+           repo: context.repo.repo,
+        });
+        for (const workflow of all_workflows) {
+            if (workflow.HeadSha == "${{ github.sha }}") {
+                var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                       owner: context.repo.owner,
+                       repo: context.repo.repo,
+                       run_id: workflow.ID,
+                       per_page: 100,
+                });
+                for (const artifact of artifacts) {
+                    var download = await github.actions.downloadArtifact({
+                       owner: context.repo.owner,
+                       repo: context.repo.repo,
+                       artifact_id: artifact.id,
+                       archive_format: 'zip',
+                    });
+                    var fs = require('fs');
+                    fs.writeFileSync('${{github.workspace}}/' + artifact.name + '.zip', Buffer.from(download.data));
+                }
+            }
+        }
     - name: show dir
       run: ls -R && echo bob && ls */
