@@ -34,8 +34,12 @@ jobs:
     - name: Setup Godot build cache
       uses: ./modules/ECMAScript/.github/actions/godot-cache
       continue-on-error: true
+      with:
+        shell: sh
     - name: Setup python and scons
       uses: ./modules/ECMAScript/.github/actions/godot-deps
+      with:
+        shell: sh
     - name: Compilation (armv7)
       uses: ./modules/ECMAScript/.github/actions/godot-build
       with:
@@ -43,6 +47,7 @@ jobs:
         platform: android
         target: release
         tools: false
+        shell: sh
     - name: Compilation (arm64v8)
       uses: ./modules/ECMAScript/.github/actions/godot-build
       with:
@@ -50,6 +55,7 @@ jobs:
         platform: android
         target: release
         tools: false
+        shell: sh
     - name: Generate Godot templates
       run: |
         cd platform/android/java
@@ -58,3 +64,5 @@ jobs:
         ls -l bin/
     - name: Upload artifact
       uses: ./modules/ECMAScript/.github/actions/upload-artifact
+      with:
+        shell: sh

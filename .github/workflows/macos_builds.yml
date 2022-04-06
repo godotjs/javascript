@@ -39,9 +39,12 @@ jobs:
       uses: ./modules/ECMAScript/.github/actions/godot-cache
       with:
         cache-name: ${{ matrix.cache-name }}
+        shell: sh
       continue-on-error: true
     - name: Setup python and scons
       uses: ./modules/ECMAScript/.github/actions/godot-deps
+      with:
+        shell: sh
     - name: Compilation
       uses: ./modules/ECMAScript/.github/actions/godot-build
       with:
@@ -49,7 +52,9 @@ jobs:
         platform: osx
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
+        shell: sh
     - name: Upload artifact
       uses: ./modules/ECMAScript/.github/actions/upload-artifact
       with:
         name: ${{ matrix.cache-name }}
+        shell: sh

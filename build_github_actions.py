@@ -12,7 +12,7 @@ import yaml
 import os
 import subprocess
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, List, Any
 
 # https://stackoverflow.com/a/33300001 + some changes
 def str_presenter(dumper, data):
@@ -55,30 +55,51 @@ def parseargs():
     return parser.parse_args()
 
 
-def main():
-    args = parseargs()
-    assert os.path.isdir(args.godot_github_folder)
-    assert os.path.isdir(args.ECMAS_github_folder)
+def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
+    out = [
+        {
+            "name": "setup-msys2",
+            "uses": "msys2/setup-msys2@v2",
+            "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-gcc"},
+        },
+        {
+            "name": "update mingw2",
+            "run": "pacman -Syu --needed --noconfirm mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc mingw-w64-i686-python3-pip mingw-w64-i686-gcc make",
+        },
+        {
+            "name": "update scons",
+            "run": "pip3 install scons",
+        },
+    ]
+    return out
 
-    for x in ["actions", "workflows"]:
-        subprocess.call(["rm", "-rf", os.path.join(args.ECMAS_github_folder, x)])
-        subprocess.call(
-            ["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.ECMAS_github_folder, x)]
-        )
 
-    basic_flags = " "
-    workflows = {
-        "android_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "ios_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "javascript_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "linux_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "macos_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "windows_builds.yml": BuildOpts(f"{basic_flags} use_mingw=yes", args.godot_version),
-    }
-    subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
+def get_ECMAScript_checkout_steps() -> List[Dict[str, Any]]:
+    out = [
+        {
+            "name": "Checkout Godot",
+            "uses": "actions/checkout@v2",
+            "with": {"repository": "godotengine/godot", "ref": "${{ env.GODOT_BASE_BRANCH }}"},
+        },
+        {
+            "name": "Checkout ECMAScript",
+            "uses": "actions/checkout@v2",
+            "with": {"path": "${{github.workspace}}/modules/ECMAScript/"},
+        },
+    ]
+    return out
+
+
+def get_rid_of_ubsan_asan_linux(matrix_step: Dict[str, Any]) -> Dict[str, Any]:
+    for get_rid_of in ["use_ubsan=yes", "use_asan=yes"]:
+        matrix_step["name"] = matrix_step["name"].replace(get_rid_of, "").replace(" , ", " ").replace(", )", ")")
+        matrix_step["sconsflags"] = matrix_step["sconsflags"].replace(get_rid_of, "").replace(", )", ")")
+    return matrix_step
+
+
+def fix_all_workflows(ECMAS_github_folder: str, workflows: Dict[str, BuildOpts]) -> None:
     for wf_base_fn, build_opts in workflows.items():
-        full_fn = os.path.join(args.ECMAS_github_folder, "workflows", wf_base_fn)
+        full_fn = os.path.join(ECMAS_github_folder, "workflows", wf_base_fn)
         data = yaml.safe_load(open(full_fn))
 
         build_opts.add_to_flags(data["env"]["SCONSFLAGS"])
@@ -100,67 +121,83 @@ def main():
 
         new_steps = []
         if "windows" in wf_base_fn:
-            # msvc_config_var = "SCONS_CACHE_MSVC_CONFIG"
-            # if msvc_config_var in data["env"]:
-            #     del data["env"][msvc_config_var]
-            # data["jobs"][only_template_name]["runs-on"] = data["jobs"][only_template_name]["runs-on"].replace(
-            #     "latest", "2019"
-            # )
+            # quickjs can't build under msvc, must use mingw, install it here
+            new_steps += get_windows_mingw_checkout_steps()
             data["jobs"][only_template_name]["defaults"] = {"run": {"shell": "msys2 {0}"}}
-            new_steps += [
-                {
-                    "name": "setup-msys2",
-                    "uses": "msys2/setup-msys2@v2",
-                    "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-gcc"},
-                },
-                {
-                    "name": "update mingw2",
-                    "run": "pacman -Syu --needed --noconfirm mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc mingw-w64-i686-python3-pip mingw-w64-i686-gcc make",
-                },
-                {
-                    "name": "update scons",
-                    "run": "pip3 install scons",
-                },
-            ]
 
-        if "linux" in wf_base_fn:
+        elif "linux" in wf_base_fn:
             for matrix_step in data["jobs"][only_template_name]["strategy"]["matrix"]["include"]:
+                # quickjs fails under ubsan & asan, don't include those flags
                 if "name" in matrix_step and "Editor and sanitizers" in matrix_step["name"]:
-                    # for get_rid_of in ["use_asan", "use_ubsan"]:
-                    # for get_rid_of in ["use_ubsan=yes"]:
-                    # for get_rid_of in ["use_asan=yes"]:
-                    # for get_rid_of in []:
-                    for get_rid_of in ["use_ubsan=yes", "use_asan=yes"]:
-                        matrix_step["name"] = (
-                            matrix_step["name"].replace(get_rid_of, "").replace(" , ", " ").replace(", )", ")")
-                        )
-                        matrix_step["sconsflags"] = (
-                            matrix_step["sconsflags"].replace(get_rid_of, "").replace(", )", ")")
-                        )
+                    matrix_step = get_rid_of_ubsan_asan_linux(matrix_step)
 
         base_github_string = "./.github/"
         for step in data["jobs"][only_template_name]["steps"]:
+            # replace godot checkout routine with this checkout routine
             if "uses" in step and "checkout" in step["uses"]:
-                checkout_godot = {
-                    "name": "Checkout Godot",
-                    "uses": "actions/checkout@v2",
-                    "with": {"repository": "godotengine/godot", "ref": "${{ env.GODOT_BASE_BRANCH }}"},
-                }
-                checkout_ecmas = {
-                    "name": "Checkout ECMAScript",
-                    "uses": "actions/checkout@v2",
-                    "with": {"path": "${{github.workspace}}/modules/ECMAScript/"},
-                }
-                new_steps.append(checkout_godot)
-                new_steps.append(checkout_ecmas)
+                new_steps += get_ECMAScript_checkout_steps()
             elif "uses" in step and base_github_string in step["uses"]:
                 step["uses"] = step["uses"].replace(base_github_string, "./modules/ECMAScript/.github/")
+                to_add = {"shell": "msys2 {0}" if "windows" in wf_base_fn else "sh"}
+                if "with" not in step:
+                    step["with"] = to_add
+                else:
+                    step["with"].update(to_add)
                 new_steps.append(step)
             else:
                 new_steps.append(step)
+
         data["jobs"][only_template_name]["steps"] = new_steps
         with open(full_fn, "w") as fh:
             yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
+
+
+def fix_all_actions(ECMAS_github_folder: str, actions: List[str]):
+    for action_base_fn in actions:
+        full_action_fn = os.path.join(ECMAS_github_folder, action_base_fn)
+        data = yaml.safe_load(open(full_action_fn))
+        new_steps = []
+        for step in data["runs"]["steps"]:
+            if "shell" in step:
+                step["shell"] = "${{ inputs.shell }}"
+                data["inputs"]["shell"] = {"description": "the shell to run this under", "default": "sh"}
+            new_steps.append(step)
+        data["runs"]["steps"] = new_steps
+        with open(full_action_fn, "w") as fh:
+            yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
+
+
+def main():
+    args = parseargs()
+    assert os.path.isdir(args.godot_github_folder)
+    assert os.path.isdir(args.ECMAS_github_folder)
+
+    for x in ["actions", "workflows"]:
+        subprocess.call(["rm", "-rf", os.path.join(args.ECMAS_github_folder, x)])
+        subprocess.call(
+            ["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.ECMAS_github_folder, x)]
+        )
+
+    basic_flags = " "
+    workflows = {
+        "android_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "ios_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "javascript_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "linux_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "macos_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
+        "windows_builds.yml": BuildOpts(f"{basic_flags} use_mingw=yes", args.godot_version),
+    }
+    fix_all_workflows(args.ECMAS_github_folder, workflows)
+    subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
+
+    actions = [
+        "actions/godot-build/action.yml",
+        "actions/godot-cache/action.yml",
+        "actions/godot-deps/action.yml",
+        "actions/upload-artifact/action.yml",
+    ]
+    fix_all_actions(args.ECMAS_github_folder, actions)
 
 
 if __name__ == "__main__":

@@ -51,9 +51,12 @@ jobs:
       uses: ./modules/ECMAScript/.github/actions/godot-cache
       with:
         cache-name: ${{ matrix.cache-name }}
+        shell: msys2 {0}
       continue-on-error: true
     - name: Setup python and scons
       uses: ./modules/ECMAScript/.github/actions/godot-deps
+      with:
+        shell: msys2 {0}
     - name: Compilation
       uses: ./modules/ECMAScript/.github/actions/godot-build
       with:
@@ -62,10 +65,12 @@ jobs:
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
         scons-cache-limit: 3072
+        shell: msys2 {0}
     - name: Upload artifact
       uses: ./modules/ECMAScript/.github/actions/upload-artifact
       with:
         name: ${{ matrix.cache-name }}
+        shell: msys2 {0}
     defaults:
       run:
         shell: msys2 {0}
