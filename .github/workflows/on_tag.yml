@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: download artifacts
-      uses: actions/github-script@v3.1.0
+      uses: actions/github-script@v6
       with:
         script: |-
           var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({

@@ -248,7 +248,7 @@ for (const workflow of all_workflows) {
                     # {"name": "show dir", "run": "sleep 900"},
                     {
                         "name": "download artifacts",
-                        "uses": "actions/github-script@v3.1.0",
+                        "uses": "actions/github-script@v6",
                         "with": {"script": script_text},
                     },
                     {"name": "show dir", "run": "ls -R && echo bob && ls */"},
