@@ -31,7 +31,7 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: mingw-w64-x86_64-cc
+        install: mingw-w64-x86_64-gcc
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -50,6 +50,7 @@ jobs:
       uses: ./.github/actions/godot-deps
     - name: Compilation
       uses: ./.github/actions/godot-build
+      shell: msys2 {0}
       with:
         sconsflags: ${{ env.SCONSFLAGS }}
         platform: windows

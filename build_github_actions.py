@@ -110,7 +110,7 @@ def main():
             new_steps.append(
                 {
                     "uses": "msys2/setup-msys2@v2",
-                    "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-cc"},
+                    "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-gcc"},
                 }
             )
 
