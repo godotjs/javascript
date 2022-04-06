@@ -32,19 +32,19 @@ jobs:
       with:
         java-version: 11
     - name: Setup Godot build cache
-      uses: ./modules/ECMSAScript/.github/actions/godot-cache
+      uses: ./modules/ECMAScript/.github/actions/godot-cache
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMSAScript/.github/actions/godot-deps
+      uses: ./modules/ECMAScript/.github/actions/godot-deps
     - name: Compilation (armv7)
-      uses: ./modules/ECMSAScript/.github/actions/godot-build
+      uses: ./modules/ECMAScript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=armv7
         platform: android
         target: release
         tools: false
     - name: Compilation (arm64v8)
-      uses: ./modules/ECMSAScript/.github/actions/godot-build
+      uses: ./modules/ECMAScript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=arm64v8
         platform: android
@@ -57,4 +57,4 @@ jobs:
         cd ../../..
         ls -l bin/
     - name: Upload artifact
-      uses: ./modules/ECMSAScript/.github/actions/upload-artifact
+      uses: ./modules/ECMAScript/.github/actions/upload-artifact
