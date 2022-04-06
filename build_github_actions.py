@@ -245,7 +245,7 @@ for (const workflow of all_workflows) {
             "collect-template": {
                 "runs-on": "ubuntu-latest",
                 "steps": [
-                    {"name": "show dir", "run": "sleep 900"},
+                    # {"name": "show dir", "run": "sleep 900"},
                     {"name": "download artifacts", "uses": "actions/github-script@v3.1.0", "with": script_text},
                     {"name": "show dir", "run": "ls -R && echo bob && ls */"},
                 ],
