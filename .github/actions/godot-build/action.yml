@@ -37,7 +37,7 @@ runs:
       echo "Building with flags:" ${{ env.SCONSFLAGS }}
       scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
       ls -l bin/
-    if: ${{ inputs.shell }} == 'sh'
+    if: inputs.shell == 'sh'
   - name: Scons Build
     shell: msys2 {0}
     env:
@@ -48,4 +48,4 @@ runs:
       echo "Building with flags:" ${{ env.SCONSFLAGS }}
       scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
       ls -l bin/
-    if: ${{ inputs.shell }} == 'msys2 {0}'
+    if: inputs.shell == 'msys2 {0}'

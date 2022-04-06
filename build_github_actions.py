@@ -183,7 +183,7 @@ def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
                 for shell in ["sh", "msys2 {0}"]:
                     cp_step = copy.deepcopy(step)
                     cp_step["shell"] = shell
-                    cp_step["if"] = f"${{{{ inputs.shell }}}} == '{shell}'"
+                    cp_step["if"] = f"inputs.shell == '{shell}'"
                     new_steps.append(cp_step)
                 data["inputs"]["shell"] = {"description": "the shell to run this under", "default": "sh"}
                 actions_that_require_shell_set.add(action_base_fn)
