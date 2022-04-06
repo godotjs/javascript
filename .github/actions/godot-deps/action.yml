@@ -19,8 +19,16 @@ runs:
       python-version: ${{ inputs.python-version }}
       architecture: ${{ inputs.python-arch }}
   - name: Setup scons
-    shell: ${{ inputs.shell }}
+    shell: sh
     run: |
       python -c "import sys; print(sys.version)"
       python -m pip install scons
       scons --version
+    if: ${{ inputs.shell }} == 'sh'
+  - name: Setup scons
+    shell: msys2 {0}
+    run: |
+      python -c "import sys; print(sys.version)"
+      python -m pip install scons
+      scons --version
+    if: ${{ inputs.shell }} == 'msys2 {0}'

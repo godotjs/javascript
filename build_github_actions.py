@@ -14,6 +14,7 @@ import os
 import subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List, Any
+import copy
 
 # https://stackoverflow.com/a/33300001 + some changes
 def str_presenter(dumper, data):
@@ -161,15 +162,33 @@ def fix_all_workflows(ECMAS_github_folder: str, workflows: Dict[str, BuildOpts])
 
 
 def fix_all_actions(ECMAS_github_folder: str, actions: List[str]):
+    """
+    This can be simplified once:
+    https://github.com/actions/runner/pull/1767
+    is completed
+    """
     for action_base_fn in actions:
         full_action_fn = os.path.join(ECMAS_github_folder, action_base_fn)
         data = yaml.safe_load(open(full_action_fn))
         new_steps = []
         for step in data["runs"]["steps"]:
             if "shell" in step:
-                step["shell"] = "${{ inputs.shell }}"
+                for shell in ["sh", "msys2 {0}"]:
+                    cp_step = copy.deepcopy(step)
+                    cp_step["shell"] = shell
+                    cp_step["if"] = f"${{{{ inputs.shell }}}} == '{shell}'"
+                    new_steps.append(cp_step)
                 data["inputs"]["shell"] = {"description": "the shell to run this under", "default": "sh"}
-            new_steps.append(step)
+            else:
+                new_steps.append(step)
+            # new_steps.append(step)
+            # Uncomment this when github actions updated
+            # if "shell" in step:
+            #     step["shell"] = "${{ inputs.shell }}"
+            #     data["inputs"]["shell"] = {"description": "the shell to run this under", "default": "sh"}
+            # new_steps.append(step)
+
+            # We ca
         data["runs"]["steps"] = new_steps
         with open(full_action_fn, "w") as fh:
             yaml.dump(data, fh, sort_keys=False, allow_unicode=True)

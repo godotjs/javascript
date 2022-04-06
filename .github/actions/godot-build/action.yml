@@ -28,7 +28,7 @@ runs:
   using: composite
   steps:
   - name: Scons Build
-    shell: ${{ inputs.shell }}
+    shell: sh
     env:
       SCONSFLAGS: ${{ inputs.sconsflags }}
       SCONS_CACHE: ${{ inputs.scons-cache }}
@@ -37,3 +37,15 @@ runs:
       echo "Building with flags:" ${{ env.SCONSFLAGS }}
       scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
       ls -l bin/
+    if: ${{ inputs.shell }} == 'sh'
+  - name: Scons Build
+    shell: msys2 {0}
+    env:
+      SCONSFLAGS: ${{ inputs.sconsflags }}
+      SCONS_CACHE: ${{ inputs.scons-cache }}
+      SCONS_CACHE_LIMIT: ${{ inputs.scons-cache-limit }}
+    run: |
+      echo "Building with flags:" ${{ env.SCONSFLAGS }}
+      scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
+      ls -l bin/
+    if: ${{ inputs.shell }} == 'msys2 {0}'
