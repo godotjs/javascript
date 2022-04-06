@@ -6,7 +6,6 @@ env:
   GODOT_BASE_BRANCH: 3.4.4-stable
   SCONSFLAGS: '  verbose=yes   debug_symbols=no'
   SCONS_CACHE_MSVC_CONFIG: true
-  CXX: "i686-w64-mingw32-g++"
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
   cancel-in-progress: true
@@ -35,11 +34,6 @@ jobs:
         install: >-
           base-devel
           git
-          mingw-w64-i686-toolchain
-          mingw-w64-i686-gcc
-          mingw-w64-i686-g++
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-g++
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -68,6 +62,9 @@ jobs:
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
         scons-cache-limit: 3072
+    - name: Setup tmate session
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
     - name: Upload artifact
       uses: ./.github/actions/upload-artifact
       with:
