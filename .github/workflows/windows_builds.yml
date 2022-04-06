@@ -27,11 +27,17 @@ jobs:
           target: release
           tools: false
     steps:
-    - uses: msys2/setup-msys2@v2
+    - name: setup-msys2
+      uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
         update: true
         install: mingw-w64-x86_64-gcc
+    - name: update mingw2
+      run: pacman -S mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc mingw-w64-i686-python3-pip
+        mingw-w64-i686-gcc make
+    - name: update scons
+      run: pip3 install scons
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -48,8 +54,6 @@ jobs:
       continue-on-error: true
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
     - name: Compilation
       uses: ./.github/actions/godot-build
       with:

@@ -107,12 +107,21 @@ def main():
             #     "latest", "2019"
             # )
             data["jobs"][only_template_name]["defaults"] = {"run": {"shell": "msys2 {0}"}}
-            new_steps.append(
+            new_steps += [
                 {
+                    "name": "setup-msys2",
                     "uses": "msys2/setup-msys2@v2",
                     "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-gcc"},
-                }
-            )
+                },
+                {
+                    "name": "update mingw2",
+                    "run": "pacman -S mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc mingw-w64-i686-python3-pip mingw-w64-i686-gcc make",
+                },
+                {
+                    "name": "update scons",
+                    "run": "pip3 install scons",
+                },
+            ]
 
         if "linux" in wf_base_fn:
             for matrix_step in data["jobs"][only_template_name]["strategy"]["matrix"]["include"]:
