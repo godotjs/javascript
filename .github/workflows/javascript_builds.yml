@@ -39,10 +39,8 @@ jobs:
       run: |
         emcc -v
     - name: Setup Godot build cache
-      uses: ./modules/ECMAScript/.github/actions/godot-cache
+      uses: ./.github/actions/godot-cache
       continue-on-error: true
-      with:
-        shell: sh
     - name: Setup python and scons
       uses: ./modules/ECMAScript/.github/actions/godot-deps
       with:
@@ -56,6 +54,4 @@ jobs:
         tools: false
         shell: sh
     - name: Upload artifact
-      uses: ./modules/ECMAScript/.github/actions/upload-artifact
-      with:
-        shell: sh
+      uses: ./.github/actions/upload-artifact

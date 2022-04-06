@@ -32,10 +32,8 @@ jobs:
       with:
         java-version: 11
     - name: Setup Godot build cache
-      uses: ./modules/ECMAScript/.github/actions/godot-cache
+      uses: ./.github/actions/godot-cache
       continue-on-error: true
-      with:
-        shell: sh
     - name: Setup python and scons
       uses: ./modules/ECMAScript/.github/actions/godot-deps
       with:
@@ -63,6 +61,4 @@ jobs:
         cd ../../..
         ls -l bin/
     - name: Upload artifact
-      uses: ./modules/ECMAScript/.github/actions/upload-artifact
-      with:
-        shell: sh
+      uses: ./.github/actions/upload-artifact

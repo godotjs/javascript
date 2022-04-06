@@ -106,7 +106,9 @@ def get_rid_of_ubsan_asan_linux(matrix_step: Dict[str, Any]) -> Dict[str, Any]:
     return matrix_step
 
 
-def fix_all_workflows(ECMAS_github_folder: str, workflows: Dict[str, BuildOpts]) -> None:
+def fix_all_workflows(
+    ECMAS_github_folder: str, workflows: Dict[str, BuildOpts], wf_actions_that_require_shell: List[str]
+) -> None:
     for wf_base_fn, build_opts in workflows.items():
         full_fn = os.path.join(ECMAS_github_folder, "workflows", wf_base_fn)
         data = yaml.safe_load(open(full_fn))
@@ -145,7 +147,11 @@ def fix_all_workflows(ECMAS_github_folder: str, workflows: Dict[str, BuildOpts])
             # replace godot checkout routine with this checkout routine
             if "uses" in step and "checkout" in step["uses"]:
                 new_steps += get_ECMAScript_checkout_steps()
-            elif "uses" in step and base_github_string in step["uses"]:
+            elif (
+                "uses" in step
+                and base_github_string in step["uses"]
+                and any(x in step["uses"] for x in wf_actions_that_require_shell)
+            ):
                 step["uses"] = step["uses"].replace(base_github_string, "./modules/ECMAScript/.github/")
                 to_add = {"shell": "msys2 {0}" if "windows" in wf_base_fn else "sh"}
                 if "with" not in step:
@@ -161,12 +167,13 @@ def fix_all_workflows(ECMAS_github_folder: str, workflows: Dict[str, BuildOpts])
             yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
 
 
-def fix_all_actions(ECMAS_github_folder: str, actions: List[str]):
+def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
     """
     This can be simplified once:
     https://github.com/actions/runner/pull/1767
     is completed
     """
+    actions_that_require_shell_set = set()
     for action_base_fn in actions:
         full_action_fn = os.path.join(ECMAS_github_folder, action_base_fn)
         data = yaml.safe_load(open(full_action_fn))
@@ -179,6 +186,7 @@ def fix_all_actions(ECMAS_github_folder: str, actions: List[str]):
                     cp_step["if"] = f"${{{{ inputs.shell }}}} == '{shell}'"
                     new_steps.append(cp_step)
                 data["inputs"]["shell"] = {"description": "the shell to run this under", "default": "sh"}
+                actions_that_require_shell_set.add(action_base_fn)
             else:
                 new_steps.append(step)
             # new_steps.append(step)
@@ -192,6 +200,7 @@ def fix_all_actions(ECMAS_github_folder: str, actions: List[str]):
         data["runs"]["steps"] = new_steps
         with open(full_action_fn, "w") as fh:
             yaml.dump(data, fh, sort_keys=False, allow_unicode=True)
+    return list(sorted([x.split("/")[1] for x in actions_that_require_shell_set]))
 
 
 def main():
@@ -207,6 +216,13 @@ def main():
         )
 
     basic_flags = " "
+    actions = [
+        "actions/godot-build/action.yml",
+        "actions/godot-cache/action.yml",
+        "actions/godot-deps/action.yml",
+        "actions/upload-artifact/action.yml",
+    ]
+    wf_actions_that_require_shell = fix_all_actions(args.ECMAS_github_folder, actions)
     workflows = {
         "android_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "ios_builds.yml": BuildOpts(basic_flags, args.godot_version),
@@ -216,16 +232,8 @@ def main():
         "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "windows_builds.yml": BuildOpts(f"{basic_flags} use_mingw=yes", args.godot_version),
     }
-    fix_all_workflows(args.ECMAS_github_folder, workflows)
+    fix_all_workflows(args.ECMAS_github_folder, workflows, wf_actions_that_require_shell)
     subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
-
-    actions = [
-        "actions/godot-build/action.yml",
-        "actions/godot-cache/action.yml",
-        "actions/godot-deps/action.yml",
-        "actions/upload-artifact/action.yml",
-    ]
-    fix_all_actions(args.ECMAS_github_folder, actions)
 
 
 if __name__ == "__main__":
