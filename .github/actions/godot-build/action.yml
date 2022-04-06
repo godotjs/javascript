@@ -31,7 +31,6 @@ runs:
           SCONS_CACHE: ${{ inputs.scons-cache }}
           SCONS_CACHE_LIMIT: ${{ inputs.scons-cache-limit }}
       run: |
-        grep -r "ENABLE_VIRTUAL_TERMINAL_PROCESSING" /
         env
         g++ --version
         echo "Building with flags:" ${{ env.SCONSFLAGS }}
