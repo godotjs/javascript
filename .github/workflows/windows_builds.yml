@@ -31,9 +31,7 @@ jobs:
       with:
         msystem: MINGW64
         update: true
-        install: >-
-          base-devel
-          git
+        install: mingw-w64-x86_64-cc
     - name: Checkout Godot
       uses: actions/checkout@v2
       with:
@@ -48,10 +46,6 @@ jobs:
       with:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
-    - shell: msys2 {0}
-      run: |
-        g++ --version
-        gcc --version
     - name: Setup python and scons
       uses: ./.github/actions/godot-deps
     - name: Compilation
@@ -62,9 +56,6 @@ jobs:
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
         scons-cache-limit: 3072
-    - name: Setup tmate session
-      if: ${{ failure() }}
-      uses: mxschmitt/action-tmate@v3
     - name: Upload artifact
       uses: ./.github/actions/upload-artifact
       with:
