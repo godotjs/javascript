@@ -217,8 +217,10 @@ def add_publish_workflow(out_fn: str, wf_name_list: List[str]):
    owner: context.repo.owner,
    repo: context.repo.repo,
 });
+console.log("my sha " + "${{ github.sha }}" + " out of " + all_workflows.data.workflow_runs.length );
 for (const workflow of all_workflows.data.workflow_runs) {
     if (workflow.HeadSha == "${{ github.sha }}") {
+        console.log("found one " + workflow.ID);
         var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                owner: context.repo.owner,
                repo: context.repo.repo,
@@ -226,6 +228,7 @@ for (const workflow of all_workflows.data.workflow_runs) {
                per_page: 100,
         });
         for (const artifact of artifacts.data.artifacts) {
+            console.log("found one artifact " + artifact.id + " " + artifact.name);
             var download = await github.rest.actions.downloadArtifact({
                owner: context.repo.owner,
                repo: context.repo.repo,
