@@ -257,7 +257,7 @@ def main():
     wf_names = fix_all_workflows(args.ECMAS_github_folder, workflows, wf_actions_that_require_shell)
     subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
 
-    out_publish_fn = os.path.join(args.ECMAS_github_folder, "workflows", "tag.yml")
+    out_publish_fn = os.path.join(args.ECMAS_github_folder, "workflows", "on_tag.yml")
     add_publish_workflow(out_publish_fn, wf_names)
 
 
