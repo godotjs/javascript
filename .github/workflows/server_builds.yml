@@ -47,14 +47,14 @@ jobs:
             libxinerama-dev libgl1-mesa-dev libglu-dev libasound2-dev libpulse-dev \
             libdbus-1-dev libudev-dev libxi-dev libxrandr-dev yasm xvfb wget unzip
     - name: Setup Godot build cache
-      uses: ./.github/actions/godot-cache
+      uses: ./modules/ECMSAScript/.github/actions/godot-cache
       with:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./.github/actions/godot-deps
+      uses: ./modules/ECMSAScript/.github/actions/godot-deps
     - name: Compilation
-      uses: ./.github/actions/godot-build
+      uses: ./modules/ECMSAScript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
         platform: server

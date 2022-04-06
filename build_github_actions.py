@@ -138,6 +138,7 @@ def main():
                             matrix_step["sconsflags"].replace(get_rid_of, "").replace(", )", ")")
                         )
 
+        base_github_string = "./.github/"
         for step in data["jobs"][only_template_name]["steps"]:
             if "uses" in step and "checkout" in step["uses"]:
                 checkout_godot = {
@@ -152,6 +153,9 @@ def main():
                 }
                 new_steps.append(checkout_godot)
                 new_steps.append(checkout_ecmas)
+            elif "uses" in step and base_github_string in step["uses"]:
+                step["uses"] = step["uses"].replace(base_github_string, "./modules/ECMSAScript/.github/")
+                new_steps.append(step)
             else:
                 new_steps.append(step)
         data["jobs"][only_template_name]["steps"] = new_steps

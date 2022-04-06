@@ -23,16 +23,16 @@ jobs:
       with:
         path: ${{github.workspace}}/modules/ECMAScript/
     - name: Setup Godot build cache
-      uses: ./.github/actions/godot-cache
+      uses: ./modules/ECMSAScript/.github/actions/godot-cache
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./.github/actions/godot-deps
+      uses: ./modules/ECMSAScript/.github/actions/godot-deps
     - name: Compilation (armv7)
-      uses: ./.github/actions/godot-build
+      uses: ./modules/ECMSAScript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }}
         platform: iphone
         target: release
         tools: false
     - name: Upload artifact
-      uses: ./.github/actions/upload-artifact
+      uses: ./modules/ECMSAScript/.github/actions/upload-artifact
