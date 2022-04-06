@@ -11,7 +11,7 @@ jobs:
     steps:
     - name: download artifacts
       uses: actions/github-script@v3.1.0
-      with: |-
+      with: |
         var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
            owner: context.repo.owner,
            repo: context.repo.repo,
