@@ -226,7 +226,7 @@ for (const workflow of all_workflows) {
                per_page: 100,
         });
         for (const artifact of artifacts) {
-            var download = await github.actions.downloadArtifact({
+            var download = await github.rest.actions.downloadArtifact({
                owner: context.repo.owner,
                repo: context.repo.repo,
                artifact_id: artifact.id,
