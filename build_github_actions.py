@@ -115,7 +115,7 @@ def main():
                 },
                 {
                     "name": "update mingw2",
-                    "run": "pacman -S mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc mingw-w64-i686-python3-pip mingw-w64-i686-gcc make",
+                    "run": "pacman -Syu --needed --noconfirm mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc mingw-w64-i686-python3-pip mingw-w64-i686-gcc make",
                 },
                 {
                     "name": "update scons",
