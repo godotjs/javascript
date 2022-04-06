@@ -240,7 +240,7 @@ for (const workflow of all_workflows) {
 
     data = {
         "name": "🚢 Publish release",
-        "on": {"workflow_run": {"workflows": [x for x in wf_name_list if "Windows" in x], "types": ["completed"]}},
+        "on": {"workflow_run": {"workflows": [x for x in wf_name_list if "Java" in x], "types": ["completed"]}},
         "jobs": {
             "collect-template": {
                 "runs-on": "ubuntu-latest",

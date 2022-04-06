@@ -2,7 +2,7 @@ name: 🚢 Publish release
 'on':
   workflow_run:
     workflows:
-    - 🏁 Windows Builds
+    - 🌐 JavaScript Builds
     types:
     - completed
 jobs:
