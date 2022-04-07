@@ -19,7 +19,7 @@ jobs:
           });
           console.log("my sha " + "${{ github.sha }}" + " out of " + all_workflows.data.workflow_runs.length );
           for (const workflow of all_workflows.data.workflow_runs) {
-              console.log(" checking: " + workflow.HeadSha + " I'd: " + workflow.ID);
+              console.log(" checking: " + workflow + " I'd: " + workflow.ID);
               if (workflow.HeadSha == "${{ github.sha }}") {
                   console.log("found one " + workflow.ID);
                   var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
