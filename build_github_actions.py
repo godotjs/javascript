@@ -254,10 +254,10 @@ while (total_slept < 3600000 && seen_completed_wfs.length < expected_to_see) {
                 }
             }
         }
-    }
-    if (seen_completed_wfs.length == expected_to_see) {
-        await new Promise(r => setTimeout(r, 300000));
-        total_slept = total_slept + 300000;
+        if (seen_completed_wfs.length == expected_to_see) {
+            await new Promise(r => setTimeout(r, 300000));
+            total_slept = total_slept + 300000;
+        }
     }
 }
 console.log(downloaded_files);
