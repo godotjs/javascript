@@ -229,7 +229,7 @@ while (total_slept < 3600000 && expected_to_see != 0) {
         if (workflow.head_sha == "${{ github.sha }}") {
             if (workflow.status == "completed") {
                 expected_to_see -= 1;
-                if (workflow.conclusion == ""success"") {
+                if (workflow.conclusion == "success") {
                     var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                            owner: context.repo.owner,
                            repo: context.repo.repo,
