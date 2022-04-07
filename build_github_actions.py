@@ -227,6 +227,7 @@ while (total_slept < 3600000 && expected_to_see != 0) {
     console.log("expecting " + expected_to_see + " more files but at " + downloaded_files.length + " with " + downloaded_files);
     for (const workflow of all_workflows.data.workflow_runs) {
         if (workflow.head_sha == "${{ github.sha }}") {
+            console.log("found " + workflow.name + " " + workflow.status);
             if (workflow.status == "completed") {
                 expected_to_see -= 1;
                 if (workflow.conclusion == "success") {
