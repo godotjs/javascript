@@ -238,6 +238,7 @@ while (total_slept < 3600000 && expected_to_see != 0) {
                            per_page: 100,
                     });
                     for (const artifact of artifacts.data.artifacts) {
+                        if (downloaded_files.include(artifact.name)) {continue;}
                         var download = await github.rest.actions.downloadArtifact({
                            owner: context.repo.owner,
                            repo: context.repo.repo,
