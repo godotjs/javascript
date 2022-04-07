@@ -213,33 +213,53 @@ def add_publish_workflow(out_fn: str, wf_name_list: List[str]):
     #   return artifact.name == "pr"
     # })[0];
 
-    script_text = """var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
+    script_text = (
+        """var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
    owner: context.repo.owner,
    repo: context.repo.repo,
 });
-console.log("my sha " + "${{ github.sha }}" + " out of " + all_workflows.data.workflow_runs.length );
-for (const workflow of all_workflows.data.workflow_runs) {
-    if (workflow.HeadSha == "${{ github.sha }}") {
-        console.log("found one " + workflow.ID);
-        var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               run_id: workflow.ID,
-               per_page: 100,
-        });
-        for (const artifact of artifacts.data.artifacts) {
-            console.log("found one artifact " + artifact.id + " " + artifact.name);
-            var download = await github.rest.actions.downloadArtifact({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               artifact_id: artifact.id,
-               archive_format: 'zip',
-            });
-            var fs = require('fs');
-            fs.writeFileSync('${{github.workspace}}/' + artifact.name + '.zip', Buffer.from(download.data));
+var total_slept = 0;
+var downloaded_files = [];
+var expected_to_see = """
+        + str(len(wf_name_list))
+        + """;
+while (total_slept < 3600000 && expected_to_see != 0) {
+    console.log("expecting " + expected_to_see + " more files but at " + downloaded_files.length + " with " + downloaded_files);
+    for (const workflow of all_workflows.data.workflow_runs) {
+        if (workflow.head_sha == "${{ github.sha }}") {
+            if (workflow.status == "completed") {
+                expected_to_see -= 1;
+                if (workflow.conclusion == ""success"") {
+                    var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+                           owner: context.repo.owner,
+                           repo: context.repo.repo,
+                           run_id: workflow.id,
+                           per_page: 100,
+                    });
+                    for (const artifact of artifacts.data.artifacts) {
+                        var download = await github.rest.actions.downloadArtifact({
+                           owner: context.repo.owner,
+                           repo: context.repo.repo,
+                           artifact_id: artifact.id,
+                           archive_format: 'zip',
+                        });
+                        var fs = require('fs');
+                        var fn = '${{github.workspace}}/' + artifact.name + '.zip';
+                        fs.writeFileSync(fn, Buffer.from(download.data));
+                        downloaded_files.push(fn);
+                    }
+                }
+            }
         }
     }
-}"""
+    if (expected_to_see != 0) {
+        await new Promise(r => setTimeout(r, 300000));
+        total_slept = total_slept + 300000;
+    }
+}
+console.log(downloaded_files);
+"""
+    )
 
     data = {
         "name": "🚢 Publish release",
@@ -254,7 +274,7 @@ for (const workflow of all_workflows.data.workflow_runs) {
                         "uses": "actions/github-script@v6",
                         "with": {"script": script_text},
                     },
-                    {"name": "show dir", "run": "ls -R && echo bob && ls */"},
+                    {"name": "show dir", "run": "ls -R && echo bob && unzip '*.zip' && ls -R"},
                 ],
             }
         },
