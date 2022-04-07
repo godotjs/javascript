@@ -254,8 +254,8 @@ while (total_slept < 3600000 && expected_to_see != 0) {
         }
     }
     if (expected_to_see != 0) {
-        await new Promise(r => setTimeout(r, 300000));
-        total_slept = total_slept + 300000;
+        await new Promise(r => setTimeout(r, 30000));
+        total_slept = total_slept + 30000;
     }
 }
 console.log(downloaded_files);
