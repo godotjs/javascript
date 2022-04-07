@@ -224,7 +224,7 @@ var seen_completed_wfs = [];
 var expected_to_see = """
         + str(len(wf_name_list))
         + """;
-while (total_slept < 3600000 && seen_completed_wfs.length == expected_to_see) {
+while (total_slept < 3600000 && seen_completed_wfs.length < expected_to_see) {
     console.log("expecting " + expected_to_see + " more files but at " + downloaded_files.length + " with " + downloaded_files);
     for (const workflow of all_workflows.data.workflow_runs) {
         if (workflow.head_sha == "${{ github.sha }}") {
