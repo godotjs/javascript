@@ -220,16 +220,17 @@ def add_publish_workflow(out_fn: str, wf_name_list: List[str]):
 });
 var total_slept = 0;
 var downloaded_files = [];
+var seen_completed_wfs = [];
 var expected_to_see = """
         + str(len(wf_name_list))
         + """;
-while (total_slept < 3600000 && expected_to_see != 0) {
+while (total_slept < 3600000 && seen_completed_wfs.length == expected_to_see) {
     console.log("expecting " + expected_to_see + " more files but at " + downloaded_files.length + " with " + downloaded_files);
     for (const workflow of all_workflows.data.workflow_runs) {
         if (workflow.head_sha == "${{ github.sha }}") {
             console.log("found " + workflow.name + " " + workflow.status);
             if (workflow.status == "completed") {
-                expected_to_see -= 1;
+                if (seen_completed_wfs.includes(workflow.name)) {continue;}
                 if (workflow.conclusion == "success") {
                     var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                            owner: context.repo.owner,
@@ -238,7 +239,7 @@ while (total_slept < 3600000 && expected_to_see != 0) {
                            per_page: 100,
                     });
                     for (const artifact of artifacts.data.artifacts) {
-                        if (downloaded_files.include(artifact.name)) {continue;}
+                        if (downloaded_files.includes(artifact.name)) {continue;}
                         var download = await github.rest.actions.downloadArtifact({
                            owner: context.repo.owner,
                            repo: context.repo.repo,
@@ -254,7 +255,7 @@ while (total_slept < 3600000 && expected_to_see != 0) {
             }
         }
     }
-    if (expected_to_see != 0) {
+    if (seen_completed_wfs.length == expected_to_see) {
         await new Promise(r => setTimeout(r, 30000));
         total_slept = total_slept + 30000;
     }
