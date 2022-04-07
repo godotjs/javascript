@@ -239,7 +239,8 @@ while (total_slept < 3600000 && seen_completed_wfs.length < expected_to_see) {
                            per_page: 100,
                     });
                     for (const artifact of artifacts.data.artifacts) {
-                        if (downloaded_files.includes(artifact.name)) {continue;}
+                        var fn = '${{github.workspace}}/' + artifact.name + '.zip';
+                        if (downloaded_files.includes(fn)) {continue;}
                         var download = await github.rest.actions.downloadArtifact({
                            owner: context.repo.owner,
                            repo: context.repo.repo,
@@ -247,7 +248,6 @@ while (total_slept < 3600000 && seen_completed_wfs.length < expected_to_see) {
                            archive_format: 'zip',
                         });
                         var fs = require('fs');
-                        var fn = '${{github.workspace}}/' + artifact.name + '.zip';
                         fs.writeFileSync(fn, Buffer.from(download.data));
                         downloaded_files.push(fn);
                     }
