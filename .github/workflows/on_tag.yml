@@ -25,7 +25,7 @@ jobs:
                   var artifacts = await github.rest.actions.listWorkflowRunArtifacts({
                          owner: context.repo.owner,
                          repo: context.repo.repo,
-                         run_id: workflow.ID,
+                         run_id: workflow.id,
                          per_page: 100,
                   });
                   for (const artifact of artifacts.data.artifacts) {
