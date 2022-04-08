@@ -214,17 +214,17 @@ def add_publish_workflow(out_fn: str, wf_name_list: List[str]):
     # })[0];
 
     script_text = (
-        """var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
-	owner: context.repo.owner,
-	repo: context.repo.repo,
-});
-var total_slept = 0;
+        """var total_slept = 0;
 var downloaded_files = [];
 var seen_completed_wfs = [];
 var expected_to_see = """
         + str(len(wf_name_list))
         + """;
 while (total_slept < 3600000 && seen_completed_wfs.length < expected_to_see) {
+	var all_workflows = await github.rest.actions.listWorkflowRunsForRepo({
+		owner: context.repo.owner,
+		repo: context.repo.repo,
+	});
 	console.log("expecting " + expected_to_see + " more files but at " + downloaded_files.length + " with " + downloaded_files);
 	for (const workflow of all_workflows.data.workflow_runs) {
 		if (workflow.head_sha == "${{ github.sha }}") {
