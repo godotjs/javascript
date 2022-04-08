@@ -268,4 +268,7 @@ You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScrip
 ** If you are updating this repo's compatibility, you should run that script (a brief description is at the top of the script) and it will re-create the actions `.yml` files for you.
 * The script also build the `on_tag.yml` script which automates the github release publishing.
 ** The `on_tag.yml` functionality tries to sleep until all jobs with the same `sha` are completed.  It should be fine to run whenever, but depending on how github actions culls long running jobs you might want to make sure that all/(most of) the builds look good before tagging.
+* Linux ubsan asan build woes:
+** The godot repo has ubsan and asan builds that we can't build from.  Currently we skip them (get removed via the `build_github_actions.py` script).
+** They should definitely be fixed & enabled at some point, **so please submit a PR if you have any ideas of how to do that!**
 
