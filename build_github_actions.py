@@ -268,7 +268,10 @@ console.log(downloaded_files);"""
 
     data = {
         "name": "🚢 Publish release",
-        "on": {"workflow_run": {"workflows": [x for x in wf_name_list if "Java" in x], "types": ["completed"]}},
+        # You should tag as late as possible, don't want to sleep too long and get push job killed
+        "on": {
+            "push": {"tags": ["*"]},
+        },
         "jobs": {
             "collect-template": {
                 "runs-on": "ubuntu-latest",
