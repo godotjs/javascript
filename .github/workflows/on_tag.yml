@@ -11,14 +11,16 @@ jobs:
     steps:
     - name: download artifacts
       uses: actions/github-script@v6
+      if: startsWith(github.ref, 'refs/tags')
       with:
         script: "var total_slept = 0;\nvar downloaded_files = [];\nvar seen_completed_wfs\
           \ = [];\nvar expected_to_see = 7;\nwhile (total_slept < 3600000 && seen_completed_wfs.length\
           \ < expected_to_see) {\n\tvar all_workflows = await github.rest.actions.listWorkflowRunsForRepo({\n\
           \t\towner: context.repo.owner,\n\t\trepo: context.repo.repo,\n\t});\n\t\
-          console.log(\"expecting \" + expected_to_see + \" more files but at \" +\
-          \ downloaded_files.length + \" with \" + downloaded_files);\n\tfor (const\
-          \ workflow of all_workflows.data.workflow_runs) {\n\t\tif (workflow.head_sha\
+          console.log(\"Expecting to download from \" + expected_to_see + \" workflows,\
+          \ currently at \" + seen_completed_wfs.length \". Have already downloaded\
+          \ \" + downloaded_files.length + \" files as \" + downloaded_files);\n\t\
+          for (const workflow of all_workflows.data.workflow_runs) {\n\t\tif (workflow.head_sha\
           \ == \"${{ github.sha }}\") {\n\t\t\tconsole.log(\"found \" + workflow.name\
           \ + \" \" + workflow.status);\n\t\t\tif (workflow.status == \"completed\"\
           ) {\n\t\t\t\tif (seen_completed_wfs.includes(workflow.name)) {continue;}\n\
@@ -39,4 +41,13 @@ jobs:
           \ setTimeout(r, 300000));\n\t\ttotal_slept = total_slept + 300000;\n\t\t\
           console.log(\"done sleeping \" + 300000);\n\t}\n}\nconsole.log(downloaded_files);"
     - name: show dir
-      run: ls -R && echo bob && unzip '*.zip' && ls -R
+      run: ls -R
+    - name: Upload binaries to release
+      uses: svenstaro/upload-release-action@v2
+      if: startsWith(github.ref, 'refs/tags')
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: '*.zip'
+        tag: ${{ github.ref }}
+        overwrite: 'true'
+        file_glob: 'true'

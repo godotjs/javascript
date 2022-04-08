@@ -225,7 +225,7 @@ while (total_slept < 3600000 && seen_completed_wfs.length < expected_to_see) {
 		owner: context.repo.owner,
 		repo: context.repo.repo,
 	});
-	console.log("expecting " + expected_to_see + " more files but at " + downloaded_files.length + " with " + downloaded_files);
+	console.log("Expecting to download from " + expected_to_see + " workflows, currently at " + seen_completed_wfs.length ". Have already downloaded " + downloaded_files.length + " files as " + downloaded_files);
 	for (const workflow of all_workflows.data.workflow_runs) {
 		if (workflow.head_sha == "${{ github.sha }}") {
 			console.log("found " + workflow.name + " " + workflow.status);
@@ -277,9 +277,22 @@ console.log(downloaded_files);"""
                     {
                         "name": "download artifacts",
                         "uses": "actions/github-script@v6",
+                        "if": "startsWith(github.ref, 'refs/tags')",
                         "with": {"script": script_text},
                     },
-                    {"name": "show dir", "run": "ls -R && echo bob && unzip '*.zip' && ls -R"},
+                    {"name": "show dir", "run": "ls -R"},
+                    {
+                        "name": "Upload binaries to release",
+                        "uses": "svenstaro/upload-release-action@v2",
+                        "if": "startsWith(github.ref, 'refs/tags')",
+                        "with": {
+                            "repo_token": "${{ secrets.GITHUB_TOKEN }}",
+                            "file": "*.zip",
+                            "tag": "${{ github.ref }}",
+                            "overwrite": "true",
+                            "file_glob": "true",
+                        },
+                    },
                 ],
             }
         },
