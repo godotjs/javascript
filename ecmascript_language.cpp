@@ -149,6 +149,25 @@ void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
 	}
 }
 
+bool ECMAScriptLanguage::is_control_flow_keyword(String p_keyword) const {
+	return p_keyword == "if" ||
+		   p_keyword == "else" ||
+		   p_keyword == "return" ||
+		   p_keyword == "do" ||
+		   p_keyword == "while" ||
+		   p_keyword == "for" ||
+		   p_keyword == "break" ||
+		   p_keyword == "continue" ||
+		   p_keyword == "switch" ||
+		   p_keyword == "case" ||
+		   p_keyword == "default" ||
+		   p_keyword == "throw" ||
+		   p_keyword == "try" ||
+		   p_keyword == "catch" ||
+		   p_keyword == "finally";
+}
+
+
 void ECMAScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const {
 	p_delimiters->push_back("//"); // single-line comment
 	p_delimiters->push_back("/* */"); // delimited comment
