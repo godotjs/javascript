@@ -15,8 +15,41 @@ ECMAScript::ECMAScript() {
 ECMAScript::~ECMAScript() {
 }
 
-bool ECMAScript::can_instance() const {
+Variant ECMAScript::_new(const Variant **p_args, int p_argcount, Variant::CallError &r_error) {
+	ECMAScriptBinder *binder = ECMAScriptLanguage::get_thread_binder(Thread::get_caller_id());
+	const ECMAClassInfo *cls = NULL;
+	ECMAscriptScriptError ecma_err;
+	if (!bytecode.empty()) {
+		cls = binder->parse_ecma_class(bytecode, script_path, false, &ecma_err);
+	} else {
+		cls = binder->parse_ecma_class(code, script_path, false, &ecma_err);
+	}
+	ERR_FAIL_NULL_V_MSG(cls, NULL, vformat("Cannot parse class from %s", get_script_path()));
 
+	Object *object = ClassDB::instance(cls->native_class->name);
+	ERR_FAIL_COND_V_MSG(!object, Variant(), "Class type: '" + String(class_name) + "' is not instantiable.");
+
+	ECMAScriptGCHandler ecma_instance = binder->create_ecma_instance_for_godot_object_args(cls, object, p_args, p_argcount);
+	ERR_FAIL_NULL_V(ecma_instance.ecma_object, NULL);
+
+	ECMAScriptInstance *instance = memnew(ECMAScriptInstance);
+	instance->script = Ref<ECMAScript>(this);
+	instance->owner = object;
+	instance->binder = binder;
+	instance->ecma_object = ecma_instance;
+	instance->ecma_class = cls;
+	instance->owner->set_script_instance(instance);
+	instances.insert(object);
+
+	Reference *ref = Object::cast_to<Reference>(object);
+	if (ref) {
+		return REF(ref);
+	} else {
+		return object;
+	}
+}
+
+bool ECMAScript::can_instance() const {
 #ifdef TOOLS_ENABLED
 	return is_valid() && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -238,6 +271,7 @@ bool ECMAScript::is_valid() const {
 }
 
 void ECMAScript::_bind_methods() {
+	ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "new", &ECMAScript::_new);
 }
 
 RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {

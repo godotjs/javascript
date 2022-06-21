@@ -2073,6 +2073,38 @@ void QuickJSBinder::get_own_property_names(JSContext *ctx, JSValue p_object, Set
 	js_free_rt(JS_GetRuntime(ctx), props);
 }
 
+ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object_args(const ECMAClassInfo *p_class, Object *p_object, const Variant **p_args, int p_argcount) {
+
+	ERR_FAIL_NULL_V(p_object, ECMAScriptGCHandler());
+	ERR_FAIL_NULL_V(p_class, ECMAScriptGCHandler());
+
+	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_GD(ctx, p_object);
+	ERR_FAIL_NULL_V(bind, ECMAScriptGCHandler());
+
+	JSValue constructor = JS_MKPTR(JS_TAG_OBJECT, p_class->constructor.ecma_object);
+	JSValue object = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
+
+
+	JSValue *argv = NULL;
+	argv = memnew_arr(JSValue, p_argcount);
+	for (int i = 0; i < p_argcount; ++i) {
+		argv[i] = variant_to_var(ctx, *p_args[i]);
+	}
+
+
+	JS_CallConstructor2(ctx, constructor, object, p_argcount, argv);
+	if (JS_SetPrototype(ctx, object, JS_MKPTR(JS_TAG_OBJECT, p_class->prototype.ecma_object)) < 0) {
+		JSValue e = JS_GetException(ctx);
+		ECMAscriptScriptError error;
+		dump_exception(ctx, e, &error);
+		JS_FreeValue(ctx, e);
+		bind->ecma_object = NULL;
+		ERR_FAIL_V_MSG(*bind, vformat("Cannot create instance from ECMAScript class '%s'\n%s", p_class->class_name, error_to_string(error)));
+	}
+	//initialize_properties(ctx, p_class, object);
+	return *bind;
+}
+
 ECMAScriptGCHandler QuickJSBinder::create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object) {
 
 	ERR_FAIL_NULL_V(p_object, ECMAScriptGCHandler());

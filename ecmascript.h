@@ -41,6 +41,7 @@ protected:
 	static void _bind_methods();
 
 public:
+	Variant _new(const Variant **p_args, int p_argcount, Variant::CallError &r_error);
 	virtual bool can_instance() const;
 
 	virtual bool inherits_script(const Ref<Script> &p_script) const { return false; }

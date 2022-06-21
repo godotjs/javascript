@@ -87,6 +87,7 @@ public:
 	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) = 0;
 	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) = 0;
 
+	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object_args(const ECMAClassInfo *p_class, Object *p_object, const Variant **p_args, int p_argcount) = 0;
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object) = 0;
 	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
