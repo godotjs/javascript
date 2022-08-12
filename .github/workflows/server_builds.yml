@@ -3,7 +3,7 @@ name: ☁ Server Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: 3.4.4-stable
+  GODOT_BASE_BRANCH: 3.5-stable
   SCONSFLAGS: '  verbose=yes   debug_symbols=no module_mono_enabled=yes mono_static=yes
     mono_glue=no'
 concurrency:
