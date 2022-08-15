@@ -1,6 +1,7 @@
 #include "editor_tools.h"
 #include "../ecmascript_language.h"
 #include "core/math/expression.h"
+#include "core/os/keyboard.h"
 #include "editor/filesystem_dock.h"
 
 #define TS_IGNORE "//@ts-ignore\n"
@@ -156,6 +157,7 @@ static String format_doc_text(const String &p_bbcode, const String &p_indent = "
 			line = line.replace("[constant ", "`");
 			line = line.replace("[", "`");
 			line = line.replace("]", "`");
+			line = line.replace("*/", "* /"); // To solve issues with accidental multiline comment ends
 		}
 
 		if (!in_code_block && i < lines.size() - 1) {
@@ -606,6 +608,17 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 						dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
 						dict["name"] = format_property_name(enums[i]->name);
 						dict["value"] = enums[i]->value;
+
+						// Exceptions
+
+						/**
+						 * KEY_MASK_CMD docs has value listed as "platform-dependent",
+						 * so we have to retreive the actual value manually
+						 */
+						if (dict["name"] == "KEY_MASK_CMD") {
+							dict["value"] = KEY_MASK_CMD;
+						}
+
 						enum_str += apply_pattern(const_str, dict);
 					}
 					enum_str += "\t}\n";
