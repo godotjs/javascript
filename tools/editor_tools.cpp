@@ -1,6 +1,7 @@
 #include "editor_tools.h"
 #include "../ecmascript_language.h"
 #include "core/math/expression.h"
+#include "core/os/keyboard.h"
 #include "editor/filesystem_dock.h"
 
 #define TS_IGNORE "//@ts-ignore\n"
@@ -612,14 +613,10 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 
 						/**
 						 * KEY_MASK_CMD docs has value listed as "platform-dependent",
-						 * so the actual values have to be manually changed depending on the platform.
+						 * so we have to retreive the actual value manually
 						 */
 						if (dict["name"] == "KEY_MASK_CMD") {
-#ifdef APPLE_STYLE_KEYS
-							dict["value"] = (1 << 27);
-#else
-							dict["value"] = (1 << 28);
-#endif
+							dict["value"] = KEY_MASK_CMD;
 						}
 
 						enum_str += apply_pattern(const_str, dict);
