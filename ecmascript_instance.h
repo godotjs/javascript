@@ -3,7 +3,8 @@
 
 #include "ecmascript.h"
 #include "ecmascript_binder.h"
-#include <core/script_language.h>
+#include "core/object/script_language.h"
+#include "core/variant/callable.h"
 
 class ECMAScriptInstance : public ScriptInstance {
 
@@ -28,7 +29,7 @@ public:
 	virtual void get_method_list(List<MethodInfo> *p_list) const;
 	virtual bool has_method(const StringName &p_method) const;
 
-	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
+	virtual Variant call(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 
 	/* TODO */ virtual void notification(int p_notification) {}
 
@@ -43,9 +44,6 @@ public:
 
 	/* TODO */ virtual void property_set_fallback(const StringName &p_name, const Variant &p_value, bool *r_valid) {}
 	/* TODO */ virtual Variant property_get_fallback(const StringName &p_name, bool *r_valid) { return Variant(); }
-
-	/* TODO */ virtual MultiplayerAPI::RPCMode get_rpc_mode(const StringName &p_method) const { return MultiplayerAPI::RPC_MODE_DISABLED; }
-	/* TODO */ virtual MultiplayerAPI::RPCMode get_rset_mode(const StringName &p_variable) const { return MultiplayerAPI::RPC_MODE_DISABLED; }
 
 	virtual ScriptLanguage *get_language();
 

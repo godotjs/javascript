@@ -7,10 +7,10 @@
 #ifdef QUICKJS_WITH_DEBUGGER
 #include "quickjs_debugger.h"
 #endif
-
 #include "core/os/memory.h"
 #include "core/os/thread.h"
-#include "core/resource.h"
+#include "core/io/resource.h"
+#include "core/variant/callable.h"
 #include "quickjs_builtin_binder.h"
 #define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
 #define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
@@ -22,7 +22,6 @@
 #define ENDL "\r\n"
 
 class QuickJSWorker;
-
 class QuickJSBinder : public ECMAScriptBinder {
 
 	friend class QuickJSBuiltinBinder;
@@ -65,14 +64,14 @@ public:
 		JSModuleDef *module = NULL;
 		uint32_t hash = 0;
 		JSValue res_value;
-		RES res;
+		Ref<Resource> res;
 	};
 
 	struct CommonJSModule {
 		int flags;
 		JSValue exports;
 		String md5;
-		RES res;
+		Ref<Resource> res;
 	};
 
 	enum {
@@ -211,11 +210,11 @@ protected:
 	static JSValue godot_builtin_function(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic);
 
 	static int get_js_array_length(JSContext *ctx, JSValue p_val);
-	static void get_own_property_names(JSContext *ctx, JSValue p_object, Set<String> *r_list);
+	static void get_own_property_names(JSContext *ctx, JSValue p_object, HashSet<String> *r_list);
 
 	static JSAtom get_atom(JSContext *ctx, const StringName &p_key);
 	static HashMap<uint64_t, Variant> transfer_deopot;
-	static Map<String, const char *> class_remap;
+	static HashMap<String, const char *> class_remap;
 #ifdef TOOLS_ENABLED
 	Dictionary modified_api;
 #endif
@@ -319,8 +318,8 @@ public:
 	virtual void free_object_binding_data(void *p_gc_handle);
 	static Error bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, Object *p_object);
 
-	virtual void godot_refcount_incremented(Reference *p_object);
-	virtual bool godot_refcount_decremented(Reference *p_object);
+	virtual void godot_refcount_incremented(RefCounted *p_object);
+	virtual bool godot_refcount_decremented(RefCounted *p_object);
 
 	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret);
 	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);
@@ -333,7 +332,7 @@ public:
 	const ECMAClassInfo *parse_ecma_class_from_module(ModuleCache *p_module, const String &p_path, ECMAscriptScriptError *r_error);
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object);
-	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error);
+	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);

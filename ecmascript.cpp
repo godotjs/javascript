@@ -1,5 +1,5 @@
 #include "ecmascript.h"
-#include "core/engine.h"
+#include "core/config/engine.h"
 #include "core/io/file_access_encrypted.h"
 #include "ecmascript_instance.h"
 #include "ecmascript_language.h"
@@ -15,8 +15,7 @@ ECMAScript::ECMAScript() {
 ECMAScript::~ECMAScript() {
 }
 
-bool ECMAScript::can_instance() const {
-
+bool ECMAScript::can_instantiate() const {
 #ifdef TOOLS_ENABLED
 	return is_valid() && (is_tool() || ScriptServer::is_scripting_enabled());
 #else
@@ -37,7 +36,7 @@ ScriptInstance *ECMAScript::instance_create(Object *p_this) {
 	ERR_FAIL_NULL_V_MSG(binder, NULL, "Cannot create instance from this thread");
 	const ECMAClassInfo *cls = NULL;
 	ECMAscriptScriptError ecma_err;
-	if (!bytecode.empty()) {
+	if (!bytecode.is_empty()) {
 		cls = binder->parse_ecma_class(bytecode, script_path, false, &ecma_err);
 	} else {
 		cls = binder->parse_ecma_class(code, script_path, false, &ecma_err);
@@ -88,7 +87,7 @@ Error ECMAScript::reload(bool p_keep_state) {
 	ECMAScriptBinder *binder = ECMAScriptLanguage::get_thread_binder(Thread::get_caller_id());
 	ERR_FAIL_COND_V_MSG(binder == NULL, ERR_INVALID_DATA, "Cannot load script in this thread");
 	ECMAscriptScriptError ecma_err;
-	if (!bytecode.empty()) {
+	if (!bytecode.is_empty()) {
 		ecma_class = binder->parse_ecma_class(bytecode, script_path, true, &ecma_err);
 	} else {
 		ecma_class = binder->parse_ecma_class(code, script_path, true, &ecma_err);
@@ -102,19 +101,15 @@ Error ECMAScript::reload(bool p_keep_state) {
 		set_last_modified_time(FileAccess::get_modified_time(script_path));
 		p_keep_state = true;
 
-		for (Set<Object *>::Element *E = instances.front(); E; E = E->next()) {
-			Object *owner = E->get();
-
-			Map<StringName, Variant> values;
+		for (Object *owner : instances) {
+			HashMap<StringName, Variant> values;
 			if (p_keep_state) {
-				const StringName *p = ecma_class->properties.next(NULL);
-				while (p) {
-					values.insert(*p, owner->get(*p));
-					p = ecma_class->properties.next(p);
+				for (const KeyValue<StringName, ECMAProperyInfo> &pair : ecma_class->properties) {
+					values.insert(pair.key, owner->get(pair.key));
 				}
 			}
 
-			ScriptInstance *si = E->get()->get_script_instance();
+			ScriptInstance *si = owner->get_script_instance();
 			if (si->is_placeholder()) {
 				PlaceHolderScriptInstance *psi = static_cast<PlaceHolderScriptInstance *>(si);
 				if (ecma_class->tool) {
@@ -130,10 +125,10 @@ Error ECMAScript::reload(bool p_keep_state) {
 			}
 
 			if (p_keep_state) {
-				for (Map<StringName, Variant>::Element *E = values.front(); E; E = E->next()) {
-					if (const ECMAProperyInfo *epi = ecma_class->properties.getptr(E->key())) {
-						const Variant &backup = E->value();
-						owner->set(E->key(), backup.get_type() == epi->type ? backup : epi->default_value);
+				for (const KeyValue<StringName, Variant> &pair : values) {
+					if (const ECMAProperyInfo *epi = ecma_class->properties.getptr(pair.key)) {
+						const Variant &backup = pair.value;
+						owner->set(pair.key, backup.get_type() == epi->type ? backup : epi->default_value);
 					}
 				}
 			}
@@ -175,18 +170,15 @@ bool ECMAScript::is_tool() const {
 
 void ECMAScript::get_script_method_list(List<MethodInfo> *p_list) const {
 	if (!ecma_class) return;
-	const StringName *key = ecma_class->methods.next(NULL);
-	while (key) {
-		p_list->push_back(ecma_class->methods.get(*key));
-		key = ecma_class->methods.next(key);
+	for (const KeyValue<StringName, MethodInfo> &pair : ecma_class->methods) {
+		p_list->push_back(pair.value);
 	}
 }
 
 void ECMAScript::get_script_property_list(List<PropertyInfo> *p_list) const {
 	if (!ecma_class) return;
-	for (const StringName *name = ecma_class->properties.next(NULL); name; name = ecma_class->properties.next(name)) {
-		const ECMAProperyInfo &pi = ecma_class->properties.get(*name);
-		p_list->push_back(pi);
+	for (const KeyValue<StringName, ECMAProperyInfo> &pair : ecma_class->properties) {
+		p_list->push_back(pair.value);
 	}
 }
 
@@ -208,15 +200,15 @@ void ECMAScript::update_exports() {
 	if (!ecma_class) return;
 
 	List<PropertyInfo> props;
-	Map<StringName, Variant> values;
-	for (const StringName *name = ecma_class->properties.next(NULL); name; name = ecma_class->properties.next(name)) {
-		const ECMAProperyInfo pi = ecma_class->properties.get(*name);
+	HashMap<StringName, Variant> values;
+	for (const KeyValue<StringName, ECMAProperyInfo> &pair : ecma_class->properties) {
+		const ECMAProperyInfo &pi = pair.value;
 		props.push_back(pi);
-		values[*name] = pi.default_value;
+		values[pair.key] = pi.default_value;
 	}
 
-	for (Set<PlaceHolderScriptInstance *>::Element *E = placeholders.front(); E; E = E->next()) {
-		E->get()->update(props, values);
+	for (PlaceHolderScriptInstance *s : placeholders) {
+		s->update(props, values);
 	}
 #endif
 }
@@ -228,8 +220,8 @@ bool ECMAScript::has_script_signal(const StringName &p_signal) const {
 
 void ECMAScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
 	if (!ecma_class) return;
-	for (const StringName *name = ecma_class->signals.next(NULL); name; name = ecma_class->signals.next(name)) {
-		r_signals->push_back(ecma_class->signals.get(*name));
+	for (const KeyValue<StringName, MethodInfo> &pair : ecma_class->signals) {
+		r_signals->push_back(pair.value);
 	}
 }
 
@@ -240,19 +232,19 @@ bool ECMAScript::is_valid() const {
 void ECMAScript::_bind_methods() {
 }
 
-RES ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
+Ref<Resource> ResourceFormatLoaderECMAScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
 	Error err = OK;
 	Ref<ECMAScriptModule> module = ResourceFormatLoaderECMAScriptModule::load_static(p_path, p_original_path, &err);
 	if (r_error) *r_error = err;
-	ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load script file '" + p_path + "'.");
+	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load script file '" + p_path + "'.");
 	Ref<ECMAScript> script;
-	script.instance();
+	script.instantiate();
 	script->set_script_path(p_path);
 	script->bytecode = module->get_bytecode();
 	script->set_source_code(module->get_source_code());
 	err = script->reload();
 	if (r_error) *r_error = err;
-	ERR_FAIL_COND_V_MSG(err != OK, RES(), "Parse source code from file '" + p_path + "' failed.");
+	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Parse source code from file '" + p_path + "' failed.");
 #ifdef TOOLS_ENABLED
 	ECMAScriptLanguage::get_singleton()->get_scripts().insert(script);
 #endif
@@ -279,7 +271,7 @@ String ResourceFormatLoaderECMAScript::get_resource_type(const String &p_path) c
 	return "";
 }
 
-Error ResourceFormatSaverECMAScript::save(const String &p_path, const RES &p_resource, uint32_t p_flags) {
+Error ResourceFormatSaverECMAScript::save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags) {
 
 	Ref<ECMAScript> script = p_resource;
 	ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
@@ -287,13 +279,12 @@ Error ResourceFormatSaverECMAScript::save(const String &p_path, const RES &p_res
 	String source = script->get_source_code();
 
 	Error err;
-	FileAccessRef file = FileAccess::open(p_path, FileAccess::WRITE, &err);
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_V_MSG(err, err, "Cannot save file '" + p_path + "'.");
 	file->store_string(source);
 	if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
 		return ERR_CANT_CREATE;
 	}
-	file->close();
 
 	if (ScriptServer::is_reload_scripts_on_save_enabled()) {
 		script->reload();
@@ -302,14 +293,14 @@ Error ResourceFormatSaverECMAScript::save(const String &p_path, const RES &p_res
 	return OK;
 }
 
-void ResourceFormatSaverECMAScript::get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const {
+void ResourceFormatSaverECMAScript::get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const {
 	if (Object::cast_to<ECMAScript>(*p_resource)) {
 		p_extensions->push_back(EXT_JSCLASS);
 	}
 }
 
-bool ResourceFormatSaverECMAScript::recognize(const RES &p_resource) const {
-	return Object::cast_to<ECMAScript>(*p_resource) != NULL;
+bool ResourceFormatSaverECMAScript::recognize(const Ref<Resource> &p_resource) const {
+	return Object::cast_to<ECMAScript>(*p_resource) != nullptr;
 }
 
 void ECMAScriptModule::_bind_methods() {
@@ -326,8 +317,8 @@ ECMAScriptModule::ECMAScriptModule() {
 	set_source_code("module.exports = {};" ENDL);
 }
 
-RES ResourceFormatLoaderECMAScriptModule::load(const String &p_path, const String &p_original_path, Error *r_error) {
-	return load_static(p_path, p_original_path, r_error);
+Ref<Resource> ResourceFormatLoaderECMAScriptModule::load(const String &p_path, const String &p_original_path, Error *r_error) {
+	Ref<Resource>turn load_static(p_path, p_original_path, r_error);
 }
 
 void ResourceFormatLoaderECMAScriptModule::get_recognized_extensions(List<String> *p_extensions) const {
@@ -350,24 +341,24 @@ String ResourceFormatLoaderECMAScriptModule::get_resource_type(const String &p_p
 	return "";
 }
 
-RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, const String &p_original_path, Error *r_error) {
+Ref<Resource> ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, const String &p_original_path, Error *r_error) {
 	Error err = ERR_FILE_CANT_OPEN;
 	Ref<ECMAScriptModule> module;
-	module.instance();
+	module.instantiate();
 	module->set_script_path(p_path);
 	if (p_path.ends_with("." EXT_JSMODULE) || p_path.ends_with("." EXT_JSCLASS) || p_path.ends_with("." EXT_JSON)) {
 		String code = FileAccess::get_file_as_string(p_path, &err);
 		if (r_error) *r_error = err;
-		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load source code from file '" + p_path + "'.");
+		ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load source code from file '" + p_path + "'.");
 		module->set_source_code(code);
 	} else if (p_path.ends_with("." EXT_JSMODULE_BYTECODE) || p_path.ends_with("." EXT_JSCLASS_BYTECODE)) {
 		module->set_bytecode(FileAccess::get_file_as_array(p_path, &err));
 		if (r_error) *r_error = err;
-		ERR_FAIL_COND_V_MSG(err != OK, RES(), "Cannot load bytecode from file '" + p_path + "'.");
+		ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load bytecode from file '" + p_path + "'.");
 	} else if (p_path.ends_with("." EXT_JSMODULE_ENCRYPTED) || p_path.ends_with("." EXT_JSCLASS_ENCRYPTED)) {
-		FileAccess *fa = FileAccess::open(p_path, FileAccess::READ);
-		if (fa->is_open()) {
-			FileAccessEncrypted *fae = memnew(FileAccessEncrypted);
+		Ref<FileAccess> fa = FileAccess::open(p_path, FileAccess::READ);
+		if (fa.is_valid() && fa->is_open()) {
+			Ref<FileAccessEncrypted> fae = memnew(FileAccessEncrypted);
 			Vector<uint8_t> key;
 			key.resize(32);
 			for (int i = 0; i < key.size(); i++) {
@@ -376,7 +367,7 @@ RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, cons
 			err = fae->open_and_parse(fa, key, FileAccessEncrypted::MODE_READ);
 			if (err == OK) {
 				Vector<uint8_t> encrypted_code;
-				encrypted_code.resize(fae->get_len());
+				encrypted_code.resize(fae->get_length());
 				fae->get_buffer(encrypted_code.ptrw(), encrypted_code.size());
 
 				String code;
@@ -385,45 +376,36 @@ RES ResourceFormatLoaderECMAScriptModule::load_static(const String &p_path, cons
 				} else {
 					module->set_source_code(code);
 				}
-				fa->close();
-				fae->close();
-				memdelete(fae);
-			} else {
-				fa->close();
-				fae->close();
-				memdelete(fae);
-				memdelete(fa);
 			}
 		} else {
 			err = ERR_CANT_OPEN;
 		}
 	}
 	if (r_error) *r_error = err;
-	ERR_FAIL_COND_V(err != OK, RES());
+	ERR_FAIL_COND_V(err != OK, Ref<Resource>());
 	return module;
 }
 
-Error ResourceFormatSaverECMAScriptModule::save(const String &p_path, const RES &p_resource, uint32_t p_flags) {
+Error ResourceFormatSaverECMAScriptModule::save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags) {
 	Ref<ECMAScriptModule> module = p_resource;
 	ERR_FAIL_COND_V(module.is_null(), ERR_INVALID_PARAMETER);
 	String source = module->get_source_code();
 	Error err;
-	FileAccessRef file = FileAccess::open(p_path, FileAccess::WRITE, &err);
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
 	ERR_FAIL_COND_V_MSG(err, err, "Cannot save file '" + p_path + "'.");
 	file->store_string(source);
 	if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
 		return ERR_CANT_CREATE;
 	}
-	file->close();
 	return OK;
 }
 
-void ResourceFormatSaverECMAScriptModule::get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const {
+void ResourceFormatSaverECMAScriptModule::get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const {
 	if (Object::cast_to<ECMAScriptModule>(*p_resource)) {
 		p_extensions->push_back(EXT_JSMODULE);
 	}
 }
 
-bool ResourceFormatSaverECMAScriptModule::recognize(const RES &p_resource) const {
-	return Object::cast_to<ECMAScriptModule>(*p_resource) != NULL;
+bool ResourceFormatSaverECMAScriptModule::recognize(const Ref<Resource> &p_resource) const {
+	return Object::cast_to<ECMAScriptModule>(*p_resource) != nullptr;
 }

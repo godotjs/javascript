@@ -1,7 +1,7 @@
 ﻿#ifndef ECMASCRIPT_LANGUAGE_H
 #define ECMASCRIPT_LANGUAGE_H
 
-#include "core/script_language.h"
+#include "core/object/script_language.h"
 #include "ecmascript.h"
 #include "quickjs/quickjs_binder.h"
 
@@ -21,7 +21,7 @@ private:
 	int language_index;
 	HashMap<Thread::ID, ECMAScriptBinder *> thread_binder_map;
 #ifdef TOOLS_ENABLED
-	Set<Ref<ECMAScript> > scripts;
+	HashSet<Ref<ECMAScript>> scripts;
 #endif
 
 public:
@@ -39,7 +39,7 @@ public:
 	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
 
 #ifdef TOOLS_ENABLED
-	_FORCE_INLINE_ Set<Ref<ECMAScript> > &get_scripts() { return scripts; }
+	_FORCE_INLINE_ HashSet<Ref<ECMAScript> > &get_scripts() { return scripts; }
 #endif
 	/* LANGUAGE FUNCTIONS */
 
@@ -47,13 +47,11 @@ public:
 	_FORCE_INLINE_ virtual String get_extension() const { return EXT_JSCLASS; }
 	_FORCE_INLINE_ virtual bool has_named_classes() const { return true; }
 	_FORCE_INLINE_ virtual bool supports_builtin_mode() const { return false; }
-	_FORCE_INLINE_ virtual bool can_inherit_from_file() { return false; }
 	_FORCE_INLINE_ virtual bool is_using_templates() { return true; }
 	_FORCE_INLINE_ virtual bool overrides_external_editor() { return false; }
 
 	virtual void init();
 	virtual void finish();
-
 	virtual Error execute_file(const String &p_path);
 
 	virtual void get_reserved_words(List<String> *p_words) const;
@@ -62,18 +60,15 @@ public:
 	virtual void get_string_delimiters(List<String> *p_delimiters) const;
 
 	virtual Ref<Script> get_template(const String &p_class_name, const String &p_base_class_name) const;
-	virtual void make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script);
+	virtual Ref<Script> make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const;
 
-	virtual bool validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path = "", List<String> *r_functions = NULL, List<Warning> *r_warnings = NULL, Set<int> *r_safe_lines = NULL) const;
+	virtual bool validate(const String &p_script, const String &p_path = "", List<String> *r_functions = nullptr, List<ScriptError> *r_errors = nullptr, List<Warning> *r_warnings = nullptr, HashSet<int> *r_safe_lines = nullptr) const;
 	virtual String validate_path(const String &p_path) const { return ""; }
 	virtual Script *create_script() const;
 
 	/* TODO */ virtual int find_function(const String &p_function, const String &p_code) const { return -1; }
-	/* TODO */ virtual String make_function(const String &p_class, const String &p_name, const PoolStringArray &p_args) const { return ""; }
+	/* TODO */ virtual String make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const { return ""; }
 	/* TODO */ virtual Error open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) { return ERR_UNAVAILABLE; }
-
-	/* TODO */ virtual Error complete_code(const String &p_code, const String &p_path, Object *p_owner, List<ScriptCodeCompletionOption> *r_options, bool &r_force, String &r_call_hint) { return ERR_UNAVAILABLE; }
-	/* TODO */ virtual Error lookup_code(const String &p_code, const String &p_symbol, const String &p_base_path, Object *p_owner, LookupResult &r_result) { return ERR_UNAVAILABLE; }
 
 	/* TODO */ virtual void auto_indent_code(String &p_code, int p_from_line, int p_to_line) const {}
 	/* TODO */ virtual void add_global_constant(const StringName &p_variable, const Variant &p_value) {}

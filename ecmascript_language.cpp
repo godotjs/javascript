@@ -1,6 +1,6 @@
 #include "ecmascript_language.h"
-#include "core/class_db.h"
-#include "core/os/file_access.h"
+#include "core/object/class_db.h"
+#include "core/io/file_access.h"
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
 void ECMAScriptLanguage::init() {
@@ -204,26 +204,31 @@ Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const S
 	script_template = script_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
 
 	Ref<ECMAScript> script;
-	script.instance();
+	script.instantiate();
 	script->set_source_code(script_template);
 	script->set_name(p_class_name);
 	script->set_script_path(p_class_name);
 	return script;
 }
 
-void ECMAScriptLanguage::make_template(const String &p_class_name, const String &p_base_class_name, Ref<Script> &p_script) {
-	String src = p_script->get_source_code();
+Ref<Script> ECMAScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
+	Ref<Script> script;
+	script.instantiate();
+	String src = script->get_source_code();
 	src = src.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
-	p_script->set_source_code(src);
+	script->set_source_code(src);
+	return script;
 }
 
-bool ECMAScriptLanguage::validate(const String &p_script, int &r_line_error, int &r_col_error, String &r_test_error, const String &p_path, List<String> *r_functions, List<ScriptLanguage::Warning> *r_warnings, Set<int> *r_safe_lines) const {
+bool ECMAScriptLanguage::validate(const String &p_script, const String &p_path, List<String> *r_functions, List<ScriptError> *r_errors, List<Warning> *r_warnings, HashSet<int> *r_safe_lines) const {
 	ECMAscriptScriptError script_error;
 	bool ret = main_binder->validate(p_script, p_path, &script_error);
 	if (!ret) {
-		r_test_error = main_binder->error_to_string(script_error);
-		r_line_error = script_error.line;
-		r_col_error = script_error.column;
+		ScriptError se;
+		se.line = script_error.line;
+		se.column = script_error.column;
+		se.message = script_error.message;
+		r_errors->push_back(se);
 	}
 	return ret;
 }
@@ -234,8 +239,8 @@ Script *ECMAScriptLanguage::create_script() const {
 
 void ECMAScriptLanguage::reload_all_scripts() {
 #ifdef TOOLS_ENABLED
-	for (Set<Ref<ECMAScript> >::Element *E = scripts.front(); E; E = E->next()) {
-		reload_script(E->get(), true);
+	for (const Ref<ECMAScript> &s : scripts) {
+		reload_script(s, true);
 	}
 #endif
 }
@@ -277,13 +282,13 @@ void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
 
 void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {
 	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
-		binder->godot_refcount_incremented(static_cast<Reference *>(p_object));
+		binder->godot_refcount_incremented(static_cast<RefCounted *>(p_object));
 	}
 }
 
 bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object) {
 	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
-		return binder->godot_refcount_decremented(static_cast<Reference *>(p_object));
+		return binder->godot_refcount_decremented(static_cast<RefCounted *>(p_object));
 	}
 	return true;
 }

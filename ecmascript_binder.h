@@ -49,6 +49,7 @@ protected:
 	// Path ==> ECMA Class
 	HashMap<String, ECMAClassInfo> ecma_classes;
 	HashMap<int64_t, ECMAScriptGCHandler> frame_callbacks;
+	HashSet<int64_t> canceled_frame_callbacks;
 	static String BINDING_SCRIPT_CONTENT;
 
 public:
@@ -73,8 +74,8 @@ public:
 	virtual void *alloc_object_binding_data(Object *p_object) = 0;
 	virtual void free_object_binding_data(void *p_gc_handle) = 0;
 
-	virtual void godot_refcount_incremented(Reference *p_object) = 0;
-	virtual bool godot_refcount_decremented(Reference *p_object) = 0;
+	virtual void godot_refcount_incremented(RefCounted *p_object) = 0;
+	virtual bool godot_refcount_decremented(RefCounted *p_object) = 0;
 
 	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret) = 0;
 	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) = 0;
@@ -88,7 +89,7 @@ public:
 	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error) = 0;
 
 	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object) = 0;
-	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Variant::CallError &r_error) = 0;
+	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) = 0;
 	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
 	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name) = 0;

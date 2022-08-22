@@ -34,7 +34,7 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/io/file_access_encrypted.h"
-#include "editor/editor_export.h"
+#include "editor/export/editor_export.h"
 #include "editor/editor_node.h"
 #include "tools/editor_tools.h"
 void editor_init_callback();
@@ -44,7 +44,7 @@ class EditorExportECMAScript : public EditorExportPlugin {
 	GDCLASS(EditorExportECMAScript, EditorExportPlugin);
 
 public:
-	virtual void _export_file(const String &p_path, const String &p_type, const Set<String> &p_features) {
+	virtual void _export_file(const String &p_path, const String &p_type, const HashSet<String> &p_features) {
 		int script_mode = EditorExportPreset::MODE_SCRIPT_COMPILED;
 		const Ref<EditorExportPreset> &preset = get_export_preset();
 
@@ -126,20 +126,20 @@ Ref<ResourceFormatLoaderECMAScript> resource_loader_ecmascript;
 Ref<ResourceFormatSaverECMAScript> resource_saver_ecmascript;
 Ref<ResourceFormatLoaderECMAScriptModule> resource_loader_ecmascript_module;
 Ref<ResourceFormatSaverECMAScriptModule> resource_saver_ecmascript_module;
-static ECMAScriptLanguage *script_language_js = NULL;
+static ECMAScriptLanguage *script_language_js = nullptr;
 
-void register_ECMAScript_types() {
-
+void initialize_ECMAScript_module(ModuleInitializationLevel p_level) {
+	if (p_level != ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_CORE) return;
 	ClassDB::register_class<ECMAScript>();
 	ClassDB::register_class<ECMAScriptModule>();
 
-	resource_loader_ecmascript.instance();
-	resource_saver_ecmascript.instance();
+	resource_loader_ecmascript.instantiate();
+	resource_saver_ecmascript.instantiate();
 	ResourceLoader::add_resource_format_loader(resource_loader_ecmascript, true);
 	ResourceSaver::add_resource_format_saver(resource_saver_ecmascript, true);
 
-	resource_loader_ecmascript_module.instance();
-	resource_saver_ecmascript_module.instance();
+	resource_loader_ecmascript_module.instantiate();
+	resource_saver_ecmascript_module.instantiate();
 	ResourceLoader::add_resource_format_loader(resource_loader_ecmascript_module, true);
 	ResourceSaver::add_resource_format_saver(resource_saver_ecmascript_module, true);
 
@@ -152,7 +152,8 @@ void register_ECMAScript_types() {
 #endif
 }
 
-void unregister_ECMAScript_types() {
+void uninitialize_ECMAScript_module(ModuleInitializationLevel p_level) {
+	if (p_level != ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_CORE) return;
 	ScriptServer::unregister_language(script_language_js);
 	memdelete(script_language_js);
 
@@ -169,11 +170,11 @@ void unregister_ECMAScript_types() {
 
 #ifdef TOOLS_ENABLED
 void editor_init_callback() {
-	ECMAScriptPlugin *plugin = memnew(ECMAScriptPlugin(EditorNode::get_singleton()));
-	EditorNode::get_singleton()->add_editor_plugin(plugin);
+	// ECMAScriptPlugin *plugin = memnew(ECMAScriptPlugin(EditorNode::get_singleton()));
+	// EditorNode::get_singleton()->add_editor_plugin(plugin);
 
-	Ref<EditorExportECMAScript> js_export;
-	js_export.instance();
-	EditorExport::get_singleton()->add_export_plugin(js_export);
+	// Ref<EditorExportECMAScript> js_export;
+	// js_export.instance();
+	// EditorExport::get_singleton()->add_export_plugin(js_export);
 }
 #endif

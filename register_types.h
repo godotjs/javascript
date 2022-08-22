@@ -28,5 +28,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-void register_ECMAScript_types();
-void unregister_ECMAScript_types();
+#ifndef ECMASCRIPT_MODULE_H
+#define ECMASCRIPT_MODULE_H
+
+#include "modules/register_module_types.h"
+void initialize_ECMAScript_module(ModuleInitializationLevel p_level);
+void uninitialize_ECMAScript_module(ModuleInitializationLevel p_level);
+
+#endif

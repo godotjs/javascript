@@ -3,7 +3,7 @@
 
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
-#include "core/script_language.h"
+#include "core/object/script_language.h"
 #include "ecmascript_binder.h"
 #include "scene/resources/text_file.h"
 
@@ -23,7 +23,7 @@ private:
 	friend class QuickJSBinder;
 	friend class ResourceFormatLoaderECMAScript;
 
-	Set<Object *> instances;
+	HashSet<Object *> instances;
 	StringName class_name;
 	String code;
 	String script_path;
@@ -32,7 +32,7 @@ private:
 	const BasicECMAClassInfo *ecma_class;
 
 #ifdef TOOLS_ENABLED
-	Set<PlaceHolderScriptInstance *> placeholders;
+	HashSet<PlaceHolderScriptInstance *> placeholders;
 	virtual void _placeholder_erased(PlaceHolderScriptInstance *p_placeholder);
 #endif
 
@@ -41,16 +41,16 @@ protected:
 	static void _bind_methods();
 
 public:
-	virtual bool can_instance() const;
+	virtual bool can_instantiate() const;
 
-	virtual bool inherits_script(const Ref<Script> &p_script) const { return false; }
-	virtual Ref<Script> get_base_script() const { return NULL; } //for script inheritance
+	/* TODO */ virtual Ref<Script> get_base_script() const { return nullptr; } //for script inheritance
+	/* TODO */ virtual bool inherits_script(const Ref<Script> &p_script) const { return false; }
+
 	virtual StringName get_instance_base_type() const;
-
 	virtual ScriptInstance *instance_create(Object *p_this);
 	virtual bool instance_has(const Object *p_this) const;
-
 	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this);
+
 	virtual bool is_placeholder_fallback_enabled() const;
 
 	virtual bool has_source_code() const { return true; }
@@ -75,13 +75,17 @@ public:
 	virtual void update_exports(); //editor tool
 
 	/* TODO */ virtual int get_member_line(const StringName &p_member) const { return -1; }
-	/* TODO */ virtual void get_constants(Map<StringName, Variant> *p_constants) {}
-	/* TODO */ virtual void get_members(Set<StringName> *p_constants) {}
+	/* TODO */ virtual void get_constants(HashMap<StringName, Variant> *p_constants) {}
+	/* TODO */ virtual void get_members(HashSet<StringName> *p_constants) {}
 
 	virtual ScriptLanguage *get_language() const;
 
 	_FORCE_INLINE_ String get_script_path() const { return script_path; }
 	_FORCE_INLINE_ void set_script_path(const String &p_path) { script_path = p_path; }
+
+#ifdef TOOLS_ENABLED
+	_FORCE_INLINE_ virtual Vector<DocData::ClassDoc> get_documentation() { return Vector<DocData::ClassDoc>(); }
+#endif // TOOLS_ENABLED
 
 	ECMAScript();
 	virtual ~ECMAScript();
@@ -90,7 +94,7 @@ public:
 class ResourceFormatLoaderECMAScript : public ResourceFormatLoader {
 	GDCLASS(ResourceFormatLoaderECMAScript, ResourceFormatLoader)
 public:
-	virtual RES load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
+	virtual Ref<Resource> load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;
 	virtual void get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const;
 	virtual bool handles_type(const String &p_type) const;
@@ -100,9 +104,9 @@ public:
 class ResourceFormatSaverECMAScript : public ResourceFormatSaver {
 	GDCLASS(ResourceFormatSaverECMAScript, ResourceFormatSaver)
 public:
-	virtual Error save(const String &p_path, const RES &p_resource, uint32_t p_flags = 0);
-	virtual void get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const;
-	virtual bool recognize(const RES &p_resource) const;
+	virtual Error save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags = 0);
+	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const;
+	virtual bool recognize(const Ref<Resource> &p_resource) const;
 };
 
 class ECMAScriptModule : public TextFile {
@@ -125,21 +129,21 @@ public:
 class ResourceFormatLoaderECMAScriptModule : public ResourceFormatLoader {
 	GDCLASS(ResourceFormatLoaderECMAScriptModule, ResourceFormatLoader)
 public:
-	virtual RES load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
+	virtual Ref<Resource> load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const;
 	virtual void get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const;
 	virtual bool handles_type(const String &p_type) const;
 	virtual String get_resource_type(const String &p_path) const;
 
-	static RES load_static(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
+	static Ref<Resource> load_static(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 };
 
 class ResourceFormatSaverECMAScriptModule : public ResourceFormatSaver {
 	GDCLASS(ResourceFormatSaverECMAScriptModule, ResourceFormatSaver)
 public:
-	virtual Error save(const String &p_path, const RES &p_resource, uint32_t p_flags = 0);
-	virtual void get_recognized_extensions(const RES &p_resource, List<String> *p_extensions) const;
-	virtual bool recognize(const RES &p_resource) const;
+	virtual Error save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags = 0);
+	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const;
+	virtual bool recognize(const Ref<Resource> &p_resource) const;
 };
 
 #endif // ECMASCRIPT_H

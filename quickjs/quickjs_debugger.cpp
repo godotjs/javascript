@@ -3,20 +3,20 @@
 #define QJS_DEBUGGER_DEBUG_LOG 0
 
 QuickJSDebugger::ConnectionConfig QuickJSDebugger::parse_address(const String &address) {
-	int idx = address.find_last(":");
+	int idx = address.rfind(":");
 	String address_str = address.substr(0, idx);
 	if (address_str == "localhost") {
 		address_str = "127.0.0.1";
 	}
 	ConnectionConfig connect;
 	connect.port = address.substr(idx + 1).to_int();
-	connect.address = IP_Address(address_str);
+	connect.address = IPAddress(address_str);
 	return connect;
 }
 
 size_t QuickJSDebugger::transport_read(void *udata, char *buffer, size_t length) {
 	QuickJSDebugger *debugger = static_cast<QuickJSDebugger *>(udata);
-	ERR_FAIL_COND_V(debugger == NULL || debugger->peer.is_null() || !debugger->peer->is_connected_to_host(), -1);
+	ERR_FAIL_COND_V(debugger == NULL || debugger->peer.is_null() || debugger->peer->get_status() != StreamPeerTCP::STATUS_CONNECTED, -1);
 	ERR_FAIL_COND_V(length == 0, -2);
 	ERR_FAIL_NULL_V(buffer, -3);
 	int ret = length;
@@ -32,7 +32,7 @@ size_t QuickJSDebugger::transport_read(void *udata, char *buffer, size_t length)
 
 size_t QuickJSDebugger::transport_write(void *udata, const char *buffer, size_t length) {
 	QuickJSDebugger *debugger = static_cast<QuickJSDebugger *>(udata);
-	ERR_FAIL_COND_V(debugger == NULL || debugger->peer.is_null() || !debugger->peer->is_connected_to_host(), -1);
+	ERR_FAIL_COND_V(debugger == NULL || debugger->peer.is_null() || debugger->peer->get_status() != StreamPeerTCP::STATUS_CONNECTED, -1);
 	ERR_FAIL_COND_V(length == 0, -2);
 	ERR_FAIL_NULL_V(buffer, -3);
 	int ret = length;
@@ -47,7 +47,7 @@ size_t QuickJSDebugger::transport_write(void *udata, const char *buffer, size_t 
 
 size_t QuickJSDebugger::transport_peek(void *udata) {
 	QuickJSDebugger *debugger = static_cast<QuickJSDebugger *>(udata);
-	ERR_FAIL_COND_V(debugger == NULL || debugger->peer.is_null() || !debugger->peer->is_connected_to_host(), -1);
+	ERR_FAIL_COND_V(debugger == NULL || debugger->peer.is_null() || debugger->peer->get_status() != StreamPeerTCP::STATUS_CONNECTED, -1);
 	StreamPeerTCP::Status status = debugger->peer->get_status();
 #if QJS_DEBUGGER_DEBUG_LOG
 	print_line(vformat("[peek] %d", debugger->peer->get_available_bytes()));
@@ -99,7 +99,7 @@ Error QuickJSDebugger::listen(JSContext *ctx, const String &address) {
 	if (server.is_valid() && server->is_listening()) {
 		server->stop();
 	}
-	server.instance();
+	server.instantiate();
 	ConnectionConfig c = parse_address(address);
 	Error err = server->listen(c.port, c.address);
 	return err;
