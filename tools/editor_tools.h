@@ -32,7 +32,7 @@ protected:
 	void _generate_typescript_project();
 
 public:
-	virtual String get_name() const { return "ECMAScriptPlugin"; }
+	virtual String get_name() const override { return "ECMAScriptPlugin"; }
 	ECMAScriptPlugin(EditorNode *p_node);
 };
 

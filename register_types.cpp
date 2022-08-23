@@ -34,17 +34,16 @@
 
 #ifdef TOOLS_ENABLED
 #include "core/io/file_access_encrypted.h"
-#include "editor/export/editor_export.h"
 #include "editor/editor_node.h"
+#include "editor/export/editor_export.h"
 #include "tools/editor_tools.h"
 void editor_init_callback();
 
 class EditorExportECMAScript : public EditorExportPlugin {
-
 	GDCLASS(EditorExportECMAScript, EditorExportPlugin);
 
 public:
-	virtual void _export_file(const String &p_path, const String &p_type, const HashSet<String> &p_features) {
+	virtual void _export_file(const String &p_path, const String &p_type, const HashSet<String> &p_features) override {
 		int script_mode = EditorExportPreset::MODE_SCRIPT_COMPILED;
 		const Ref<EditorExportPreset> &preset = get_export_preset();
 
@@ -59,54 +58,7 @@ public:
 		if (extension != EXT_JSCLASS && extension != EXT_JSMODULE)
 			return;
 
-		if (script_mode == EditorExportPreset::MODE_SCRIPT_ENCRYPTED) {
-			Vector<uint8_t> file = FileAccess::get_file_as_array(p_path);
-			if (file.empty())
-				return;
-
-			String script_key = preset->get_script_encryption_key().to_lower();
-			String tmp_path = EditorSettings::get_singleton()->get_cache_dir().plus_file("script." + extension + "e");
-			FileAccess *fa = FileAccess::open(tmp_path, FileAccess::WRITE);
-
-			Vector<uint8_t> key;
-			key.resize(32);
-			for (int i = 0; i < 32; i++) {
-				int v = 0;
-				if (i * 2 < script_key.length()) {
-					CharType ct = script_key[i * 2];
-					if (ct >= '0' && ct <= '9')
-						ct = ct - '0';
-					else if (ct >= 'a' && ct <= 'f')
-						ct = 10 + ct - 'a';
-					v |= ct << 4;
-				}
-
-				if (i * 2 + 1 < script_key.length()) {
-					CharType ct = script_key[i * 2 + 1];
-					if (ct >= '0' && ct <= '9')
-						ct = ct - '0';
-					else if (ct >= 'a' && ct <= 'f')
-						ct = 10 + ct - 'a';
-					v |= ct;
-				}
-				key.write[i] = v;
-			}
-			FileAccessEncrypted *fae = memnew(FileAccessEncrypted);
-			Error err = fae->open_and_parse(fa, key, FileAccessEncrypted::MODE_WRITE_AES256);
-
-			if (err == OK) {
-				fae->store_buffer(file.ptr(), file.size());
-			}
-
-			memdelete(fae);
-
-			file = FileAccess::get_file_as_array(tmp_path);
-			add_file(p_path.get_basename() + "." + extension + "e", file, true);
-
-			// Clean up temporary file.
-			DirAccess::remove_file_or_error(tmp_path);
-
-		} else {
+		if (script_mode == EditorExportPreset::ScriptExportMode::MODE_SCRIPT_COMPILED) {
 #if 0 // Disable compile to bytecode as it is not battle tested on all platform
 			Error err;
 			String code = FileAccess::get_file_as_string(p_path, &err);
@@ -129,7 +81,9 @@ Ref<ResourceFormatSaverECMAScriptModule> resource_saver_ecmascript_module;
 static ECMAScriptLanguage *script_language_js = nullptr;
 
 void initialize_ECMAScript_module(ModuleInitializationLevel p_level) {
-	if (p_level != ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_CORE) return;
+	if (p_level != ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_CORE)
+		return;
+
 	ClassDB::register_class<ECMAScript>();
 	ClassDB::register_class<ECMAScriptModule>();
 
@@ -144,7 +98,6 @@ void initialize_ECMAScript_module(ModuleInitializationLevel p_level) {
 	ResourceSaver::add_resource_format_saver(resource_saver_ecmascript_module, true);
 
 	script_language_js = memnew(ECMAScriptLanguage);
-	script_language_js->set_language_index(ScriptServer::get_language_count());
 	ScriptServer::register_language(script_language_js);
 
 #ifdef TOOLS_ENABLED
@@ -153,7 +106,9 @@ void initialize_ECMAScript_module(ModuleInitializationLevel p_level) {
 }
 
 void uninitialize_ECMAScript_module(ModuleInitializationLevel p_level) {
-	if (p_level != ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_CORE) return;
+	if (p_level != ModuleInitializationLevel::MODULE_INITIALIZATION_LEVEL_CORE)
+		return;
+
 	ScriptServer::unregister_language(script_language_js);
 	memdelete(script_language_js);
 
@@ -170,11 +125,11 @@ void uninitialize_ECMAScript_module(ModuleInitializationLevel p_level) {
 
 #ifdef TOOLS_ENABLED
 void editor_init_callback() {
-	// ECMAScriptPlugin *plugin = memnew(ECMAScriptPlugin(EditorNode::get_singleton()));
-	// EditorNode::get_singleton()->add_editor_plugin(plugin);
+	ECMAScriptPlugin *plugin = memnew(ECMAScriptPlugin(EditorNode::get_singleton()));
+	EditorNode::get_singleton()->add_editor_plugin(plugin);
 
-	// Ref<EditorExportECMAScript> js_export;
-	// js_export.instance();
-	// EditorExport::get_singleton()->add_export_plugin(js_export);
+	Ref<EditorExportECMAScript> js_export;
+	js_export.instantiate();
+	EditorExport::get_singleton()->add_export_plugin(js_export);
 }
 #endif

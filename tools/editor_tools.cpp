@@ -5,11 +5,11 @@
 #include "editor/filesystem_dock.h"
 
 #define TS_IGNORE "//@ts-ignore\n"
-static RBMap<String, HashSet<String> > ts_ignore_errors;
-static RBMap<String, HashSet<String> > removed_members;
-static RBMap<String, List<String> > added_apis;
+static HashMap<String, HashSet<String>> ts_ignore_errors;
+static HashMap<String, HashSet<String>> removed_members;
+static HashMap<String, List<String>> added_apis;
 typedef HashMap<String, Vector<const DocData::ConstantDoc *>> ClassEnumerations;
-static RBMap<String, ClassEnumerations> class_enumerations;
+static HashMap<String, ClassEnumerations> class_enumerations;
 
 struct ECMAScriptAlphCompare {
 	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
@@ -213,7 +213,6 @@ static String get_type_name(const String &p_type) {
 }
 
 String _export_method(const DocData::MethodDoc &p_method, bool is_function = false, bool is_static = false, bool ts_ignore_error = false) {
-#if 0
 	Dictionary dict;
 	dict["description"] = format_doc_text(p_method.description, "\t\t ");
 	dict["name"] = format_property_name(p_method.name);
@@ -223,18 +222,18 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	bool arg_default_value_started = false;
 	for (int i = 0; i < p_method.arguments.size(); i++) {
 		const DocData::ArgumentDoc &arg = p_method.arguments[i];
-		if (!arg_default_value_started && !arg.default_value.empty()) {
+		if (!arg_default_value_started && !arg.default_value.is_empty()) {
 			arg_default_value_started = true;
 		}
 		String arg_type = get_type_name(arg.type);
-		if (!arg.enumeration.empty()) {
+		if (!arg.enumeration.is_empty()) {
 			arg_type = format_enum_name(arg.enumeration);
 		}
 
 		String default_value;
 		if (arg_default_value_started) {
 			default_value += " = ";
-			if (arg.default_value.empty()) {
+			if (arg.default_value.is_empty()) {
 				if (arg.type == "string") {
 					default_value += "''";
 				} else {
@@ -253,7 +252,7 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	}
 
 	if (p_method.qualifiers.find("vararg") != -1) {
-		params += params.empty() ? "...args" : ", ...args";
+		params += params.is_empty() ? "...args" : ", ...args";
 	}
 	dict["params"] = params;
 
@@ -280,13 +279,9 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 		}
 	}
 	return apply_pattern(method_template, dict);
-#else
-	return "";
-#endif
 }
 
 String _export_class(const DocData::ClassDoc &class_doc) {
-#if 0
 	String class_template = "\n"
 							"\t/** ${brief_description}\n"
 							"\t ${description} */\n"
@@ -304,8 +299,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	class_template = class_template.replace("${TS_IGNORE}", ts_ignore_errors.has(class_doc.name) ? "\t" TS_IGNORE : "");
 	Dictionary dict;
 	dict["name"] = class_doc.name;
-	dict["inherits"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits);
-	dict["extends"] = class_doc.inherits.empty() ? "" : " extends ";
+	dict["inherits"] = class_doc.inherits.is_empty() ? "" : get_type_name(class_doc.inherits);
+	dict["extends"] = class_doc.inherits.is_empty() ? "" : " extends ";
 	String brief_description = format_doc_text(class_doc.brief_description, "\t ");
 	dict["brief_description"] = brief_description;
 	String description = format_doc_text(class_doc.description, "\t ");
@@ -321,7 +316,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	}
 
 	String constants = "";
-	RBMap<String, Vector<const DocData::ConstantDoc *> > enumerations;
+	HashMap<String, Vector<const DocData::ConstantDoc *>> enumerations;
 	for (const DocData::ConstantDoc &const_doc : class_doc.constants) {
 		if (ignore_members.has(const_doc.name)) continue;
 
@@ -330,11 +325,11 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		dict["name"] = format_property_name(const_doc.name);
 		dict["value"] = const_doc.value;
 		String type = "number";
-		if (!const_doc.enumeration.empty()) {
+		if (!const_doc.enumeration.is_empty()) {
 			type = const_doc.enumeration + "." + const_doc.name;
 		} else if (const_doc.value.find("(") != -1) {
 			type = const_doc.value.split("(")[0];
-		} else if (const_doc.value.is_valid_integer()) {
+		} else if (const_doc.value.is_valid_int()) {
 			type = dict["value"];
 		}
 		dict["type"] = type;
@@ -350,7 +345,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		}
 		constants += apply_pattern(const_str, dict);
 
-		if (!const_doc.enumeration.empty()) {
+		if (!const_doc.enumeration.is_empty()) {
 			if (!enumerations.has(const_doc.enumeration)) {
 				Vector<const DocData::ConstantDoc *> e;
 				e.push_back(&const_doc);
@@ -365,11 +360,11 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	dict["constants"] = constants;
 	String enumerations_str = "";
 	for (const KeyValue<String, Vector<const DocData::ConstantDoc *>> &E : enumerations) {
-		if (ignore_members.has(E.key) {
+		if (ignore_members.has(E.key)) {
 			continue;
 		}
 		String enum_str = "\t\tenum " + E.key + " {\n";
-		const Vector<const DocData::ConstantDoc *> &enums = E->get();
+		const Vector<const DocData::ConstantDoc *> &enums = E.value;
 		for (int i = 0; i < enums.size(); i++) {
 			String const_str = "\t\t\t/** ${description} */\n"
 							   "\t\t\t${name} = ${value},\n";
@@ -472,13 +467,9 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	dict["extrals"] = extrals;
 
 	return apply_pattern(class_template, dict);
-#else
-	return "";
-#endif
 }
 
 void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
-#if 0
 	modified_api = &ECMAScriptLanguage::get_singleton()->get_main_binder()->get_modified_api();
 
 	removed_members.clear();
@@ -543,7 +534,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("RID");
 	ignored_classes.insert("NodePath");
 	ignored_classes.insert("Transform2D");
-	ignored_classes.insert("Transform");
+	ignored_classes.insert("Transform3D");
 	ignored_classes.insert("Basis");
 	ignored_classes.insert("Quaternion");
 	ignored_classes.insert("Plane");
@@ -604,9 +595,9 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 				}
 				class_enumerations.insert(GODOT_OBJECT_NAME, enumerations);
 
-				for (auto E = enumerations.front(); E; E = E->next()) {
-					String enum_str = "\tenum " + format_enum_name(E->key()) + " {\n";
-					const Vector<const DocData::ConstantDoc *> &enums = E->value();
+				for (auto E : enumerations) {
+					String enum_str = "\tenum " + format_enum_name(E.key) + " {\n";
+					const Vector<const DocData::ConstantDoc *> &enums = E.value;
 					for (int i = 0; i < enums.size(); i++) {
 						String const_str = "\t\t/** ${description} */\n"
 										   "\t\t${name} = ${value},\n";
@@ -616,21 +607,15 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 						dict["value"] = enums[i]->value;
 
 						// Exceptions
-
-						/**
-							 * KEY_MASK_CMD docs has value listed as "platform-dependent",
-							 * so we have to retreive the actual value manually
-							 */
 						if (dict["name"] == "KEY_MASK_CMD") {
-							dict["value"] = KEY_MASK_CMD;
+							dict["value"] = (uint64_t)KeyModifierMask::CMD;
 						}
-
 						enum_str += apply_pattern(const_str, dict);
 					}
 					enum_str += "\t}\n";
 					enumerations_str += enum_str;
 				}
-
+#if 0
 				for (int i = 0; i < class_doc.methods.size(); i++) {
 					const DocData::MethodDoc &method_doc = class_doc.methods[i];
 					if (Expression::find_function(method_doc.name) == Expression::FUNC_MAX) {
@@ -641,6 +626,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					}
 					functions += _export_method(method_doc, true, false, ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(method_doc.name));
 				}
+#endif
 			}
 			continue;
 		}
@@ -657,11 +643,9 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	if (f.is_valid() && f->is_open()) {
 		f->store_string(text);
 	}
-#endif
 }
 
 void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
-#if 0
 	_export_typescript_declare_file("");
 	String file_content = "// Tool generated file DO NOT modify mannually\n"
 						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
@@ -676,17 +660,18 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 						  "export default class extends godot.Node {};\n";
 
 	String enumerations = "";
-	for (auto cls = class_enumerations.front(); cls; cls = cls->next()) {
-		const ClassEnumerations &enumeration = cls->value();
-		const String &name = cls->key();
+	for (const auto &cls : class_enumerations) {
+		const ClassEnumerations &enumeration = cls.value;
+		const String &name = cls.key;
 		String class_name = name;
 		if (class_name != "godot") {
 			class_name = "godot." + class_name;
 		}
 		String class_enums = "";
-		for (auto E = enumeration.front(); E; E = E->next()) {
+		uint32_t idx = 0;
+		for (const auto &E : enumeration) {
 			String enum_items_text = "{";
-			const Vector<const DocData::ConstantDoc *> &consts = E->value();
+			const Vector<const DocData::ConstantDoc *> &consts = E.value;
 			for (int i = 0; i < consts.size(); ++i) {
 				const DocData::ConstantDoc *c = consts[i];
 				enum_items_text += c->name + ": " + c->value;
@@ -696,14 +681,15 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 			}
 			enum_items_text += " }";
 			Dictionary dict;
-			dict["name"] = format_enum_name(E->key());
+			dict["name"] = format_enum_name(E.key);
 			dict["values"] = enum_items_text;
 			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", dict);
-			if (E->next()) {
+			if (idx < enumeration.size() - 1) {
 				class_enums += ", ";
 			} else {
 				class_enums += "\n\t";
 			}
+			idx++;
 		}
 		static String class_template = "\tbind(${class}, {${enumerations}});\n";
 		Dictionary dict;
@@ -716,7 +702,6 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	file_content = apply_pattern(file_content, dict);
 
 	dump_to_file(p_path, file_content);
-#endif
 }
 
 void ECMAScriptPlugin::_generate_typescript_project() {

@@ -152,8 +152,6 @@ protected:
 	int internal_godot_method_id;
 	Vector<const ClassDB::PropertySetGet *> godot_object_indexed_properties;
 	int internal_godot_indexed_property_id;
-	const ECMAScriptGCHandler *lastest_allocated_object = NULL;
-
 #if NO_MODULE_EXPORT_SUPPORT
 	String parsing_script_file;
 #endif
@@ -309,17 +307,17 @@ public:
 	_FORCE_INLINE_ const ClassBindData get_origin_class() const { return godot_origin_class; }
 	_FORCE_INLINE_ static JSClassID get_origin_class_id(JSContext *ctx) { return get_context_binder(ctx)->godot_origin_class.class_id; }
 
-	virtual void initialize();
-	virtual void uninitialize();
-	virtual void language_finalize();
-	virtual void frame();
+	virtual void initialize() override;
+	virtual void uninitialize() override;
+	virtual void language_finalize() override;
+	virtual void frame() override;
 
-	virtual void *alloc_object_binding_data(Object *p_object);
-	virtual void free_object_binding_data(void *p_gc_handle);
+	virtual ECMAScriptGCHandler *alloc_object_binding_data(Object *p_object) override;
+	virtual void free_object_binding_data(ECMAScriptGCHandler *p_gc_handle) override;
+	virtual void godot_refcount_incremented(ECMAScriptGCHandler *p_gc_handle) override;
+	virtual bool godot_refcount_decremented(ECMAScriptGCHandler *p_gc_handle) override;
+
 	static Error bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, Object *p_object);
-
-	virtual void godot_refcount_incremented(RefCounted *p_object);
-	virtual bool godot_refcount_decremented(RefCounted *p_object);
 
 	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret);
 	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);

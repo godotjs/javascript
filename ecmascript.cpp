@@ -73,14 +73,6 @@ PlaceHolderScriptInstance *ECMAScript::placeholder_instance_create(Object *p_thi
 #endif
 }
 
-bool ECMAScript::is_placeholder_fallback_enabled() const {
-#ifdef TOOLS_ENABLED
-	return Engine::get_singleton()->is_editor_hint() && false;
-#else
-	return false;
-#endif
-}
-
 Error ECMAScript::reload(bool p_keep_state) {
 	ecma_class = NULL;
 	Error err = OK;
@@ -318,7 +310,7 @@ ECMAScriptModule::ECMAScriptModule() {
 }
 
 Ref<Resource> ResourceFormatLoaderECMAScriptModule::load(const String &p_path, const String &p_original_path, Error *r_error) {
-	Ref<Resource>turn load_static(p_path, p_original_path, r_error);
+	return load_static(p_path, p_original_path, r_error);
 }
 
 void ResourceFormatLoaderECMAScriptModule::get_recognized_extensions(List<String> *p_extensions) const {

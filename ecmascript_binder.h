@@ -71,11 +71,10 @@ public:
 	virtual void language_finalize() = 0;
 	virtual void frame() = 0;
 
-	virtual void *alloc_object_binding_data(Object *p_object) = 0;
-	virtual void free_object_binding_data(void *p_gc_handle) = 0;
-
-	virtual void godot_refcount_incremented(RefCounted *p_object) = 0;
-	virtual bool godot_refcount_decremented(RefCounted *p_object) = 0;
+	virtual ECMAScriptGCHandler *alloc_object_binding_data(Object *p_object) = 0;
+	virtual void free_object_binding_data(ECMAScriptGCHandler *p_gc_handle) = 0;
+	virtual void godot_refcount_incremented(ECMAScriptGCHandler *p_gc_handle) = 0;
+	virtual bool godot_refcount_decremented(ECMAScriptGCHandler *p_gc_handle) = 0;
 
 	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret) = 0;
 	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret) = 0;

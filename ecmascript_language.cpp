@@ -3,9 +3,52 @@
 #include "core/io/file_access.h"
 ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
 
+namespace ECMAScriptInstanceBindingCallbacks {
+
+static void *create_callback(void *p_token, void *p_instance) {
+	if (ECMAScriptBinder *binder = ECMAScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
+		return binder->alloc_object_binding_data(static_cast<Object *>(p_instance));
+	}
+	return nullptr;
+}
+
+static void free_callback(void *p_token, void *p_instance, void *p_binding) {
+	if (ECMAScriptBinder *binder = ECMAScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
+		return binder->free_object_binding_data(static_cast<ECMAScriptGCHandler *>(p_binding));
+	}
+}
+
+static GDNativeBool reference_callback(void *p_token, void *p_binding, GDNativeBool p_reference) {
+	if (ECMAScriptBinder *binder = ECMAScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
+		if (p_reference) {
+			binder->godot_refcount_incremented(static_cast<ECMAScriptGCHandler *>(p_binding));
+			return false;
+		} else {
+			return binder->godot_refcount_decremented(static_cast<ECMAScriptGCHandler *>(p_binding));
+		}
+	}
+	return true;
+}
+
+} // namespace ECMAScriptInstanceBindingCallbacks
+
+ECMAScriptLanguage::ECMAScriptLanguage() {
+	ERR_FAIL_COND(singleton);
+	singleton = this;
+	main_binder = memnew(QuickJSBinder);
+	instance_binding_callbacks.create_callback = ECMAScriptInstanceBindingCallbacks::create_callback;
+	instance_binding_callbacks.free_callback = ECMAScriptInstanceBindingCallbacks::free_callback;
+	instance_binding_callbacks.reference_callback = ECMAScriptInstanceBindingCallbacks::reference_callback;
+}
+
+ECMAScriptLanguage::~ECMAScriptLanguage() {
+	memdelete(main_binder);
+}
+
 void ECMAScriptLanguage::init() {
 	ERR_FAIL_NULL(main_binder);
 	main_binder->initialize();
+	execute_file("bin/test.js");
 }
 
 void ECMAScriptLanguage::finish() {
@@ -212,7 +255,7 @@ Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const S
 }
 
 Ref<Script> ECMAScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
-	Ref<Script> script;
+	Ref<ECMAScript> script;
 	script.instantiate();
 	String src = script->get_source_code();
 	src = src.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
@@ -267,32 +310,6 @@ void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) c
 	p_extensions->push_back(EXT_JSCLASS_BYTECODE);
 }
 
-void *ECMAScriptLanguage::alloc_instance_binding_data(Object *p_object) {
-	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
-		return binder->alloc_object_binding_data(p_object);
-	}
-	return NULL;
-}
-
-void ECMAScriptLanguage::free_instance_binding_data(void *p_data) {
-	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
-		return binder->free_object_binding_data(p_data);
-	}
-}
-
-void ECMAScriptLanguage::refcount_incremented_instance_binding(Object *p_object) {
-	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
-		binder->godot_refcount_incremented(static_cast<RefCounted *>(p_object));
-	}
-}
-
-bool ECMAScriptLanguage::refcount_decremented_instance_binding(Object *p_object) {
-	if (ECMAScriptBinder *binder = get_thread_binder(Thread::get_caller_id())) {
-		return binder->godot_refcount_decremented(static_cast<RefCounted *>(p_object));
-	}
-	return true;
-}
-
 void ECMAScriptLanguage::frame() {
 	main_binder->frame();
 }
@@ -324,15 +341,4 @@ String ECMAScriptLanguage::globalize_relative_path(const String &p_relative, con
 		file = base_dir + file_path;
 	}
 	return file;
-}
-
-ECMAScriptLanguage::ECMAScriptLanguage() {
-
-	ERR_FAIL_COND(singleton);
-	singleton = this;
-	main_binder = memnew(QuickJSBinder);
-}
-
-ECMAScriptLanguage::~ECMAScriptLanguage() {
-	memdelete(main_binder);
 }

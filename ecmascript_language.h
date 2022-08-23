@@ -5,7 +5,6 @@
 #include "ecmascript.h"
 #include "quickjs/quickjs_binder.h"
 
-/*********************** ECMAScriptLanguage ***********************/
 class ECMAScriptBinder;
 class ECMAScriptLanguage : public ScriptLanguage {
 
@@ -18,8 +17,8 @@ class ECMAScriptLanguage : public ScriptLanguage {
 private:
 	static ECMAScriptLanguage *singleton;
 	ECMAScriptBinder *main_binder;
-	int language_index;
 	HashMap<Thread::ID, ECMAScriptBinder *> thread_binder_map;
+	GDNativeInstanceBindingCallbacks instance_binding_callbacks;
 #ifdef TOOLS_ENABLED
 	HashSet<Ref<ECMAScript>> scripts;
 #endif
@@ -31,94 +30,82 @@ public:
 		if (ECMAScriptBinder **ptr = singleton->thread_binder_map.getptr(p_id)) {
 			return *ptr;
 		}
-		return NULL;
+		return nullptr;
 	}
 
-	_FORCE_INLINE_ virtual String get_name() const { return "JavaScript"; }
-	_FORCE_INLINE_ int get_language_index() const { return language_index; }
-	_FORCE_INLINE_ void set_language_index(int value) { language_index = value; }
-
+	_FORCE_INLINE_ virtual String get_name() const override { return "JavaScript"; }
+	const GDNativeInstanceBindingCallbacks *getInstanceBindingCallbacks() const { return &instance_binding_callbacks; }
 #ifdef TOOLS_ENABLED
 	_FORCE_INLINE_ HashSet<Ref<ECMAScript> > &get_scripts() { return scripts; }
 #endif
 	/* LANGUAGE FUNCTIONS */
 
-	_FORCE_INLINE_ virtual String get_type() const { return "JavaScript"; }
-	_FORCE_INLINE_ virtual String get_extension() const { return EXT_JSCLASS; }
-	_FORCE_INLINE_ virtual bool has_named_classes() const { return true; }
-	_FORCE_INLINE_ virtual bool supports_builtin_mode() const { return false; }
-	_FORCE_INLINE_ virtual bool is_using_templates() { return true; }
-	_FORCE_INLINE_ virtual bool overrides_external_editor() { return false; }
+	_FORCE_INLINE_ virtual String get_type() const override { return "JavaScript"; }
+	_FORCE_INLINE_ virtual String get_extension() const override { return EXT_JSCLASS; }
 
-	virtual void init();
-	virtual void finish();
-	virtual Error execute_file(const String &p_path);
+	virtual void init() override;
+	virtual void finish() override;
+	virtual Error execute_file(const String &p_path) override;
 
-	virtual void get_reserved_words(List<String> *p_words) const;
-	virtual bool is_control_flow_keyword(String p_keywords) const;
-	virtual void get_comment_delimiters(List<String> *p_delimiters) const;
-	virtual void get_string_delimiters(List<String> *p_delimiters) const;
+	virtual void get_reserved_words(List<String> *p_words) const override;
+	virtual bool is_control_flow_keyword(String p_keywords) const override;
+	virtual void get_comment_delimiters(List<String> *p_delimiters) const override;
+	virtual void get_string_delimiters(List<String> *p_delimiters) const override;
 
-	virtual Ref<Script> get_template(const String &p_class_name, const String &p_base_class_name) const;
-	virtual Ref<Script> make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const;
+	Ref<Script> get_template(const String &p_class_name, const String &p_base_class_name) const;
+	virtual Ref<Script> make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const override;
 
-	virtual bool validate(const String &p_script, const String &p_path = "", List<String> *r_functions = nullptr, List<ScriptError> *r_errors = nullptr, List<Warning> *r_warnings = nullptr, HashSet<int> *r_safe_lines = nullptr) const;
-	virtual String validate_path(const String &p_path) const { return ""; }
-	virtual Script *create_script() const;
+	virtual Script *create_script() const override;
+	_FORCE_INLINE_ virtual bool has_named_classes() const override { return true; }
+	_FORCE_INLINE_ virtual bool supports_builtin_mode() const override { return false; }
+	_FORCE_INLINE_ virtual bool is_using_templates() override { return true; }
 
-	/* TODO */ virtual int find_function(const String &p_function, const String &p_code) const { return -1; }
-	/* TODO */ virtual String make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const { return ""; }
-	/* TODO */ virtual Error open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) { return ERR_UNAVAILABLE; }
+	virtual bool validate(const String &p_script, const String &p_path = "", List<String> *r_functions = nullptr, List<ScriptError> *r_errors = nullptr, List<Warning> *r_warnings = nullptr, HashSet<int> *r_safe_lines = nullptr) const override;
 
-	/* TODO */ virtual void auto_indent_code(String &p_code, int p_from_line, int p_to_line) const {}
-	/* TODO */ virtual void add_global_constant(const StringName &p_variable, const Variant &p_value) {}
-	/* TODO */ virtual void add_named_global_constant(const StringName &p_name, const Variant &p_value) {}
-	/* TODO */ virtual void remove_named_global_constant(const StringName &p_name) {}
+	virtual int find_function(const String &p_function, const String &p_code) const override { return -1; }
+	virtual String make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const override { return ""; }
 
-	/* MULTITHREAD FUNCTIONS */
+	virtual void auto_indent_code(String &p_code, int p_from_line, int p_to_line) const override {}
+	virtual void add_global_constant(const StringName &p_variable, const Variant &p_value) override {}
 
-	//some VMs need to be notified of thread creation/exiting to allocate a stack
-	/* TODO */ virtual void thread_enter() {}
-	/* TODO */ virtual void thread_exit() {}
+	virtual void thread_enter() override {}
+	virtual void thread_exit() override {}
 
 	/* DEBUGGER FUNCTIONS */
 
 	/* DEBUGGER FUNCTIONS */
-	/* TODO */ virtual String debug_get_error() const { return ""; }
-	/* TODO */ virtual int debug_get_stack_level_count() const { return 1; }
-	/* TODO */ virtual int debug_get_stack_level_line(int p_level) const { return 1; }
-	/* TODO */ virtual String debug_get_stack_level_function(int p_level) const { return ""; }
-	/* TODO */ virtual String debug_get_stack_level_source(int p_level) const { return ""; }
-	/* TODO */ virtual void debug_get_stack_level_locals(int p_level, List<String> *p_locals, List<Variant> *p_values, int p_max_subitems, int p_max_depth) {}
-	/* TODO */ virtual void debug_get_stack_level_members(int p_level, List<String> *p_members, List<Variant> *p_values, int p_max_subitems, int p_max_depth) {}
-	/* TODO */ virtual void debug_get_globals(List<String> *p_locals, List<Variant> *p_values, int p_max_subitems, int p_max_depth) {}
-	/* TODO */ virtual String debug_parse_stack_level_expression(int p_level, const String &p_expression, int p_max_subitems, int p_max_depth) { return ""; }
-	/* TODO */ virtual Vector<StackInfo> debug_get_current_stack_info() { return Vector<StackInfo>(); }
+	virtual String debug_get_error() const override { return ""; }
+	virtual int debug_get_stack_level_count() const override { return 1; }
+	virtual int debug_get_stack_level_line(int p_level) const override { return 1; }
+	virtual String debug_get_stack_level_function(int p_level) const override { return ""; }
+	virtual String debug_get_stack_level_source(int p_level) const override { return ""; }
+	virtual void debug_get_stack_level_locals(int p_level, List<String> *p_locals, List<Variant> *p_values, int p_max_subitems, int p_max_depth) override {}
+	virtual void debug_get_stack_level_members(int p_level, List<String> *p_members, List<Variant> *p_values, int p_max_subitems, int p_max_depth) override {}
+	virtual void debug_get_globals(List<String> *p_locals, List<Variant> *p_values, int p_max_subitems, int p_max_depth) override {}
+	virtual String debug_parse_stack_level_expression(int p_level, const String &p_expression, int p_max_subitems, int p_max_depth) override { return ""; }
+	virtual Vector<StackInfo> debug_get_current_stack_info() override { return Vector<StackInfo>(); }
 
 	void reload_script(const Ref<Script> &p_script, bool p_soft_reload);
-	virtual void reload_all_scripts();
-	virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) { reload_script(p_script, p_soft_reload); }
+
+	virtual void reload_all_scripts() override;
+	virtual void reload_tool_script(const Ref<Script> &p_script, bool p_soft_reload) override { reload_script(p_script, p_soft_reload); }
 
 	/* LOADER FUNCTIONS */
-	virtual void get_recognized_extensions(List<String> *p_extensions) const;
-	/* TODO */ virtual void get_public_functions(List<MethodInfo> *p_functions) const {}
-	/* TODO */ virtual void get_public_constants(List<Pair<String, Variant> > *p_constants) const {}
+	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
+	virtual void get_public_functions(List<MethodInfo> *p_functions) const override {}
+	virtual void get_public_constants(List<Pair<String, Variant>> *p_constants) const override {}
+	virtual void get_public_annotations(List<MethodInfo> *p_annotations) const override{};
 
-	/* TODO */ virtual void profiling_start() {}
-	/* TODO */ virtual void profiling_stop() {}
+	virtual void profiling_start() override {}
+	virtual void profiling_stop() override {}
 
-	/* TODO */ virtual int profiling_get_accumulated_data(ProfilingInfo *p_info_arr, int p_info_max) { return -1; }
-	/* TODO */ virtual int profiling_get_frame_data(ProfilingInfo *p_info_arr, int p_info_max) { return -1; }
+	virtual int profiling_get_accumulated_data(ProfilingInfo *p_info_arr, int p_info_max) override { return -1; }
+	virtual int profiling_get_frame_data(ProfilingInfo *p_info_arr, int p_info_max) override { return -1; }
 
-	virtual void *alloc_instance_binding_data(Object *p_object); //optional, not used by all languages
-	virtual void free_instance_binding_data(void *p_data); //optional, not used by all languages
-	virtual void refcount_incremented_instance_binding(Object *p_object); //optional, not used by all languages
-	virtual bool refcount_decremented_instance_binding(Object *p_object); //return true if it can die //optional, not used by all languages
+	virtual void frame() override;
 
-	virtual void frame();
-
-	/* TODO */ virtual bool handles_global_class_type(const String &p_type) const { return false; }
-	/* TODO */ virtual String get_global_class_name(const String &p_path, String *r_base_type = NULL, String *r_icon_path = NULL) const { return String(); }
+	virtual bool handles_global_class_type(const String &p_type) const override { return false; }
+	virtual String get_global_class_name(const String &p_path, String *r_base_type = NULL, String *r_icon_path = NULL) const override { return String(); }
 
 	static String globalize_relative_path(const String &p_relative, const String &p_base_dir);
 
