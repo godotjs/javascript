@@ -34,7 +34,7 @@ public:
 	}
 
 	_FORCE_INLINE_ virtual String get_name() const override { return "JavaScript"; }
-	const GDNativeInstanceBindingCallbacks *getInstanceBindingCallbacks() const { return &instance_binding_callbacks; }
+	const GDNativeInstanceBindingCallbacks *get_instance_binding_callbacks() const { return &instance_binding_callbacks; }
 #ifdef TOOLS_ENABLED
 	_FORCE_INLINE_ HashSet<Ref<ECMAScript> > &get_scripts() { return scripts; }
 #endif

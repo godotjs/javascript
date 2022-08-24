@@ -48,7 +48,7 @@ ECMAScriptLanguage::~ECMAScriptLanguage() {
 void ECMAScriptLanguage::init() {
 	ERR_FAIL_NULL(main_binder);
 	main_binder->initialize();
-	execute_file("bin/test.js");
+	execute_file("modules/ECMAScript/tests/UnitTest.js");
 }
 
 void ECMAScriptLanguage::finish() {

@@ -50,7 +50,7 @@ struct GodotMethodArguments {
 _FORCE_INLINE_ static ECMAScriptGCHandler *BINDING_DATA_FROM_GD(Object *p_object) {
 	ERR_FAIL_COND_V(p_object == NULL, NULL);
 	ECMAScriptLanguage *lang = ECMAScriptLanguage::get_singleton();
-	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)(p_object)->get_instance_binding(lang, lang->getInstanceBindingCallbacks());
+	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)(p_object)->get_instance_binding(lang, lang->get_instance_binding_callbacks());
 	return bind;
 }
 
@@ -1587,6 +1587,7 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 		if (p_object->is_ref_counted()) {
 			RefCounted *ref = Object::cast_to<RefCounted>(p_object);
 			data->flags |= ECMAScriptGCHandler::FLAG_REFERENCE;
+#if 0
 			union {
 				Ref<RefCounted> *ref;
 				struct {
@@ -1596,6 +1597,9 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 			u.ref = memnew(Ref<RefCounted>);
 			u.r->ref = ref;
 			data->godot_reference = u.ref;
+#else
+			data->godot_reference = memnew(Ref<RefCounted>(ref));
+#endif
 		}
 		JS_SetOpaque(obj, data);
 #ifdef DUMP_LEAKS
@@ -1633,7 +1637,10 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		js_obj = new_target;
 	} else {
 		Object *gd_obj = cls.gdclass->creation_func();
-		bind = BINDING_DATA_FROM_GD(ctx, gd_obj);
+		ECMAScriptLanguage *lang = ECMAScriptLanguage::get_singleton();
+		bind = new_gc_handler(ctx);
+		bind_gc_object(ctx, bind, gd_obj);
+		gd_obj->set_instance_binding(lang, bind, lang->get_instance_binding_callbacks());
 		js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 
 		if (JS_IsFunction(ctx, new_target)) {
