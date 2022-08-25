@@ -17,9 +17,9 @@ struct ECMAScriptGCHandler {
 		FLAG_ATOMIC_VALUE = 1 << 1,
 		FLAG_BUILTIN_CLASS = 1 << 2,
 		FLAG_OBJECT = 1 << 3,
-		FLAG_REFERENCE = 1 << 4,
-		FLAG_SCRIPT_FINALIZED = 1 << 5,
-		FLAG_CONTEXT_TRANSFERABLE = 1 << 6,
+		FLAG_REF_COUNTED = 1 << 4,
+		FLAG_FINALIZED = 1 << 5,
+		FLAG_TRANSFERABLE = 1 << 6,
 	};
 	Variant::Type type;
 	uint8_t flags;
@@ -27,20 +27,14 @@ struct ECMAScriptGCHandler {
 	void *ecma_object;
 	union {
 		Object *godot_object;
-		Ref<RefCounted> *godot_reference;
 		void *godot_builtin_object_ptr;
 		void *native_ptr;
 	};
 
 	_FORCE_INLINE_ Variant get_value() const {
 		switch (type) {
-			case Variant::OBJECT: {
-				if (flags & FLAG_REFERENCE) {
-					return *godot_reference;
-				} else if (flags & FLAG_OBJECT) {
-					return godot_object;
-				}
-			} break;
+			case Variant::OBJECT:
+				return godot_object;
 			case Variant::VECTOR2:
 				return *(static_cast<Vector2 *>(godot_builtin_object_ptr));
 			case Variant::RECT2:
@@ -88,12 +82,10 @@ struct ECMAScriptGCHandler {
 	}
 
 	_FORCE_INLINE_ Object *get_godot_object() {
-		if (flags & FLAG_REFERENCE && godot_reference) {
-			return godot_reference->ptr();
-		} else if (flags & FLAG_OBJECT) {
+		if (flags & FLAG_OBJECT) {
 			return godot_object;
 		}
-		return NULL;
+		return nullptr;
 	}
 
 	_FORCE_INLINE_ Vector2 *getVector2() const { return static_cast<Vector2 *>(godot_builtin_object_ptr); }
@@ -118,15 +110,15 @@ struct ECMAScriptGCHandler {
 	_FORCE_INLINE_ PackedVector3Array *getPackedVector3Array() const { return static_cast<PackedVector3Array *>(godot_builtin_object_ptr); }
 
 	_FORCE_INLINE_ bool is_object() const {
-		return flags & FLAG_OBJECT && !(flags & FLAG_REFERENCE);
+		return flags & FLAG_OBJECT;
 	}
 
-	_FORCE_INLINE_ bool is_reference() const {
-		return flags & FLAG_REFERENCE;
+	_FORCE_INLINE_ bool is_ref_counted() const {
+		return flags & FLAG_REF_COUNTED;
 	}
 
 	_FORCE_INLINE_ bool is_transferable() const {
-		return flags & FLAG_CONTEXT_TRANSFERABLE;
+		return flags & FLAG_TRANSFERABLE;
 	}
 
 	_FORCE_INLINE_ bool is_atomic_type() const {
@@ -134,7 +126,7 @@ struct ECMAScriptGCHandler {
 	}
 
 	_FORCE_INLINE_ bool is_finalized() const {
-		return flags & FLAG_SCRIPT_FINALIZED;
+		return flags & FLAG_FINALIZED;
 	}
 	_FORCE_INLINE_ bool is_valid_ecma_object() const {
 		return context != NULL && ecma_object != NULL && !is_finalized();

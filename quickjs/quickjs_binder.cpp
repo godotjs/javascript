@@ -247,7 +247,6 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 			ERR_FAIL_NULL_V(data, JS_UNDEFINED);
 			ERR_FAIL_NULL_V(data->ecma_object, JS_UNDEFINED);
 			ERR_FAIL_COND_V(data->context != ctx, (JS_UNDEFINED));
-			QuickJSBinder *binder = get_context_binder(ctx);
 			JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, data->ecma_object);
 			JS_DupValue(ctx, js_obj);
 
@@ -555,9 +554,7 @@ void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, c
 	if (p_bind->type != Variant::OBJECT) {
 		classname = to_js_string(ctx, Variant::get_type_name(p_bind->type));
 	} else {
-		if (p_bind->is_reference()) {
-			classname = to_js_string(ctx, (*p_bind->godot_reference)->get_class_name());
-		} else if (p_bind->is_object()) {
+		if (p_bind->is_object()) {
 			classname = to_js_string(ctx, p_bind->godot_object->get_class_name());
 		}
 	}
@@ -1558,7 +1555,7 @@ ECMAScriptGCHandler *QuickJSBinder::alloc_object_binding_data(Object *p_object) 
 
 void QuickJSBinder::free_object_binding_data(ECMAScriptGCHandler *p_gc_handle) {
 	ECMAScriptGCHandler *bind = (ECMAScriptGCHandler *)p_gc_handle;
-	if (bind->is_object()) {
+	if (!bind->is_ref_counted()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		JS_SetOpaque(js_obj, NULL);
 		JS_FreeValue((JSContext *)bind->context, js_obj);
@@ -1585,21 +1582,9 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 		data->type = Variant::OBJECT;
 		data->flags = ECMAScriptGCHandler::FLAG_OBJECT;
 		if (p_object->is_ref_counted()) {
-			RefCounted *ref = Object::cast_to<RefCounted>(p_object);
-			data->flags |= ECMAScriptGCHandler::FLAG_REFERENCE;
-#if 0
-			union {
-				Ref<RefCounted> *ref;
-				struct {
-					RefCounted *ref;
-				} * r;
-			} u;
-			u.ref = memnew(Ref<RefCounted>);
-			u.r->ref = ref;
-			data->godot_reference = u.ref;
-#else
-			data->godot_reference = memnew(Ref<RefCounted>(ref));
-#endif
+			if (static_cast<RefCounted *>(p_object)->init_ref()) {
+				data->flags |= ECMAScriptGCHandler::FLAG_REF_COUNTED;
+			}
 		}
 		JS_SetOpaque(obj, data);
 #ifdef DUMP_LEAKS
@@ -1612,14 +1597,14 @@ Error QuickJSBinder::bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, O
 }
 
 void QuickJSBinder::godot_refcount_incremented(ECMAScriptGCHandler *bind) {
-	if (bind->is_valid_ecma_object() && bind->is_reference()) {
+	if (bind->is_valid_ecma_object()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		JS_DupValue((JSContext *)bind->context, js_obj);
 	}
 }
 
 bool QuickJSBinder::godot_refcount_decremented(ECMAScriptGCHandler *bind) {
-	if (bind->is_valid_ecma_object() && bind->is_reference()) {
+	if (bind->is_valid_ecma_object()) {
 		JSValue js_obj = JS_MKPTR(JS_TAG_OBJECT, bind->ecma_object);
 		JS_FreeValue((JSContext *)bind->context, js_obj);
 		return bind->is_finalized();
@@ -1669,9 +1654,7 @@ JSValue QuickJSBinder::object_constructor(JSContext *ctx, JSValueConst new_targe
 		JS_FreeValue(ctx, es_class_name);
 		gd_obj->set_script_instance(si);
 #endif
-		if (bind->is_reference()) {
-			bind->flags |= ECMAScriptGCHandler::FLAG_REFERENCE;
-		} else if (bind->is_object()) {
+		if (!bind->is_ref_counted()) { // Object need to be freed manually
 			JS_DupValue(ctx, js_obj);
 		}
 	}
@@ -1696,9 +1679,11 @@ void QuickJSBinder::initialize_properties(JSContext *ctx, const ECMAClassInfo *p
 
 void QuickJSBinder::object_finalizer(ECMAScriptGCHandler *p_bind) {
 	p_bind->flags ^= ECMAScriptGCHandler::FLAG_OBJECT;
-	if (p_bind->is_reference()) {
-		p_bind->flags ^= ECMAScriptGCHandler::FLAG_REFERENCE;
-		memdelete(p_bind->godot_reference);
+	if (p_bind->godot_object->is_ref_counted()) {
+		RefCounted *ref = static_cast<RefCounted *>(p_bind->godot_object);
+		if (ref->unreference()) {
+			memdelete(ref);
+		}
 	}
 }
 
@@ -1706,7 +1691,7 @@ void QuickJSBinder::origin_finalizer(JSRuntime *rt, JSValue val) {
 	QuickJSBinder *binder = get_runtime_binder(rt);
 	ECMAScriptGCHandler *bind = static_cast<ECMAScriptGCHandler *>(JS_GetOpaque(val, binder->godot_origin_class.class_id));
 	if (bind) {
-		bind->flags |= ECMAScriptGCHandler::FLAG_SCRIPT_FINALIZED;
+		bind->flags |= ECMAScriptGCHandler::FLAG_FINALIZED;
 		if (bind->type == Variant::OBJECT) {
 			object_finalizer(bind);
 		} else {
@@ -1720,7 +1705,7 @@ JSValue QuickJSBinder::object_free(JSContext *ctx, JSValue this_val, int argc, J
 	ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 	ERR_FAIL_NULL_V(bind, JS_ThrowReferenceError(ctx, "The object already be freed"));
 	ERR_FAIL_NULL_V(bind->godot_object, JS_ThrowReferenceError(ctx, "The object already be freed"));
-	ERR_FAIL_COND_V((bind->is_reference()), JS_ThrowReferenceError(ctx, "Call free to RefCounted object is not allowed"));
+	ERR_FAIL_COND_V(bind->godot_object->is_ref_counted(), JS_ThrowReferenceError(ctx, "Call free to RefCounted object is not allowed"));
 
 	memdelete(bind->godot_object);
 	JS_SetOpaque(this_val, NULL);
@@ -2266,16 +2251,15 @@ JSValue QuickJSBinder::godot_abandon_value(JSContext *ctx, JSValue this_val, int
 		ECMAScriptGCHandler *data = BINDING_DATA_FROM_JS(ctx, value);
 		if (data) {
 			JS_SetOpaque(value, NULL);
-			if (data->type == Variant::OBJECT) {
+			if (data->is_ref_counted()) {
+				static_cast<RefCounted *>(data->godot_object)->unreference();
+			} else if (data->is_object()) {
 				JS_FreeValue(ctx, value);
-				if (data->is_reference()) {
-					memdelete(data->godot_reference);
-				}
 			}
 			data->godot_object = NULL;
 			data->ecma_object = NULL;
 			data->context = NULL;
-			data->flags |= ECMAScriptGCHandler::FLAG_CONTEXT_TRANSFERABLE;
+			data->flags |= ECMAScriptGCHandler::FLAG_TRANSFERABLE;
 		} else {
 			valid = false;
 		}
