@@ -1257,11 +1257,13 @@ void QuickJSBinder::initialize() {
 	String script_binding_error;
 	JavaScriptGCHandler eval_ret;
 	if (OK == safe_eval_text(JavaScriptBinder::BINDING_SCRIPT_CONTENT, JavaScriptBinder::EVAL_TYPE_GLOBAL, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
+#ifdef TOOLS_ENABLED
 		if (eval_ret.javascript_object) {
 			JSValue ret = JS_MKPTR(JS_TAG_OBJECT, eval_ret.javascript_object);
 			modified_api = var_to_variant(ctx, ret);
 			JS_FreeValue(ctx, ret);
 		}
+#endif
 	} else {
 		CRASH_NOW_MSG("Execute script binding failed:" ENDL + script_binding_error);
 	}
