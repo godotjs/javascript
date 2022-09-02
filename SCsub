@@ -49,19 +49,19 @@ if JS_ENGINE == 'quickjs':
 
 # Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:
-	text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
+	text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../javascript_binder.h"\nString JavaScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
 	f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
 
 sources = [
 	'register_types.cpp',
-	'ecmascript_language.cpp',
-	'ecmascript_instance.cpp',
-	'ecmascript.cpp',
+	'javascript_language.cpp',
+	'javascript_instance.cpp',
+	'javascript.cpp',
 	'misc/godot.binding_script.gen.cpp',
 ]
 
 if env['tools']:
-	base_text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::{} = \n{};'
+	base_text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
 	tool_fns = {"tools/godot.d.ts.gen.cpp": ("BUILTIN_DECLARATION_TEXT", dump_text_file_to_cpp("misc/godot.d.ts")),
 		"tools/tsconfig.json.gen.cpp": ("TSCONFIG_CONTENT", dump_text_file_to_cpp("misc/tsconfig.json")),
 		"tools/decorators.ts.gen.cpp": ("TS_DECORATORS_CONTENT", dump_text_file_to_cpp("misc/decorators.ts")),
@@ -73,5 +73,5 @@ if env['tools']:
 		env_module.add_source_files(env.modules_sources, fn)
 
 
-env_module.Append(CPPPATH=["#modules/ECMAScript"])
+env_module.Append(CPPPATH=["#modules/javascript"])
 env_module.add_source_files(env.modules_sources, sources)

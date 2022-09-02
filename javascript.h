@@ -1,10 +1,10 @@
-#ifndef ECMASCRIPT_H
-#define ECMASCRIPT_H
+#ifndef JAVASCRIPT_H
+#define JAVASCRIPT_H
 
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
-#include "ecmascript_binder.h"
+#include "javascript_binder.h"
 #include "scene/resources/text_file.h"
 
 #define EXT_JSCLASS "jsx"
@@ -15,20 +15,20 @@
 #define EXT_JSMODULE_ENCRYPTED EXT_JSMODULE "e"
 #define EXT_JSON "json"
 
-class ECMAScript : public Script {
-	GDCLASS(ECMAScript, Script);
+class JavaScript : public Script {
+	GDCLASS(JavaScript, Script);
 
 private:
-	friend class ECMAScriptInstance;
+	friend class JavaScriptInstance;
 	friend class QuickJSBinder;
-	friend class ResourceFormatLoaderECMAScript;
+	friend class ResourceFormatLoaderJavaScript;
 
 	HashSet<Object *> instances;
 	StringName class_name;
 	String code;
 	String script_path;
 	Vector<uint8_t> bytecode;
-	const BasicECMAClassInfo *ecma_class;
+	const BasicJavaScriptClassInfo *javascript_class;
 
 #ifdef TOOLS_ENABLED
 	HashSet<PlaceHolderScriptInstance *> placeholders;
@@ -83,12 +83,12 @@ public:
 
 	virtual const Variant get_rpc_config() const override { return rpc_config; }
 
-	ECMAScript();
-	virtual ~ECMAScript();
+	JavaScript();
+	virtual ~JavaScript();
 };
 
-class ResourceFormatLoaderECMAScript : public ResourceFormatLoader {
-	GDCLASS(ResourceFormatLoaderECMAScript, ResourceFormatLoader)
+class ResourceFormatLoaderJavaScript : public ResourceFormatLoader {
+	GDCLASS(ResourceFormatLoaderJavaScript, ResourceFormatLoader)
 public:
 	virtual Ref<Resource> load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
@@ -97,16 +97,16 @@ public:
 	virtual String get_resource_type(const String &p_path) const override;
 };
 
-class ResourceFormatSaverECMAScript : public ResourceFormatSaver {
-	GDCLASS(ResourceFormatSaverECMAScript, ResourceFormatSaver)
+class ResourceFormatSaverJavaScript : public ResourceFormatSaver {
+	GDCLASS(ResourceFormatSaverJavaScript, ResourceFormatSaver)
 public:
 	virtual Error save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags = 0);
 	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const override;
 	virtual bool recognize(const Ref<Resource> &p_resource) const override;
 };
 
-class ECMAScriptModule : public TextFile {
-	GDCLASS(ECMAScriptModule, Resource)
+class JavaScriptModule : public TextFile {
+	GDCLASS(JavaScriptModule, Resource)
 protected:
 	static void _bind_methods();
 	String script_path;
@@ -119,11 +119,12 @@ public:
 	_FORCE_INLINE_ Vector<uint8_t> get_bytecode() const { return bytecode; }
 	_FORCE_INLINE_ void set_script_path(String p_script_path) { script_path = p_script_path; }
 	_FORCE_INLINE_ String get_script_path() const { return script_path; }
-	ECMAScriptModule();
+
+	JavaScriptModule();
 };
 
-class ResourceFormatLoaderECMAScriptModule : public ResourceFormatLoader {
-	GDCLASS(ResourceFormatLoaderECMAScriptModule, ResourceFormatLoader)
+class ResourceFormatLoaderJavaScriptModule : public ResourceFormatLoader {
+	GDCLASS(ResourceFormatLoaderJavaScriptModule, ResourceFormatLoader)
 public:
 	virtual Ref<Resource> load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
@@ -134,12 +135,12 @@ public:
 	static Ref<Resource> load_static(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
 };
 
-class ResourceFormatSaverECMAScriptModule : public ResourceFormatSaver {
-	GDCLASS(ResourceFormatSaverECMAScriptModule, ResourceFormatSaver)
+class ResourceFormatSaverJavaScriptModule : public ResourceFormatSaver {
+	GDCLASS(ResourceFormatSaverJavaScriptModule, ResourceFormatSaver)
 public:
 	virtual Error save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags = 0);
 	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const override;
 	virtual bool recognize(const Ref<Resource> &p_resource) const override;
 };
 
-#endif // ECMASCRIPT_H
+#endif

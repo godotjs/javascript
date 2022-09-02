@@ -188,7 +188,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		tmp.x = QuickJSBinder::js_to_number(ctx, argv[0]);
 		tmp.y = QuickJSBinder::js_to_number(ctx, argv[1]);
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::VECTOR2) {
 				tmp = *bind->getVector2();
 			}
@@ -200,7 +200,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 ''',
 		"Vector3": '''
 	if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::VECTOR3)
 				tmp = *bind->getVector3();
 		} else {
@@ -224,7 +224,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 			tmp = Color::hex(QuickJSBinder::js_to_uint(ctx, argv[0]));
 		} else if (JS_IsString(argv[0])) {
 			tmp = Color::html(QuickJSBinder::js_to_string(ctx, argv[0]));
-		} else if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		} else if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::COLOR) {
 				tmp = *bind->getColor();
 			}
@@ -242,12 +242,12 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 0 of Rect2(position, size)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Rect2(position, size)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		tmp.position = *param0->getVector2();
 		tmp.size = *param1->getVector2();
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::RECT2)
 				tmp = *bind->getRect2();
 		}
@@ -259,12 +259,12 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of AABB(position, size)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of AABB(position, size)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		tmp.position = *param0->getVector3();
 		tmp.size = *param1->getVector3();
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::AABB)
 				tmp = *bind->getAABB();
 		}
@@ -282,18 +282,18 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Plane(v1, v2, v3)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[2]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 2 of Plane(v1, v2, v3)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
 		tmp = Plane(*param0->getVector3(), *param1->getVector3(), *param2->getVector3());
 	} else if (argc == 2) {
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Plane(normal, d)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		tmp = Plane(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::PLANE)
 				tmp = *bind->getPlane();
 		}
@@ -309,10 +309,10 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Quaternion(axis, angle)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		tmp = Quaternion(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::QUATERNION) {
 				tmp = *bind->getQuaternion();
 			} else if (bind->type == Variant::BASIS) {
@@ -332,9 +332,9 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Transform2D(x_axis, y_axis, origin)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[2]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 2 of Transform2D(x_axis, y_axis, origin)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
 		tmp.columns[0].operator=(*param0->getVector2());
 		tmp.columns[1].operator=(*param1->getVector2());
 		tmp.columns[2].operator=(*param2->getVector2());
@@ -342,11 +342,11 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[1]), (JS_ThrowTypeError(ctx, "Vector2 expected for argument 1 of Transform2D(rotation, position)")));
 #endif
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		tmp.set_origin(*param1->getVector2());
 		tmp.set_rotation(QuickJSBinder::js_to_number(ctx, argv[0]));
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::TRANSFORM2D)
 				tmp = *bind->getTransform2D();
 			else if (Variant::can_convert(bind->type, Variant::TRANSFORM2D)) {
@@ -362,9 +362,9 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Basis(x_axis, y_axis, z_axis)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[2]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 2 of Basis(x_axis, y_axis, z_axis)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
 		tmp.rows[0].operator=(*param0->getVector3());
 		tmp.rows[1].operator=(*param1->getVector3());
 		tmp.rows[2].operator=(*param2->getVector3());
@@ -372,10 +372,10 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 #ifdef DEBUG_METHODS_ENABLED
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 0 of Basis(axis, phi)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
 		tmp.set_axis_angle(*param0->getVector3(), QuickJSBinder::js_to_number(ctx, argv[1]));
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::VECTOR3) {
 				tmp.set_euler(*bind->getVector3());
 			} else if (bind->type == Variant::QUATERNION) {
@@ -394,10 +394,10 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[2]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 2 of Transform3D(x_axis, y_axis, z_axis, origin)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[3]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 3 of Transform3D(x_axis, y_axis, z_axis, origin)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
-		ECMAScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
-		ECMAScriptGCHandler *param3 = BINDING_DATA_FROM_JS(ctx, argv[3]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param2 = BINDING_DATA_FROM_JS(ctx, argv[2]);
+		JavaScriptGCHandler *param3 = BINDING_DATA_FROM_JS(ctx, argv[3]);
 
 		tmp.basis.rows[0].operator=(*param0->getVector3());
 		tmp.basis.rows[1].operator=(*param1->getVector3());
@@ -408,12 +408,12 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::BASIS, argv[0]), (JS_ThrowTypeError(ctx, "Basis expected for argument 0 of Transform3D(basis, origin)")));
 		ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for argument 1 of Transform3D(basis, origin)")));
 #endif
-		ECMAScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
-		ECMAScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+		JavaScriptGCHandler *param0 = BINDING_DATA_FROM_JS(ctx, argv[0]);
+		JavaScriptGCHandler *param1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 		tmp.basis.operator=(*param0->getBasis());
 		tmp.origin.operator=(*param1->getVector3());
 	} else if (argc == 1) {
-		if (ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
+		if (JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0])) {
 			if (bind->type == Variant::TRANSFORM3D) {
 				tmp.operator=(*bind->getTransform3D());
 			} else if (Variant::can_convert(bind->type, Variant::TRANSFORM3D)) {
@@ -454,7 +454,7 @@ def generate_property_bindings(cls):
 	def generate_members(cls):
 		Template = '''
 	JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+		JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 		const ${class} *ptr = bind->get${class}();
 		switch (magic) {\
 ${getters}
@@ -463,7 +463,7 @@ ${getters}
 	};
 	
 	JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-		ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+		JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 		${class} *ptr = bind->get${class}();\
 ${validation}
 		switch (magic) {\
@@ -520,7 +520,7 @@ ${bindings}
 		${type},
 		"${name}",
 		[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			${class} *ptr = bind->get${class}();\
 ${arg_declares}
 			${call}
@@ -589,13 +589,13 @@ ${arg_declares}
 #ifdef DEBUG_METHODS_ENABLED
 			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[1]), (JS_ThrowTypeError(ctx, "${target_class} expected for ${class}.${operator}")));
 #endif
-			ECMAScriptGCHandler *bind1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
+			JavaScriptGCHandler *bind1 = BINDING_DATA_FROM_JS(ctx, argv[1]);
 			${target_class} *target = bind1->get${target_class}();\
 '''
 		OperatorTemplate = '''
 	JS_SetPropertyStr(octx, base_operators, "${js_op}",
 		JS_NewCFunction(octx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 			${class} *ptr = bind->get${class}();\
 ${target_declare}
 			${call}

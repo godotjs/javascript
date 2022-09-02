@@ -1,7 +1,7 @@
 #ifndef QUICKJS_BINDING_HELPER_H
 #define QUICKJS_BINDING_HELPER_H
 
-#include "../ecmascript_binder.h"
+#include "../javascript_binder.h"
 #include "./quickjs/quickjs.h"
 
 #ifdef QUICKJS_WITH_DEBUGGER
@@ -13,8 +13,8 @@
 #include "core/variant/callable.h"
 #include "quickjs_builtin_binder.h"
 #define JS_HIDDEN_SYMBOL(x) ("\xFF" x)
-#define BINDING_DATA_FROM_JS(ctx, p_val) (ECMAScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
-#define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).ecma_object)
+#define BINDING_DATA_FROM_JS(ctx, p_val) (JavaScriptGCHandler *)JS_GetOpaque((p_val), QuickJSBinder::get_origin_class_id((ctx)))
+#define GET_JSVALUE(p_gc_handler) JS_MKPTR(JS_TAG_OBJECT, (p_gc_handler).javascript_object)
 #define NO_MODULE_EXPORT_SUPPORT 0
 #define MODULE_HAS_REFCOUNT 0 // module seems don't follow the refrence count rule in quickjs
 #define MAX_ARGUMENT_COUNT 50
@@ -22,7 +22,7 @@
 #define ENDL "\r\n"
 
 class QuickJSWorker;
-class QuickJSBinder : public ECMAScriptBinder {
+class QuickJSBinder : public JavaScriptBinder {
 
 	friend class QuickJSBuiltinBinder;
 	friend class QuickJSWorker;
@@ -52,7 +52,7 @@ public:
 		}
 	};
 
-	enum ECMAScriptModuleFlags {
+	enum JavaScriptModuleFlags {
 		MODULE_FLAG_SCRIPT = 1,
 		MODULE_FLAG_NATIVE = 2,
 		MODULE_FLAG_EVALUATED = 1 << 3,
@@ -124,10 +124,10 @@ protected:
 	static String resolve_module_file(const String &file);
 	static JSModuleDef *js_module_loader(JSContext *ctx, const char *module_name, void *opaque);
 	static JSModuleDef *js_make_module(JSContext *ctx, const String &p_id, const JSValueConst &p_value);
-	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
-	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const Vector<uint8_t> &p_bytecode, const String &p_filename, ECMAscriptScriptError *r_error);
-	ModuleCache js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, ECMAscriptScriptError *r_error);
-	static Error js_evalute_module(JSContext *ctx, ModuleCache *p_module, ECMAscriptScriptError *r_error);
+	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const String &p_code, const String &p_filename, JavaScriptError *r_error);
+	ModuleCache *js_compile_and_cache_module(JSContext *ctx, const Vector<uint8_t> &p_bytecode, const String &p_filename, JavaScriptError *r_error);
+	ModuleCache js_compile_module(JSContext *ctx, const String &p_code, const String &p_filename, JavaScriptError *r_error);
+	static Error js_evalute_module(JSContext *ctx, ModuleCache *p_module, JavaScriptError *r_error);
 	static int resource_module_initializer(JSContext *ctx, JSModuleDef *m);
 
 	struct ClassBindData {
@@ -147,7 +147,7 @@ protected:
 	HashMap<String, ModuleCache> module_cache;
 	HashMap<String, CommonJSModule> commonjs_module_cache;
 	ClassBindData worker_class_data;
-	List<ECMAScriptGCHandler *> workers;
+	List<JavaScriptGCHandler *> workers;
 	Vector<MethodBind *> godot_methods;
 	int internal_godot_method_id;
 	Vector<const ClassDB::PropertySetGet *> godot_object_indexed_properties;
@@ -165,9 +165,9 @@ protected:
 	void add_global_worker();
 
 	static JSValue object_constructor(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int class_id);
-	static void initialize_properties(JSContext *ctx, const ECMAClassInfo *p_class, JSValue p_object);
+	static void initialize_properties(JSContext *ctx, const JavaScriptClassInfo *p_class, JSValue p_object);
 
-	static void object_finalizer(ECMAScriptGCHandler *p_bind);
+	static void object_finalizer(JavaScriptGCHandler *p_bind);
 	static void origin_finalizer(JSRuntime *rt, JSValue val);
 
 	static JSValue object_free(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
@@ -178,10 +178,10 @@ protected:
 	static JSValue godot_load(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_instance_from_id(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
-	static void add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const ECMAScriptGCHandler *p_bind);
+	static void add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const JavaScriptGCHandler *p_bind);
 
-	const ECMAClassInfo *register_ecma_class(const JSValueConst &p_constructor, const String &p_path);
-	void free_ecmas_class(const ECMAClassInfo &p_class);
+	const JavaScriptClassInfo *register_javascript_class(const JSValueConst &p_constructor, const String &p_path);
+	void free_javascript_class(const JavaScriptClassInfo &p_class);
 	static JSValue godot_register_class(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_signal(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_register_property(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
@@ -223,10 +223,10 @@ public:
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
 	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
-	static void dump_exception(JSContext *ctx, const JSValueConst &p_exception, ECMAscriptScriptError *r_error);
-	virtual String error_to_string(const ECMAscriptScriptError &p_error);
-	virtual Error get_stacks(List<ECMAScriptStackInfo> &r_stacks);
-	virtual String get_backtrace_message(const List<ECMAScriptStackInfo> &stacks);
+	static void dump_exception(JSContext *ctx, const JSValueConst &p_exception, JavaScriptError *r_error);
+	virtual String error_to_string(const JavaScriptError &p_error) override;
+	virtual Error get_stacks(List<JavaScriptStackInfo> &r_stacks) override;
+	virtual String get_backtrace_message(const List<JavaScriptStackInfo> &stacks) override;
 
 	static Dictionary js_to_dictionary(JSContext *ctx, const JSValueConst &p_val, List<void *> &stack);
 
@@ -285,18 +285,18 @@ public:
 		return static_cast<QuickJSBinder *>(JS_GetContextOpaque(ctx));
 	}
 
-	virtual ECMAScriptBinder *get_context_binder(void *p_context) {
+	virtual JavaScriptBinder *get_context_binder(void *p_context) override {
 		return QuickJSBinder::get_context_binder((JSContext *)p_context);
 	}
 
-	virtual Thread::ID get_thread_id() const { return thread_id; }
+	virtual Thread::ID get_thread_id() const override { return thread_id; }
 
 	_FORCE_INLINE_ static QuickJSBinder *get_runtime_binder(JSRuntime *rt) {
 		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);
 	}
 
-	_FORCE_INLINE_ static ECMAScriptGCHandler *new_gc_handler(JSContext *ctx) {
-		ECMAScriptGCHandler *h = memnew(ECMAScriptGCHandler);
+	_FORCE_INLINE_ static JavaScriptGCHandler *new_gc_handler(JSContext *ctx) {
+		JavaScriptGCHandler *h = memnew(JavaScriptGCHandler);
 		h->context = ctx;
 		return h;
 	}
@@ -312,33 +312,33 @@ public:
 	virtual void language_finalize() override;
 	virtual void frame() override;
 
-	virtual ECMAScriptGCHandler *alloc_object_binding_data(Object *p_object) override;
-	virtual void free_object_binding_data(ECMAScriptGCHandler *p_gc_handle) override;
-	virtual void godot_refcount_incremented(ECMAScriptGCHandler *p_gc_handle) override;
-	virtual bool godot_refcount_decremented(ECMAScriptGCHandler *p_gc_handle) override;
+	virtual JavaScriptGCHandler *alloc_object_binding_data(Object *p_object) override;
+	virtual void free_object_binding_data(JavaScriptGCHandler *p_gc_handle) override;
+	virtual void godot_refcount_incremented(JavaScriptGCHandler *p_gc_handle) override;
+	virtual bool godot_refcount_decremented(JavaScriptGCHandler *p_gc_handle) override;
 
-	static Error bind_gc_object(JSContext *ctx, ECMAScriptGCHandler *data, Object *p_object);
+	static Error bind_gc_object(JSContext *ctx, JavaScriptGCHandler *data, Object *p_object);
 
-	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, ECMAScriptGCHandler &r_ret);
-	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, ECMAScriptGCHandler &r_ret);
+	virtual Error eval_string(const String &p_source, EvalType type, const String &p_path, JavaScriptGCHandler &r_ret) override;
+	virtual Error safe_eval_text(const String &p_source, EvalType type, const String &p_path, String &r_error, JavaScriptGCHandler &r_ret) override;
 
-	virtual Error compile_to_bytecode(const String &p_code, const String &p_file, Vector<uint8_t> &r_bytecode);
-	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, const String &p_file, ECMAScriptGCHandler *r_module);
+	virtual Error compile_to_bytecode(const String &p_code, const String &p_file, Vector<uint8_t> &r_bytecode) override;
+	virtual Error load_bytecode(const Vector<uint8_t> &p_bytecode, const String &p_file, JavaScriptGCHandler *r_module) override;
 
-	virtual const ECMAClassInfo *parse_ecma_class(const String &p_code, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error);
-	virtual const ECMAClassInfo *parse_ecma_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, ECMAscriptScriptError *r_error);
-	const ECMAClassInfo *parse_ecma_class_from_module(ModuleCache *p_module, const String &p_path, ECMAscriptScriptError *r_error);
+	virtual const JavaScriptClassInfo *parse_javascript_class(const String &p_code, const String &p_path, bool ignore_cacehe, JavaScriptError *r_error) override;
+	virtual const JavaScriptClassInfo *parse_javascript_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, JavaScriptError *r_error) override;
+	const JavaScriptClassInfo *parse_javascript_class_from_module(ModuleCache *p_module, const String &p_path, JavaScriptError *r_error);
 
-	virtual ECMAScriptGCHandler create_ecma_instance_for_godot_object(const ECMAClassInfo *p_class, Object *p_object);
-	virtual Variant call_method(const ECMAScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error);
-	virtual bool get_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret);
-	virtual bool set_instance_property(const ECMAScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value);
-	virtual bool has_method(const ECMAScriptGCHandler &p_object, const StringName &p_name);
-	virtual bool has_signal(const ECMAClassInfo *p_class, const StringName &p_signal);
-	virtual bool validate(const String &p_code, const String &p_path, ECMAscriptScriptError *r_error);
+	virtual JavaScriptGCHandler create_js_instance_for_godot_object(const JavaScriptClassInfo *p_class, Object *p_object) override;
+	virtual Variant call_method(const JavaScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+	virtual bool get_instance_property(const JavaScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) override;
+	virtual bool set_instance_property(const JavaScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) override;
+	virtual bool has_method(const JavaScriptGCHandler &p_object, const StringName &p_name) override;
+	virtual bool has_signal(const JavaScriptClassInfo *p_class, const StringName &p_signal) override;
+	virtual bool validate(const String &p_code, const String &p_path, JavaScriptError *r_error) override;
 
 #ifdef TOOLS_ENABLED
-	virtual const Dictionary &get_modified_api() const { return modified_api; }
+	virtual const Dictionary &get_modified_api() const override { return modified_api; }
 #endif
 };
 

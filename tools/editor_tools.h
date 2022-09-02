@@ -1,11 +1,10 @@
-#ifndef ECMA_CLASS_BROWSER_H
-#define ECMA_CLASS_BROWSER_H
+#ifndef JAVASCRIPT_PLUGIN_H
+#define JAVASCRIPT_PLUGIN_H
 #include "editor/editor_file_dialog.h"
 #include "editor/editor_node.h"
 
-class ECMAScriptPlugin : public EditorPlugin {
-
-	GDCLASS(ECMAScriptPlugin, EditorPlugin);
+class JavaScriptPlugin : public EditorPlugin {
+	GDCLASS(JavaScriptPlugin, EditorPlugin);
 
 	enum MenuItem {
 		ITEM_GEN_DECLARE_FILE,
@@ -32,8 +31,8 @@ protected:
 	void _generate_typescript_project();
 
 public:
-	virtual String get_name() const override { return "ECMAScriptPlugin"; }
-	ECMAScriptPlugin(EditorNode *p_node);
+	virtual String get_name() const override { return "JavaScriptPlugin"; }
+	JavaScriptPlugin(EditorNode *p_node);
 };
 
-#endif // ECMA_CLASS_BROWSER_H
+#endif

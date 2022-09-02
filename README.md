@@ -1,6 +1,6 @@
 ## JavaScript language binding for godot game engine
 
-This module implements JavaScript/TypeScript language support for the godot game engine. [QuickJS](https://bellard.org/quickjs/) is used as the ECMAScript engine.
+This module implements JavaScript/TypeScript language support for the godot game engine. [QuickJS](https://bellard.org/quickjs/) is used as the JavaScript engine.
 
 -----
 
@@ -20,7 +20,7 @@ You can also get the binaries with lastest commits from the [github build action
 
 ### Compilation
 * Clone the source code of [godot](https://github.com/godotengine/godot)
-* Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
+* Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `javascript`
 * [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
 ![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
@@ -28,7 +28,7 @@ You can also get the binaries with lastest commits from the [github build action
 ### Usage
 
 ##### How to export script class to godot
-1. Define your ECMAScript class and inherit from a godot class then export it as the **default** entry
+1. Define your JavaScript class and inherit from a godot class then export it as the **default** entry
 ```js
 // The default export entry is treated as an exported class to godot
 export default class MySprite extends godot.Sprite {
@@ -94,7 +94,7 @@ godot.register_property(MyClass, 'number_value',  {
 });
 ```
 
-For more detail on how to use it, [click here](https://github.com/GodotExplorer/ECMAScript/issues/24#issuecomment-655584829).
+For more detail on how to use it, [click here](https://github.com/Geequlim/ECMAScript/issues/24#issuecomment-655584829).
 
 #### About the API
 
@@ -102,7 +102,7 @@ All of godots api's are defined within the `godot` namespace.
 
 No API names have been renamed or changed so you shouldn't need to change your habits.
 
-GDScript | ECMAScript
+GDScript | JavaScript
 ---- | ---
 null | null
 int | number
@@ -180,7 +180,7 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 		```
 	
 ### TypeScript support and JSX code completion
-- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from the godot editor to generate a TypeScript project
+- Run the menu command `Project > Tools > JavaScript > Generate TypeScript Project` from the godot editor to generate a TypeScript project
 - Run `tsc -w -p .` under your project folder in the terminal to compile scripts
 
 #### Code completion
@@ -269,6 +269,6 @@ You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScrip
 * The script also build the `on_tag.yml` script which automates the github release publishing.
 ** The `on_tag.yml` functionality tries to sleep until all jobs with the same `sha` are completed.  It should be fine to run whenever, but depending on how github actions culls long running jobs you might want to make sure that all/(most of) the builds look good before tagging.
 * Linux ubsan asan build woes:
-** The godot repo has ubsan and asan builds that we can't build from.  Currently we skip them (get removed via the `build_github_actions.py` script).
-** They should definitely be fixed & enabled at some point, **so please submit a PR if you have any ideas of how to do that!**
+* The godot repo has ubsan and asan builds that we can't build from.  Currently we skip them (get removed via the `build_github_actions.py` script).
+* They should definitely be fixed & enabled at some point, **so please submit a PR if you have any ideas of how to do that!**
 

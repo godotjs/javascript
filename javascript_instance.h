@@ -1,21 +1,20 @@
-#ifndef ECMASCRIPT_INSTANCE_H
-#define ECMASCRIPT_INSTANCE_H
+#ifndef JAVASCRIPT_INSTANCE_H
+#define JAVASCRIPT_INSTANCE_H
 
-#include "ecmascript.h"
-#include "ecmascript_binder.h"
+#include "javascript.h"
+#include "javascript_binder.h"
 #include "core/object/script_language.h"
 #include "core/variant/callable.h"
 
-class ECMAScriptInstance : public ScriptInstance {
-
-	friend class ECMAScript;
+class JavaScriptInstance : public ScriptInstance {
+	friend class JavaScript;
 	friend class QuickJSBinder;
 
 	Object *owner;
-	Ref<ECMAScript> script;
-	ECMAScriptGCHandler ecma_object;
-	ECMAScriptBinder *binder;
-	const ECMAClassInfo *ecma_class;
+	Ref<JavaScript> script;
+	JavaScriptGCHandler javascript_object;
+	JavaScriptBinder *binder;
+	const JavaScriptClassInfo *javascript_class;
 
 public:
 	virtual bool set(const StringName &p_name, const Variant &p_value) override;
@@ -36,8 +35,8 @@ public:
 
 	virtual void notification(int p_notification) override{};
 
-	ECMAScriptInstance();
-	~ECMAScriptInstance();
+	JavaScriptInstance();
+	~JavaScriptInstance();
 };
 
-#endif // ECMASCRIPT_INSTANCE_H
+#endif

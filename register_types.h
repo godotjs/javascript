@@ -28,11 +28,11 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef ECMASCRIPT_MODULE_H
-#define ECMASCRIPT_MODULE_H
+#ifndef JAVASCRIPT_MODULE_H
+#define JAVASCRIPT_MODULE_H
 
 #include "modules/register_module_types.h"
-void initialize_ECMAScript_module(ModuleInitializationLevel p_level);
-void uninitialize_ECMAScript_module(ModuleInitializationLevel p_level);
+void initialize_javascript_module(ModuleInitializationLevel p_level);
+void uninitialize_javascript_module(ModuleInitializationLevel p_level);
 
 #endif

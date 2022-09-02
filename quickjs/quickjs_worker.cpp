@@ -12,8 +12,8 @@ void QuickJSWorker::thread_main(void *p_this) {
 
 	if (err == OK) {
 		String err_text;
-		ECMAScriptGCHandler eval_ret;
-		err = self->safe_eval_text(text, ECMAScriptBinder::EVAL_TYPE_MODULE, self->entry_script, err_text, eval_ret);
+		JavaScriptGCHandler eval_ret;
+		err = self->safe_eval_text(text, JavaScriptBinder::EVAL_TYPE_MODULE, self->entry_script, err_text, eval_ret);
 		if (err == OK) {
 			JSValue onmessage_callback = JS_GetPropertyStr(self->ctx, self->global_object, "onmessage");
 			bool onmessage_valid = JS_IsFunction(self->ctx, onmessage_callback);
@@ -34,7 +34,7 @@ void QuickJSWorker::thread_main(void *p_this) {
 						JSValue ret = JS_Call(self->ctx, onmessage_callback, self->global_object, 1, argv);
 						if (JS_IsException(ret)) {
 							JSValue e = JS_GetException(self->ctx);
-							ECMAscriptScriptError err;
+							JavaScriptError err;
 							dump_exception(self->ctx, e, &err);
 							ERR_PRINT(String("Error in worker onmessage callback") + ENDL + self->error_to_string(err));
 							JS_FreeValue(self->ctx, e);
@@ -80,8 +80,8 @@ JSValue QuickJSWorker::global_import_scripts(JSContext *ctx, JSValue this_val, i
 			String path = resolve_module_file(js_to_string(ctx, argv[0]));
 			String source = FileAccess::get_file_as_string(path, &err);
 			QuickJSBinder *bind = get_context_binder(ctx);
-			ECMAScriptGCHandler eval_ret;
-			bind->eval_string(source, ECMAScriptBinder::EVAL_TYPE_GLOBAL, path, eval_ret);
+			JavaScriptGCHandler eval_ret;
+			bind->eval_string(source, JavaScriptBinder::EVAL_TYPE_GLOBAL, path, eval_ret);
 		}
 	}
 	return JS_UNDEFINED;
@@ -136,7 +136,7 @@ bool QuickJSWorker::frame_of_host(QuickJSBinder *host, const JSValueConst &value
 			JSValue ret = JS_Call(host->ctx, onmessage_callback, JS_NULL, 1, argv);
 			if (JS_IsException(ret)) {
 				JSValue e = JS_GetException(host->ctx);
-				ECMAscriptScriptError err;
+				JavaScriptError err;
 				dump_exception(host->ctx, e, &err);
 				ERR_PRINT(String("Error in worker onmessage callback") + ENDL + error_to_string(err));
 				JS_FreeValue(host->ctx, e);

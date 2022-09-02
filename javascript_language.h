@@ -1,33 +1,32 @@
-﻿#ifndef ECMASCRIPT_LANGUAGE_H
-#define ECMASCRIPT_LANGUAGE_H
+﻿#ifndef JAVASCRIPT_LANGUAGE_H
+#define JAVASCRIPT_LANGUAGE_H
 
 #include "core/object/script_language.h"
-#include "ecmascript.h"
+#include "javascript.h"
 #include "quickjs/quickjs_binder.h"
 
-class ECMAScriptBinder;
-class ECMAScriptLanguage : public ScriptLanguage {
-
-	friend class ECMAScriptBinder;
-	friend class ECMAScript;
-	friend class ECMAScriptInstance;
+class JavaScriptBinder;
+class JavaScriptLanguage : public ScriptLanguage {
+	friend class JavaScriptBinder;
+	friend class JavaScript;
+	friend class JavaScriptInstance;
 	friend class DuktapeBindingHelper;
 	friend class QuickJSBinder;
 
 private:
-	static ECMAScriptLanguage *singleton;
-	ECMAScriptBinder *main_binder;
-	HashMap<Thread::ID, ECMAScriptBinder *> thread_binder_map;
+	static JavaScriptLanguage *singleton;
+	JavaScriptBinder *main_binder;
+	HashMap<Thread::ID, JavaScriptBinder *> thread_binder_map;
 	GDNativeInstanceBindingCallbacks instance_binding_callbacks;
 #ifdef TOOLS_ENABLED
-	HashSet<Ref<ECMAScript>> scripts;
+	HashSet<Ref<JavaScript>> scripts;
 #endif
 
 public:
-	_FORCE_INLINE_ static ECMAScriptLanguage *get_singleton() { return singleton; }
-	_FORCE_INLINE_ static ECMAScriptBinder *get_main_binder() { return singleton->main_binder; }
-	_FORCE_INLINE_ static ECMAScriptBinder *get_thread_binder(Thread::ID p_id) {
-		if (ECMAScriptBinder **ptr = singleton->thread_binder_map.getptr(p_id)) {
+	_FORCE_INLINE_ static JavaScriptLanguage *get_singleton() { return singleton; }
+	_FORCE_INLINE_ static JavaScriptBinder *get_main_binder() { return singleton->main_binder; }
+	_FORCE_INLINE_ static JavaScriptBinder *get_thread_binder(Thread::ID p_id) {
+		if (JavaScriptBinder **ptr = singleton->thread_binder_map.getptr(p_id)) {
 			return *ptr;
 		}
 		return nullptr;
@@ -36,7 +35,7 @@ public:
 	_FORCE_INLINE_ virtual String get_name() const override { return "JavaScript"; }
 	const GDNativeInstanceBindingCallbacks *get_instance_binding_callbacks() const { return &instance_binding_callbacks; }
 #ifdef TOOLS_ENABLED
-	_FORCE_INLINE_ HashSet<Ref<ECMAScript> > &get_scripts() { return scripts; }
+	_FORCE_INLINE_ HashSet<Ref<JavaScript> > &get_scripts() { return scripts; }
 #endif
 	/* LANGUAGE FUNCTIONS */
 
@@ -109,8 +108,8 @@ public:
 
 	static String globalize_relative_path(const String &p_relative, const String &p_base_dir);
 
-	ECMAScriptLanguage();
-	virtual ~ECMAScriptLanguage();
+	JavaScriptLanguage();
+	virtual ~JavaScriptLanguage();
 };
 
-#endif // ECMASCRIPT_LANGUAGE_H
+#endif

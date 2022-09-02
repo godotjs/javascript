@@ -1,75 +1,74 @@
-#include "ecmascript_language.h"
+#include "javascript_language.h"
 #include "core/object/class_db.h"
 #include "core/io/file_access.h"
-ECMAScriptLanguage *ECMAScriptLanguage::singleton = NULL;
+JavaScriptLanguage *JavaScriptLanguage::singleton = NULL;
 
-namespace ECMAScriptInstanceBindingCallbacks {
+namespace JavaScriptInstanceBindingCallbacks {
 
 static void *create_callback(void *p_token, void *p_instance) {
-	if (ECMAScriptBinder *binder = ECMAScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
+	if (JavaScriptBinder *binder = JavaScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
 		return binder->alloc_object_binding_data(static_cast<Object *>(p_instance));
 	}
 	return nullptr;
 }
 
 static void free_callback(void *p_token, void *p_instance, void *p_binding) {
-	if (ECMAScriptBinder *binder = ECMAScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
-		return binder->free_object_binding_data(static_cast<ECMAScriptGCHandler *>(p_binding));
+	if (JavaScriptBinder *binder = JavaScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
+		return binder->free_object_binding_data(static_cast<JavaScriptGCHandler *>(p_binding));
 	}
 }
 
 static GDNativeBool reference_callback(void *p_token, void *p_binding, GDNativeBool p_reference) {
-	if (ECMAScriptBinder *binder = ECMAScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
+	if (JavaScriptBinder *binder = JavaScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
 		if (p_reference) {
-			binder->godot_refcount_incremented(static_cast<ECMAScriptGCHandler *>(p_binding));
+			binder->godot_refcount_incremented(static_cast<JavaScriptGCHandler *>(p_binding));
 			return false;
 		} else {
-			return binder->godot_refcount_decremented(static_cast<ECMAScriptGCHandler *>(p_binding));
+			return binder->godot_refcount_decremented(static_cast<JavaScriptGCHandler *>(p_binding));
 		}
 	}
 	return true;
 }
 
-} // namespace ECMAScriptInstanceBindingCallbacks
+} // namespace JavaScriptInstanceBindingCallbacks
 
-ECMAScriptLanguage::ECMAScriptLanguage() {
+JavaScriptLanguage::JavaScriptLanguage() {
 	ERR_FAIL_COND(singleton);
 	singleton = this;
 	main_binder = memnew(QuickJSBinder);
-	instance_binding_callbacks.create_callback = ECMAScriptInstanceBindingCallbacks::create_callback;
-	instance_binding_callbacks.free_callback = ECMAScriptInstanceBindingCallbacks::free_callback;
-	instance_binding_callbacks.reference_callback = ECMAScriptInstanceBindingCallbacks::reference_callback;
+	instance_binding_callbacks.create_callback = JavaScriptInstanceBindingCallbacks::create_callback;
+	instance_binding_callbacks.free_callback = JavaScriptInstanceBindingCallbacks::free_callback;
+	instance_binding_callbacks.reference_callback = JavaScriptInstanceBindingCallbacks::reference_callback;
 }
 
-ECMAScriptLanguage::~ECMAScriptLanguage() {
+JavaScriptLanguage::~JavaScriptLanguage() {
 	memdelete(main_binder);
 }
 
-void ECMAScriptLanguage::init() {
+void JavaScriptLanguage::init() {
 	ERR_FAIL_NULL(main_binder);
 	main_binder->initialize();
-	execute_file("modules/ECMAScript/tests/UnitTest.js");
+	execute_file("modules/javascript/tests/UnitTest.js");
 }
 
-void ECMAScriptLanguage::finish() {
+void JavaScriptLanguage::finish() {
 	ERR_FAIL_NULL(main_binder);
 	main_binder->uninitialize();
 	main_binder->language_finalize();
 }
 
-Error ECMAScriptLanguage::execute_file(const String &p_path) {
+Error JavaScriptLanguage::execute_file(const String &p_path) {
 	ERR_FAIL_NULL_V(main_binder, ERR_BUG);
 	Error err;
 	String code = FileAccess::get_file_as_string(p_path, &err);
 	if (err == OK) {
-		ECMAScriptGCHandler eval_ret;
-		err = main_binder->eval_string(code, ECMAScriptBinder::EVAL_TYPE_GLOBAL, p_path, eval_ret);
+		JavaScriptGCHandler eval_ret;
+		err = main_binder->eval_string(code, JavaScriptBinder::EVAL_TYPE_GLOBAL, p_path, eval_ret);
 	}
 	return err;
 }
 
-void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
-
+void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 	static const char *_reserved_words[] = {
 		"null",
 		"false",
@@ -192,7 +191,7 @@ void ECMAScriptLanguage::get_reserved_words(List<String> *p_words) const {
 	}
 }
 
-bool ECMAScriptLanguage::is_control_flow_keyword(String p_keyword) const {
+bool JavaScriptLanguage::is_control_flow_keyword(String p_keyword) const {
 	return p_keyword == "if" ||
 		   p_keyword == "else" ||
 		   p_keyword == "return" ||
@@ -210,20 +209,18 @@ bool ECMAScriptLanguage::is_control_flow_keyword(String p_keyword) const {
 		   p_keyword == "finally";
 }
 
-
-void ECMAScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const {
+void JavaScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const {
 	p_delimiters->push_back("//"); // single-line comment
 	p_delimiters->push_back("/* */"); // delimited comment
 }
 
-void ECMAScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const {
+void JavaScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const {
 	p_delimiters->push_back("' '");
 	p_delimiters->push_back("\" \"");
 	p_delimiters->push_back("` `");
 }
 
-Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const String &p_base_class_name) const {
-
+Ref<Script> JavaScriptLanguage::get_template(const String &p_class_name, const String &p_base_class_name) const {
 	String script_template = "export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
 							 "    \n"
 							 "    // Declare member variables here. Examples:\n"
@@ -246,7 +243,7 @@ Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const S
 							 "}\n";
 	script_template = script_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
 
-	Ref<ECMAScript> script;
+	Ref<JavaScript> script;
 	script.instantiate();
 	script->set_source_code(script_template);
 	script->set_name(p_class_name);
@@ -254,8 +251,8 @@ Ref<Script> ECMAScriptLanguage::get_template(const String &p_class_name, const S
 	return script;
 }
 
-Ref<Script> ECMAScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
-	Ref<ECMAScript> script;
+Ref<Script> JavaScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
+	Ref<JavaScript> script;
 	script.instantiate();
 	String src = script->get_source_code();
 	src = src.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
@@ -263,8 +260,8 @@ Ref<Script> ECMAScriptLanguage::make_template(const String &p_template, const St
 	return script;
 }
 
-bool ECMAScriptLanguage::validate(const String &p_script, const String &p_path, List<String> *r_functions, List<ScriptError> *r_errors, List<Warning> *r_warnings, HashSet<int> *r_safe_lines) const {
-	ECMAscriptScriptError script_error;
+bool JavaScriptLanguage::validate(const String &p_script, const String &p_path, List<String> *r_functions, List<ScriptError> *r_errors, List<Warning> *r_warnings, HashSet<int> *r_safe_lines) const {
+	JavaScriptError script_error;
 	bool ret = main_binder->validate(p_script, p_path, &script_error);
 	if (!ret) {
 		ScriptError se;
@@ -276,23 +273,23 @@ bool ECMAScriptLanguage::validate(const String &p_script, const String &p_path, 
 	return ret;
 }
 
-Script *ECMAScriptLanguage::create_script() const {
-	return memnew(ECMAScript);
+Script *JavaScriptLanguage::create_script() const {
+	return memnew(JavaScript);
 }
 
-void ECMAScriptLanguage::reload_all_scripts() {
+void JavaScriptLanguage::reload_all_scripts() {
 #ifdef TOOLS_ENABLED
-	for (const Ref<ECMAScript> &s : scripts) {
+	for (const Ref<JavaScript> &s : scripts) {
 		reload_script(s, true);
 	}
 #endif
 }
 
-void ECMAScriptLanguage::reload_script(const Ref<Script> &p_script, bool p_soft_reload) {
-	Ref<ECMAScript> s = p_script;
+void JavaScriptLanguage::reload_script(const Ref<Script> &p_script, bool p_soft_reload) {
+	Ref<JavaScript> s = p_script;
 	if (s.is_valid()) {
 		Error err = OK;
-		Ref<ECMAScriptModule> module = ResourceFormatLoaderECMAScriptModule::load_static(s->get_script_path(), "", &err);
+		Ref<JavaScriptModule> module = ResourceFormatLoaderJavaScriptModule::load_static(s->get_script_path(), "", &err);
 		ERR_FAIL_COND_MSG(err != OK, ("Cannot load script file '" + s->get_script_path() + "'."));
 		s->set_source_code(module->get_source_code());
 		err = s->reload(p_soft_reload);
@@ -300,7 +297,7 @@ void ECMAScriptLanguage::reload_script(const Ref<Script> &p_script, bool p_soft_
 	}
 }
 
-void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
+void JavaScriptLanguage::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_back(EXT_JSMODULE);
 	p_extensions->push_back(EXT_JSCLASS);
 	p_extensions->push_back(EXT_JSON);
@@ -310,11 +307,11 @@ void ECMAScriptLanguage::get_recognized_extensions(List<String> *p_extensions) c
 	p_extensions->push_back(EXT_JSCLASS_BYTECODE);
 }
 
-void ECMAScriptLanguage::frame() {
+void JavaScriptLanguage::frame() {
 	main_binder->frame();
 }
 
-String ECMAScriptLanguage::globalize_relative_path(const String &p_relative, const String &p_base_dir) {
+String JavaScriptLanguage::globalize_relative_path(const String &p_relative, const String &p_base_dir) {
 	String file = p_relative;
 	if (file.begins_with(".")) {
 		String base_dir = p_base_dir;

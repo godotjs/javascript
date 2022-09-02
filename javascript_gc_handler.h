@@ -1,5 +1,5 @@
-#ifndef ECMASCRIPT_GC_HANDLER_H
-#define ECMASCRIPT_GC_HANDLER_H
+#ifndef JAVASCRIPT_GC_HANDLER_H
+#define JAVASCRIPT_GC_HANDLER_H
 
 #include "core/object/object.h"
 #include "core/object/ref_counted.h"
@@ -8,10 +8,10 @@
 #define PROTOTYPE_LITERAL "prototype"
 #define PROTO_LITERAL "__proto__"
 #define TO_STRING_LITERAL "toString"
-#define ECMA_CLASS_NAME_LITERAL "class_name"
+#define JS_CLASS_NAME_LITERAL "class_name"
 #define GODOT_OBJECT_NAME "godot"
 
-struct ECMAScriptGCHandler {
+struct JavaScriptGCHandler {
 	enum {
 		FLAG_NONE = 0,
 		FLAG_ATOMIC_VALUE = 1 << 1,
@@ -24,7 +24,7 @@ struct ECMAScriptGCHandler {
 	Variant::Type type;
 	uint8_t flags;
 	void *context;
-	void *ecma_object;
+	void *javascript_object;
 	union {
 		Object *godot_object;
 		void *godot_builtin_object_ptr;
@@ -128,23 +128,22 @@ struct ECMAScriptGCHandler {
 	_FORCE_INLINE_ bool is_finalized() const {
 		return flags & FLAG_FINALIZED;
 	}
-	_FORCE_INLINE_ bool is_valid_ecma_object() const {
-		return context != NULL && ecma_object != NULL && !is_finalized();
+	_FORCE_INLINE_ bool is_valid_javascript_object() const {
+		return context != NULL && javascript_object != NULL && !is_finalized();
 	}
-
 
 	_FORCE_INLINE_ void clear() {
 		type = Variant::NIL;
 		godot_object = NULL;
-		ecma_object = NULL;
+		javascript_object = NULL;
 		context = NULL;
 	}
 
-	ECMAScriptGCHandler() {
+	JavaScriptGCHandler() {
 		type = Variant::NIL;
 		flags = FLAG_NONE;
 		godot_object = NULL;
-		ecma_object = NULL;
+		javascript_object = NULL;
 		context = NULL;
 	}
 };

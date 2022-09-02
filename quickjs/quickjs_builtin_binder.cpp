@@ -18,96 +18,96 @@ QuickJSBuiltinBinder::~QuickJSBuiltinBinder() {
 void QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, JSValue target, Variant::Type p_type, const void *p_object) {
 
 	void *ptr = NULL;
-	ECMAScriptGCHandler *bind = NULL;
+	JavaScriptGCHandler *bind = NULL;
 	switch (p_type) {
 		case Variant::VECTOR2:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Vector2));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Vector2));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Vector2(*static_cast<const Vector2 *>(p_object)));
 			break;
 		case Variant::RECT2:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Rect2));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Rect2));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Rect2(*static_cast<const Rect2 *>(p_object)));
 			break;
 		case Variant::COLOR:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Color));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Color));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Color(*static_cast<const Color *>(p_object)));
 			break;
 		case Variant::VECTOR3:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Vector3));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Vector3));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Vector3(*static_cast<const Vector3 *>(p_object)));
 			break;
 		case Variant::BASIS:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Basis));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Basis));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Basis(*static_cast<const Basis *>(p_object)));
 			break;
 		case Variant::QUATERNION:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Quaternion));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Quaternion));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Quaternion(*static_cast<const Quaternion *>(p_object)));
 			break;
 		case Variant::PLANE:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Plane));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Plane));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Plane(*static_cast<const Plane *>(p_object)));
 			break;
 		case Variant::TRANSFORM2D:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Transform2D));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Transform2D));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Transform2D(*static_cast<const Transform2D *>(p_object)));
 			break;
 		case Variant::RID:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(RID));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(RID));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, RID(*static_cast<const RID *>(p_object)));
 			break;
 		case Variant::TRANSFORM3D:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(Transform3D));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(Transform3D));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, Transform3D(*static_cast<const Transform3D *>(p_object)));
 			break;
 		case Variant::AABB:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(AABB));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(AABB));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, AABB(*static_cast<const AABB *>(p_object)));
 			break;
 		case Variant::PACKED_INT32_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedInt32Array));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedInt32Array));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedInt32Array(*static_cast<const PackedInt32Array *>(p_object)));
 			break;
 		case Variant::PACKED_BYTE_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedByteArray));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedByteArray));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedByteArray(*static_cast<const PackedByteArray *>(p_object)));
 			break;
 		case Variant::PACKED_FLOAT32_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedFloat32Array));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedFloat32Array));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedFloat32Array(*static_cast<const PackedFloat32Array *>(p_object)));
 			break;
 		case Variant::PACKED_COLOR_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedColorArray));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedColorArray));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedColorArray(*static_cast<const PackedColorArray *>(p_object)));
 			break;
 		case Variant::PACKED_STRING_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedStringArray));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedStringArray));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedStringArray(*static_cast<const PackedStringArray *>(p_object)));
 			break;
 		case Variant::PACKED_VECTOR2_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedVector2Array));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedVector2Array));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedVector2Array(*static_cast<const PackedVector2Array *>(p_object)));
 			break;
 		case Variant::PACKED_VECTOR3_ARRAY:
-			ptr = memalloc(sizeof(ECMAScriptGCHandler) + sizeof(PackedVector3Array));
-			bind = memnew_placement(ptr, ECMAScriptGCHandler);
+			ptr = memalloc(sizeof(JavaScriptGCHandler) + sizeof(PackedVector3Array));
+			bind = memnew_placement(ptr, JavaScriptGCHandler);
 			memnew_placement(bind + 1, PackedVector3Array(*static_cast<const PackedVector3Array *>(p_object)));
 			break;
 		default:
@@ -117,9 +117,9 @@ void QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, JSValue target, V
 
 	bind->context = ctx;
 	bind->type = p_type;
-	bind->flags |= ECMAScriptGCHandler::FLAG_BUILTIN_CLASS;
+	bind->flags |= JavaScriptGCHandler::FLAG_BUILTIN_CLASS;
 	bind->godot_builtin_object_ptr = bind + 1;
-	bind->ecma_object = JS_VALUE_GET_PTR(target);
+	bind->javascript_object = JS_VALUE_GET_PTR(target);
 	JS_SetOpaque(target, bind);
 #ifdef DUMP_LEAKS
 	QuickJSBinder::add_debug_binding_info(ctx, target, bind);
@@ -134,7 +134,7 @@ JSValue QuickJSBuiltinBinder::create_builtin_value(JSContext *ctx, Variant::Type
 	return obj;
 }
 
-void QuickJSBuiltinBinder::builtin_finalizer(ECMAScriptGCHandler *p_bind) {
+void QuickJSBuiltinBinder::builtin_finalizer(JavaScriptGCHandler *p_bind) {
 	switch (p_bind->type) {
 		case Variant::PACKED_BYTE_ARRAY:
 			p_bind->getPackedByteArray()->~PackedByteArray();
@@ -247,7 +247,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 								Vector2 *ptr = bind->getVector2();
 								Vector2 ret = ptr->operator*(scalar);
 								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
@@ -259,7 +259,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "*",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Vector2 *ptr = bind->getVector2();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Vector2 ret = ptr->operator*(scalar);
@@ -272,7 +272,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "/",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Vector2 *ptr = bind->getVector2();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Vector2 ret = ptr->operator/(scalar);
@@ -295,7 +295,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 								Vector3 *ptr = bind->getVector3();
 								Vector3 ret = ptr->operator*(scalar);
 								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
@@ -307,7 +307,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "*",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Vector3 *ptr = bind->getVector3();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Vector3 ret = ptr->operator*(scalar);
@@ -320,7 +320,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "/",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Vector3 *ptr = bind->getVector3();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Vector3 ret = ptr->operator/(scalar);
@@ -343,7 +343,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 								Color *ptr = bind->getColor();
 								Color ret = ptr->operator*(scalar);
 								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
@@ -355,7 +355,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "*",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Color *ptr = bind->getColor();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Color ret = ptr->operator*(scalar);
@@ -368,7 +368,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "/",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Color *ptr = bind->getColor();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Color ret = ptr->operator/(scalar);
@@ -391,7 +391,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 								Quaternion *ptr = bind->getQuaternion();
 								Quaternion ret = ptr->operator*(scalar);
 								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
@@ -403,7 +403,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "*",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Quaternion *ptr = bind->getQuaternion();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Quaternion ret = ptr->operator*(scalar);
@@ -416,7 +416,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "/",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Quaternion *ptr = bind->getQuaternion();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Quaternion ret = ptr->operator/(scalar);
@@ -439,7 +439,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[0]);
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 								Basis *ptr = bind->getBasis();
 								Basis ret = ptr->operator*(scalar);
 								return QuickJSBuiltinBinder::new_object_from(ctx, ret);
@@ -451,7 +451,7 @@ void QuickJSBuiltinBinder::get_cross_type_operators(Variant::Type p_type, Vector
 			JS_DefinePropertyValueStr(ctx, number_right, "*",
 					JS_NewCFunction(
 							ctx, [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) -> JSValue {
-								ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+								JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 								Basis *ptr = bind->getBasis();
 								real_t scalar = QuickJSBinder::js_to_number(ctx, argv[1]);
 								Basis ret = ptr->operator*(scalar);
@@ -639,7 +639,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 
 	{ // Color
 		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			const Color *ptr = bind->getColor();
 			switch (magic) {
 				case 0:
@@ -661,7 +661,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 		};
 
 		JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			Color *ptr = bind->getColor();
 #ifdef DEBUG_METHODS_ENABLED
 			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::FLOAT, argv[0]), (JS_ThrowTypeError(ctx, "number value expected")));
@@ -703,7 +703,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 
 	{ // Rect2
 		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			const Rect2 *ptr = bind->getRect2();
 			switch (magic) {
 				case 0:
@@ -712,7 +712,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 			return JS_UNDEFINED;
 		};
 		JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			Rect2 *ptr = bind->getRect2();
 			switch (magic) {
 				case 0:
@@ -733,7 +733,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 #ifdef DEBUG_METHODS_ENABLED
 				ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Rect2.grow_margin")));
 #endif
-				ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+				JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 				Rect2 *ptr = bind->getRect2();
 #ifdef DEBUG_METHODS_ENABLED
 				ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of Rect2.grow_margin")));
@@ -751,7 +751,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				"xform",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform2D.xform")));
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					Transform2D *ptr = bind->getTransform2D();
 					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0])) {
 						Vector2 ret = ptr->xform(Vector2(QuickJSBinder::var_to_variant(ctx, argv[0])));
@@ -771,7 +771,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				"xform_inv",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform2D.xform_inv")));
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					Transform2D *ptr = bind->getTransform2D();
 					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR2, argv[0])) {
 						Vector2 ret = ptr->xform_inv(Vector2(QuickJSBinder::var_to_variant(ctx, argv[0])));
@@ -794,12 +794,12 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				"is_equal_approx",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Basis.is_equal_approx")));
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					Basis *ptr = bind->getBasis();
 #ifdef DEBUG_METHODS_ENABLED
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::BASIS, argv[0]), (JS_ThrowTypeError(ctx, "Basis expected for Basis.is_equal_approx")));
 #endif
-					ECMAScriptGCHandler *argv_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					JavaScriptGCHandler *argv_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
 					bool ret = ptr->is_equal_approx(*argv_bind->getBasis());
 					return QuickJSBinder::to_js_bool(ctx, ret);
 				},
@@ -808,7 +808,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 
 	{ // AABB
 		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			const AABB *ptr = bind->getAABB();
 			switch (magic) {
 				case 0:
@@ -817,7 +817,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 			return JS_UNDEFINED;
 		};
 		JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
-			ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 			AABB *ptr = bind->getAABB();
 			switch (magic) {
 				case 0:
@@ -838,15 +838,15 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				"intersect_3",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Plane.intersect_3")));
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					Plane *ptr = bind->getPlane();
 #ifdef DEBUG_METHODS_ENABLED
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0]), (JS_ThrowTypeError(ctx, "Plane expected for arguments #0 Plane.intersect_3")));
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[1]), (JS_ThrowTypeError(ctx, "Plane expected for arguments #1 Plane.intersect_3")));
 #endif
 					Vector3 ret;
-					ECMAScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
-					ECMAScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+					JavaScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					JavaScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 					if (ptr->intersect_3(*argv0_bind->getPlane(), *argv1_bind->getPlane(), &ret)) {
 						return QuickJSBinder::variant_to_var(ctx, ret);
 					}
@@ -858,15 +858,15 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				"intersects_ray",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Plane.intersects_ray")));
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					Plane *ptr = bind->getPlane();
 #ifdef DEBUG_METHODS_ENABLED
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #0 Plane.intersects_ray")));
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #1 Plane.intersects_ray")));
 #endif
 					Vector3 ret;
-					ECMAScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
-					ECMAScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+					JavaScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					JavaScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 					if (ptr->intersects_ray(*argv0_bind->getVector3(), *argv1_bind->getVector3(), &ret)) {
 						return QuickJSBinder::variant_to_var(ctx, ret);
 					}
@@ -878,15 +878,15 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				"intersects_segment",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Plane.intersects_segment")));
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					Plane *ptr = bind->getPlane();
 #ifdef DEBUG_METHODS_ENABLED
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #0 Plane.intersects_segment")));
 					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[1]), (JS_ThrowTypeError(ctx, "Vector3 expected for arguments #1 Plane.intersects_segment")));
 #endif
 					Vector3 ret;
-					ECMAScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
-					ECMAScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
+					JavaScriptGCHandler *argv0_bind = BINDING_DATA_FROM_JS(ctx, argv[0]);
+					JavaScriptGCHandler *argv1_bind = BINDING_DATA_FROM_JS(ctx, argv[1]);
 					if (ptr->intersects_segment(*argv0_bind->getVector3(), *argv1_bind->getVector3(), &ret)) {
 						return QuickJSBinder::variant_to_var(ctx, ret);
 					}
@@ -900,7 +900,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 			"xform",
 			[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 				ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform3D.xform")));
-				ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+				JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 				Transform3D *ptr = bind->getTransform3D();
 				if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
 					Vector3 ret = ptr->xform(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
@@ -923,7 +923,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 			"xform_inv",
 			[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 				ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform3D.xform_inv")));
-				ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+				JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 				Transform3D *ptr = bind->getTransform3D();
 				if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
 					Vector3 ret = ptr->xform_inv(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
@@ -949,7 +949,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_BYTE_ARRAY,
 				"compress",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedByteArray *ptr = bind->getPackedByteArray();
 					PackedByteArray compressed;
 					if (ptr->size() > 0) {
@@ -970,7 +970,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_BYTE_ARRAY,
 				"decompress",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedByteArray *ptr = bind->getPackedByteArray();
 					PackedByteArray decompressed;
 #ifdef DEBUG_METHODS_ENABLED
@@ -995,7 +995,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_BYTE_ARRAY,
 				"get_string_from_utf8",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedByteArray *ptr = bind->getPackedByteArray();
 					String ret;
 					if (ptr->size() > 0) {
@@ -1009,7 +1009,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_BYTE_ARRAY,
 				"get_string_from_ascii",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedByteArray *ptr = bind->getPackedByteArray();
 					String ret;
 					if (ptr->size() > 0) {
@@ -1027,7 +1027,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_BYTE_ARRAY,
 				"hex_encode",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedByteArray *ptr = bind->getPackedByteArray();
 					String ret;
 					if (ptr->size() > 0) {
@@ -1041,7 +1041,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_BYTE_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedByteArray *array = memnew(PackedByteArray(*bind->getPackedByteArray()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, const_cast<uint8_t *>(array->ptr()), array->size(), [](JSRuntime *rt, void *opaque, void *ptr) {
@@ -1058,7 +1058,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_INT32_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedInt32Array *array = memnew(PackedInt32Array(*bind->getPackedInt32Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(int), [](JSRuntime *rt, void *opaque, void *ptr) {
@@ -1075,7 +1075,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_FLOAT32_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedFloat32Array *array = memnew(PackedFloat32Array(*bind->getPackedFloat32Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(real_t), [](JSRuntime *rt, void *opaque, void *ptr) {
@@ -1092,7 +1092,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_VECTOR2_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedVector2Array *array = memnew(PackedVector2Array(*bind->getPackedVector2Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(Vector2), [](JSRuntime *rt, void *opaque, void *ptr) {
@@ -1110,7 +1110,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_VECTOR3_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedVector3Array *array = memnew(PackedVector3Array(*bind->getPackedVector3Array()));
 					JSValue ret = JS_NewArrayBuffer(
 							ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(Vector3), [](JSRuntime *rt, void *opaque, void *ptr) {
@@ -1128,7 +1128,7 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 				Variant::PACKED_COLOR_ARRAY,
 				"get_buffer",
 				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-					ECMAScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedColorArray *array = memnew(PackedColorArray(*bind->getPackedColorArray()));
 					JSValue ret = JS_NewArrayBuffer(
 						ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(Color), [](JSRuntime *rt, void *opaque, void *ptr) {

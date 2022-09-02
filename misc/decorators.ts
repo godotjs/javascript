@@ -1,10 +1,10 @@
 /**
- * Expose as an ECMAClass.
- * An ECMAScript object is created and attached automaticly when construct an instance from this class
+ * Expose as a godot class.
+ * An class object is created and attached automaticly when construct an instance from this class
  */
 export function gdclass<T extends godot.Object>(target: new() => T) {
     const id = gdclass['internal_class_id'] = gdclass['internal_class_id'] ? gdclass['internal_class_id'] + 1 : 1;
-	const class_name = `AnonymousECMAClass${id}`;
+	const class_name = `AnonymousJSClass${id}`;
 	godot.register_class(target, class_name);
 }
 

@@ -3,7 +3,7 @@
 
 #include "quickjs/quickjs.h"
 #include "core/variant/variant.h"
-struct ECMAScriptGCHandler;
+struct JavaScriptGCHandler;
 class QuickJSBinder;
 
 typedef JSValue (*JSConstructorFunc)(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);
@@ -26,7 +26,7 @@ private:
 	JSAtom js_key_to_string;
 
 public:
-	void builtin_finalizer(ECMAScriptGCHandler *p_bind);
+	void builtin_finalizer(JavaScriptGCHandler *p_bind);
 
 	void register_builtin_class(Variant::Type p_type, const char *p_name, JSConstructorFunc p_constructor, int argc);
 	void register_property(Variant::Type p_type, const char *p_name, JSCFunctionMagic *p_getter, JSCFunctionMagic *p_setter, int magic);

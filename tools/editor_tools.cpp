@@ -1,5 +1,5 @@
 #include "editor_tools.h"
-#include "../ecmascript_language.h"
+#include "../javascript_language.h"
 #include "core/math/expression.h"
 #include "core/os/keyboard.h"
 #include "editor/filesystem_dock.h"
@@ -11,8 +11,8 @@ static HashMap<String, List<String>> added_apis;
 typedef HashMap<String, Vector<const DocData::ConstantDoc *>> ClassEnumerations;
 static HashMap<String, ClassEnumerations> class_enumerations;
 
-struct ECMAScriptAlphCompare {
-	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
+struct JavaScriptAlphCompare {
+	_FORCE_INLINE_ bool operator()(const Ref<JavaScript> &l, const Ref<JavaScript> &r) const {
 		return String(l->get_class_name()) < String(r->get_class_name());
 	}
 };
@@ -26,28 +26,28 @@ static Error dump_to_file(const String &p_path, const String &p_content) {
 	return FAILED;
 }
 
-void ECMAScriptPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &ECMAScriptPlugin::_on_menu_item_pressed);
-	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &ECMAScriptPlugin::_export_typescript_declare_file);
-	ClassDB::bind_method(D_METHOD("_export_enumeration_binding_file"), &ECMAScriptPlugin::_export_enumeration_binding_file);
+void JavaScriptPlugin::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &JavaScriptPlugin::_on_menu_item_pressed);
+	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &JavaScriptPlugin::_export_typescript_declare_file);
+	ClassDB::bind_method(D_METHOD("_export_enumeration_binding_file"), &JavaScriptPlugin::_export_enumeration_binding_file);
 }
 
-void ECMAScriptPlugin::_notification(int p_what) {
+void JavaScriptPlugin::_notification(int p_what) {
 	switch (p_what) {
 		case MainLoop::NOTIFICATION_APPLICATION_FOCUS_IN: {
-			const HashSet<Ref<ECMAScript>> &scripts = ECMAScriptLanguage::get_singleton()->get_scripts();
-			for (const Ref<ECMAScript> &s : scripts) {
+			const HashSet<Ref<JavaScript>> &scripts = JavaScriptLanguage::get_singleton()->get_scripts();
+			for (const Ref<JavaScript> &s : scripts) {
 				uint64_t last_time = s->get_last_modified_time();
 				uint64_t time = FileAccess::get_modified_time(s->get_script_path());
 				if (last_time != time) {
-					ECMAScriptLanguage::get_singleton()->reload_tool_script(s, true);
+					JavaScriptLanguage::get_singleton()->reload_tool_script(s, true);
 				}
 			}
 		} break;
 	}
 }
 
-void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
+void JavaScriptPlugin::_on_menu_item_pressed(int item) {
 	switch (item) {
 		case MenuItem::ITEM_GEN_DECLARE_FILE:
 			declaration_file_dialog->popup_centered_ratio();
@@ -61,14 +61,14 @@ void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
 	}
 }
 
-ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
+JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
 
 	PopupMenu *menu = memnew(PopupMenu);
-	add_tool_submenu_item(TTR("ECMAScript"), menu);
+	add_tool_submenu_item(TTR("JavaScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLARE_FILE);
 	menu->add_item(TTR("Generate Enumeration Binding Script"), ITEM_GEN_ENUM_BINDING_SCRIPT);
 	menu->add_item(TTR("Generate TypeScript Project"), ITEM_GEN_TYPESCRIPT_PROJECT);
-	menu->connect("id_pressed", callable_mp(this, &ECMAScriptPlugin::_on_menu_item_pressed));
+	menu->connect("id_pressed", callable_mp(this, &JavaScriptPlugin::_on_menu_item_pressed));
 
 	declaration_file_dialog = memnew(EditorFileDialog);
 	declaration_file_dialog->set_title(TTR("Generate TypeScript Declaration File"));
@@ -76,7 +76,7 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	declaration_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	declaration_file_dialog->add_filter(TTR("*.d.ts;TypeScript Declaration file"));
 	declaration_file_dialog->set_current_file("godot.d.ts");
-	declaration_file_dialog->connect("file_selected", callable_mp(this, &ECMAScriptPlugin::_export_typescript_declare_file));
+	declaration_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_typescript_declare_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
 
 	enumberation_file_dialog = memnew(EditorFileDialog);
@@ -85,7 +85,7 @@ ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
 	enumberation_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	enumberation_file_dialog->add_filter(TTR("*.jsx;JavaScript file"));
 	enumberation_file_dialog->set_current_file("enumerations.jsx");
-	enumberation_file_dialog->connect("file_selected", callable_mp(this, &ECMAScriptPlugin::_export_enumeration_binding_file));
+	enumberation_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_enumeration_binding_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(enumberation_file_dialog);
 
 	ts_ignore_errors.clear();
@@ -171,7 +171,7 @@ static String format_doc_text(const String &p_bbcode, const String &p_indent = "
 
 static String format_identifier(const String &p_ident) {
 	List<String> reserved_words;
-	ECMAScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+	JavaScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
 	if (reserved_words.find(p_ident)) {
 		return String("p_") + p_ident;
 	}
@@ -180,7 +180,7 @@ static String format_identifier(const String &p_ident) {
 
 static String format_property_name(const String &p_ident) {
 	List<String> reserved_words;
-	ECMAScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+	JavaScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
 	if (reserved_words.find(p_ident) || p_ident.find("/") != -1) {
 		return String("'") + p_ident + "'";
 	}
@@ -469,8 +469,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	return apply_pattern(class_template, dict);
 }
 
-void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
-	modified_api = &ECMAScriptLanguage::get_singleton()->get_main_binder()->get_modified_api();
+void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
+	modified_api = &JavaScriptLanguage::get_singleton()->get_main_binder()->get_modified_api();
 
 	removed_members.clear();
 	if (modified_api->has("removed")) {
@@ -645,7 +645,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	}
 }
 
-void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
+void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	_export_typescript_declare_file("");
 	String file_content = "// Tool generated file DO NOT modify mannually\n"
 						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
@@ -704,7 +704,7 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	dump_to_file(p_path, file_content);
 }
 
-void ECMAScriptPlugin::_generate_typescript_project() {
+void JavaScriptPlugin::_generate_typescript_project() {
 	_export_typescript_declare_file("res://godot.d.ts");
 	dump_to_file("res://tsconfig.json", TSCONFIG_CONTENT);
 	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
