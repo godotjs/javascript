@@ -15,6 +15,7 @@
 #ifdef TOOLS_ENABLED
 #include "editor/editor_settings.h"
 #endif
+#include "quickjs_callable.h"
 #include <cstring>
 
 SafeNumeric<uint32_t> QuickJSBinder::global_context_id;
@@ -547,6 +548,19 @@ JSValue QuickJSBinder::godot_instance_from_id(JSContext *ctx, JSValue this_val, 
 	return variant_to_var(ctx, obj);
 }
 
+JSValue QuickJSBinder::godot_object_method_connect(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
+#ifdef DEBUG_METHODS_ENABLED
+	ERR_FAIL_COND_V(argc < 2 || !JS_IsString(argv[0]) || !JS_IsFunction(ctx, argv[1]), JS_ThrowTypeError(ctx, "string and function expected for %s.%s", "Object", "connect"));
+#endif
+	JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	Object *obj = bind->get_godot_object();
+	StringName signal = binder->js_to_string(ctx, argv[0]);
+	Callable callable = memnew(QuickJSCallable(ctx, argv[1]));
+	obj->connect(signal, callable);
+	return JS_UNDEFINED;
+}
+
 void QuickJSBinder::add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const JavaScriptGCHandler *p_bind) {
 	if (!p_bind)
 		return;
@@ -831,6 +845,15 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 	{
 		godot_methods.resize(internal_godot_method_id + p_cls->method_map.size());
 		for (const KeyValue<StringName, MethodBind *> &pair : p_cls->method_map) {
+			if (p_cls->name == "Object") {
+				const char *connect = "connect";
+				if (pair.key == connect) {
+					JSValue func = JS_NewCFunction(ctx, godot_object_method_connect, connect, 3);
+					JS_DefinePropertyValueStr(ctx, data.prototype, connect, func, PROP_DEF_DEFAULT);
+					continue;
+				}
+			}
+
 			MethodBind *mb = pair.value;
 			godot_methods.set(internal_godot_method_id, mb);
 			CharString name = String(pair.key).ascii();
@@ -2052,9 +2075,18 @@ Variant QuickJSBinder::call_method(const JavaScriptGCHandler &p_object, const St
 	JSAtom atom = get_atom(ctx, p_method);
 	JSValue method = JS_GetProperty(ctx, object, atom);
 	JS_FreeAtom(ctx, atom);
+	JavaScriptGCHandler func;
+	func.javascript_object = JS_VALUE_GET_PTR(method);
+	Variant ret = call(func, p_object, p_args, p_argcount, r_error);
+	JS_FreeValue(ctx, method);
+	return ret;
+}
 
+Variant QuickJSBinder::call(const JavaScriptGCHandler &p_fuction, const JavaScriptGCHandler &p_target, const Variant **p_args, int p_argcount, Callable::CallError &r_error) {
 	JSValue return_val = JS_UNDEFINED;
 	JSValue *argv = NULL;
+	JSValue method = JS_MKPTR(JS_TAG_OBJECT, p_fuction.javascript_object);
+	JSValue object = p_target.is_valid_javascript_object() ? JS_MKPTR(JS_TAG_OBJECT, p_target.javascript_object) : JS_UNDEFINED;
 
 	if (!JS_IsFunction(ctx, method) || JS_IsPureCFunction(ctx, method)) {
 		r_error.error = Callable::CallError::CALL_ERROR_INVALID_METHOD;
@@ -2086,7 +2118,6 @@ finish:
 		memdelete_arr(argv);
 	}
 	JS_FreeValue(ctx, return_val);
-	JS_FreeValue(ctx, method);
 	return ret;
 }
 

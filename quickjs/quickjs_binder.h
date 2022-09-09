@@ -178,6 +178,8 @@ protected:
 	static JSValue godot_load(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 	static JSValue godot_instance_from_id(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
 
+	static JSValue godot_object_method_connect(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv);
+
 	static void add_debug_binding_info(JSContext *ctx, JSValueConst p_obj, const JavaScriptGCHandler *p_bind);
 
 	const JavaScriptClassInfo *register_javascript_class(const JSValueConst &p_constructor, const String &p_path);
@@ -330,12 +332,15 @@ public:
 	const JavaScriptClassInfo *parse_javascript_class_from_module(ModuleCache *p_module, const String &p_path, JavaScriptError *r_error);
 
 	virtual JavaScriptGCHandler create_js_instance_for_godot_object(const JavaScriptClassInfo *p_class, Object *p_object) override;
-	virtual Variant call_method(const JavaScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+
 	virtual bool get_instance_property(const JavaScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) override;
 	virtual bool set_instance_property(const JavaScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) override;
 	virtual bool has_method(const JavaScriptGCHandler &p_object, const StringName &p_name) override;
 	virtual bool has_signal(const JavaScriptClassInfo *p_class, const StringName &p_signal) override;
 	virtual bool validate(const String &p_code, const String &p_path, JavaScriptError *r_error) override;
+
+	virtual Variant call_method(const JavaScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+	virtual Variant call(const JavaScriptGCHandler &p_fuction, const JavaScriptGCHandler &p_target, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
 
 #ifdef TOOLS_ENABLED
 	virtual const Dictionary &get_modified_api() const override { return modified_api; }

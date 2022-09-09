@@ -88,12 +88,15 @@ public:
 	virtual const JavaScriptClassInfo *parse_javascript_class(const Vector<uint8_t> &p_bytecode, const String &p_path, bool ignore_cacehe, JavaScriptError *r_error) = 0;
 
 	virtual JavaScriptGCHandler create_js_instance_for_godot_object(const JavaScriptClassInfo *p_class, Object *p_object) = 0;
-	virtual Variant call_method(const JavaScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) = 0;
 	virtual bool get_instance_property(const JavaScriptGCHandler &p_object, const StringName &p_name, Variant &r_ret) = 0;
 	virtual bool set_instance_property(const JavaScriptGCHandler &p_object, const StringName &p_name, const Variant &p_value) = 0;
 	virtual bool has_method(const JavaScriptGCHandler &p_object, const StringName &p_name) = 0;
 	virtual bool has_signal(const JavaScriptClassInfo *p_class, const StringName &p_signal) = 0;
 	virtual bool validate(const String &p_code, const String &p_path, JavaScriptError *r_error) = 0;
+
+	virtual Variant call_method(const JavaScriptGCHandler &p_object, const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) = 0;
+	virtual Variant call(const JavaScriptGCHandler &p_fuction, const JavaScriptGCHandler &p_target, const Variant **p_args, int p_argcount, Callable::CallError &r_error) = 0;
+
 #ifdef TOOLS_ENABLED
 	virtual const Dictionary &get_modified_api() const = 0;
 #endif

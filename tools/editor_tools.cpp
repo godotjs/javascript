@@ -606,10 +606,6 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 						dict["name"] = format_property_name(enums[i]->name);
 						dict["value"] = enums[i]->value;
 
-						// Exceptions
-						if (dict["name"] == "KEY_MASK_CMD") {
-							dict["value"] = (uint64_t)KeyModifierMask::CMD;
-						}
 						enum_str += apply_pattern(const_str, dict);
 					}
 					enum_str += "\t}\n";

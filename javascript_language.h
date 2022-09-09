@@ -5,6 +5,10 @@
 #include "javascript.h"
 #include "quickjs/quickjs_binder.h"
 
+class CallableMiddleman : public Object {
+	GDCLASS(CallableMiddleman, Object);
+};
+
 class JavaScriptBinder;
 class JavaScriptLanguage : public ScriptLanguage {
 	friend class JavaScriptBinder;
@@ -18,6 +22,8 @@ private:
 	JavaScriptBinder *main_binder;
 	HashMap<Thread::ID, JavaScriptBinder *> thread_binder_map;
 	GDNativeInstanceBindingCallbacks instance_binding_callbacks;
+
+	CallableMiddleman *callable_middleman;
 #ifdef TOOLS_ENABLED
 	HashSet<Ref<JavaScript>> scripts;
 #endif
@@ -30,6 +36,10 @@ public:
 			return *ptr;
 		}
 		return nullptr;
+	}
+
+	_FORCE_INLINE_ CallableMiddleman *get_callable_middleman() const {
+		return callable_middleman;
 	}
 
 	_FORCE_INLINE_ virtual String get_name() const override { return "JavaScript"; }

@@ -16,6 +16,27 @@ test('new Resource', () => {
 	return ok;
 }, 'core');
 
+test('Object.prototype.get_class', () => {
+	let obj = new godot.Object();
+	let ok = obj.get_class() === 'Object';
+	obj.free();
+	return ok;
+}, 'core')
+
+test('Object.prototype.connect', () => {
+	let ok = typeof godot.Object.prototype.connect === 'function';
+	if (!ok) return ok;
+
+	let obj = new godot.Object();
+	obj.connect('script_changed', (...args)=> {
+		console.log(`signal 'script_changed' emited with:`, ...args);
+		ok = true;
+	});
+	obj.emit_signal('script_changed');
+	obj.free();
+	return ok;
+}, 'core')
+
 
 // --------------------------- Unit Test Implementation ------------------------
 function test(description, blcok, group = 'default') {

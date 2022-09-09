@@ -36,6 +36,7 @@ JavaScriptLanguage::JavaScriptLanguage() {
 	ERR_FAIL_COND(singleton);
 	singleton = this;
 	main_binder = memnew(QuickJSBinder);
+	callable_middleman = memnew(CallableMiddleman);
 	instance_binding_callbacks.create_callback = JavaScriptInstanceBindingCallbacks::create_callback;
 	instance_binding_callbacks.free_callback = JavaScriptInstanceBindingCallbacks::free_callback;
 	instance_binding_callbacks.reference_callback = JavaScriptInstanceBindingCallbacks::reference_callback;
@@ -43,6 +44,7 @@ JavaScriptLanguage::JavaScriptLanguage() {
 
 JavaScriptLanguage::~JavaScriptLanguage() {
 	memdelete(main_binder);
+	memdelete(callable_middleman);
 }
 
 void JavaScriptLanguage::init() {

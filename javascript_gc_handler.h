@@ -128,6 +128,7 @@ struct JavaScriptGCHandler {
 	_FORCE_INLINE_ bool is_finalized() const {
 		return flags & FLAG_FINALIZED;
 	}
+
 	_FORCE_INLINE_ bool is_valid_javascript_object() const {
 		return context != NULL && javascript_object != NULL && !is_finalized();
 	}
