@@ -7,12 +7,8 @@
 #include "javascript_binder.h"
 #include "scene/resources/text_file.h"
 
-#define EXT_JSCLASS "jsx"
-#define EXT_JSCLASS_BYTECODE EXT_JSCLASS "b"
-#define EXT_JSCLASS_ENCRYPTED EXT_JSCLASS "e"
+#define EXT_JSCLASS "mjs"
 #define EXT_JSMODULE "js"
-#define EXT_JSMODULE_BYTECODE EXT_JSMODULE "b"
-#define EXT_JSMODULE_ENCRYPTED EXT_JSMODULE "e"
 #define EXT_JSON "json"
 
 class JavaScript : public Script {
@@ -90,17 +86,19 @@ public:
 class ResourceFormatLoaderJavaScript : public ResourceFormatLoader {
 	GDCLASS(ResourceFormatLoaderJavaScript, ResourceFormatLoader)
 public:
-	virtual Ref<Resource> load(const String &p_path, const String &p_original_path = "", Error *r_error = NULL);
+	virtual Ref<Resource> load(const String &p_path, const String &p_original_path = "", Error *r_error = nullptr, bool p_use_sub_threads = false, float *r_progress = nullptr, CacheMode p_cache_mode = CACHE_MODE_REUSE) override;
 	virtual void get_recognized_extensions(List<String> *p_extensions) const override;
-	virtual void get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const override;
 	virtual bool handles_type(const String &p_type) const override;
+	virtual void get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const override;
 	virtual String get_resource_type(const String &p_path) const override;
+
+	virtual bool recognize_path(const String &p_path, const String &p_for_type = String()) const override;
 };
 
 class ResourceFormatSaverJavaScript : public ResourceFormatSaver {
 	GDCLASS(ResourceFormatSaverJavaScript, ResourceFormatSaver)
 public:
-	virtual Error save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags = 0);
+	virtual Error save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags = 0) override;
 	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const override;
 	virtual bool recognize(const Ref<Resource> &p_resource) const override;
 };

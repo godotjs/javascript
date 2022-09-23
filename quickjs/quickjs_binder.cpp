@@ -97,7 +97,7 @@ JSValue QuickJSBinder::console_functions(JSContext *ctx, JSValue this_val, int a
 	String message = "";
 	for (int i = 0; i < argc; ++i) {
 		message += args[i];
-		if (i > 0 && i < argc - 1) {
+		if (i < argc - 1) {
 			message += " ";
 		}
 	}

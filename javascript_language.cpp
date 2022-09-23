@@ -105,6 +105,7 @@ void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 		"const",
 		"enum",
 		"export",
+		"default",
 		"extends",
 		"import",
 		"super",
@@ -204,7 +205,6 @@ bool JavaScriptLanguage::is_control_flow_keyword(String p_keyword) const {
 		   p_keyword == "continue" ||
 		   p_keyword == "switch" ||
 		   p_keyword == "case" ||
-		   p_keyword == "default" ||
 		   p_keyword == "throw" ||
 		   p_keyword == "try" ||
 		   p_keyword == "catch" ||
@@ -222,44 +222,62 @@ void JavaScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const
 	p_delimiters->push_back("` `");
 }
 
-Ref<Script> JavaScriptLanguage::get_template(const String &p_class_name, const String &p_base_class_name) const {
-	String script_template = "export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
-							 "    \n"
-							 "    // Declare member variables here. Examples:\n"
-							 "    a = 2;\n"
-							 "    b = \"text\";\n"
-							 "    \n"
-							 "    constructor() {\n"
-							 "        super();\n"
-							 "    }\n"
-							 "    \n"
-							 "    // Called when the node enters the scene tree for the first time.\n"
-							 "    _ready() {\n"
-							 "        \n"
-							 "    }\n"
-							 "    \n"
-							 "    // Called every frame. 'delta' is the elapsed time since the previous frame.\n"
-							 "    _process(delta) {\n"
-							 "        \n"
-							 "    }\n"
-							 "}\n";
-	script_template = script_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
-
-	Ref<JavaScript> script;
-	script.instantiate();
-	script->set_source_code(script_template);
-	script->set_name(p_class_name);
-	script->set_script_path(p_class_name);
-	return script;
-}
-
 Ref<Script> JavaScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
 	Ref<JavaScript> script;
 	script.instantiate();
-	String src = script->get_source_code();
-	src = src.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
+	String src = p_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
 	script->set_source_code(src);
 	return script;
+}
+
+Vector<ScriptLanguage::ScriptTemplate> JavaScriptLanguage::get_built_in_templates(StringName p_object) {
+	Vector<ScriptLanguage::ScriptTemplate> templates;
+#ifdef TOOLS_ENABLED
+	constexpr size_t len = 2;
+	static const struct ScriptLanguage::ScriptTemplate TEMPLATES[len] = {
+		{ "Node",
+			"Default",
+			"Base template for Node with default Godot cycle methods",
+			"export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
+			"    \n"
+			"    constructor() {\n"
+			"        super();\n"
+			"    }\n"
+			"    \n"
+			"    // Called when the node enters the scene tree for the first time.\n"
+			"    _ready() {\n"
+			"        \n"
+			"    }\n"
+			"    \n"
+			"    // Called every frame. 'delta' is the elapsed time since the previous frame.\n"
+			"    _process(delta) {\n"
+			"        \n"
+			"    }\n"
+			"}\n" },
+		{ "Object",
+			"Empty",
+			"Empty template suitable for all Objects",
+			"export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
+			"    \n"
+			"    // Declare member variables here. Examples:\n"
+			"    a = 2;\n"
+			"    b = \"text\";\n"
+			"    \n"
+			"    constructor() {\n"
+			"        super();\n"
+			"    }\n"
+			"    \n"
+			"}\n" },
+	};
+
+	for (int i = 0; i < len; i++) {
+		if (TEMPLATES[i].inherit == p_object) {
+			templates.append(TEMPLATES[i]);
+		}
+	}
+#endif
+
+	return templates;
 }
 
 bool JavaScriptLanguage::validate(const String &p_script, const String &p_path, List<String> *r_functions, List<ScriptError> *r_errors, List<Warning> *r_warnings, HashSet<int> *r_safe_lines) const {
@@ -303,10 +321,6 @@ void JavaScriptLanguage::get_recognized_extensions(List<String> *p_extensions) c
 	p_extensions->push_back(EXT_JSMODULE);
 	p_extensions->push_back(EXT_JSCLASS);
 	p_extensions->push_back(EXT_JSON);
-	p_extensions->push_back(EXT_JSMODULE_ENCRYPTED);
-	p_extensions->push_back(EXT_JSMODULE_BYTECODE);
-	p_extensions->push_back(EXT_JSCLASS_ENCRYPTED);
-	p_extensions->push_back(EXT_JSCLASS_BYTECODE);
 }
 
 void JavaScriptLanguage::frame() {

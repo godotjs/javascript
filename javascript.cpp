@@ -231,10 +231,11 @@ bool JavaScript::is_valid() const {
 void JavaScript::_bind_methods() {
 }
 
-Ref<Resource> ResourceFormatLoaderJavaScript::load(const String &p_path, const String &p_original_path, Error *r_error) {
+Ref<Resource> ResourceFormatLoaderJavaScript::load(const String &p_path, const String &p_original_path, Error *r_error, bool p_use_sub_threads, float *r_progress, CacheMode p_cache_mode) {
 	Error err = OK;
 	Ref<JavaScriptModule> module = ResourceFormatLoaderJavaScriptModule::load_static(p_path, p_original_path, &err);
-	if (r_error) *r_error = err;
+	if (r_error)
+		*r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load script file '" + p_path + "'.");
 	Ref<JavaScript> script;
 	script.instantiate();
@@ -242,7 +243,8 @@ Ref<Resource> ResourceFormatLoaderJavaScript::load(const String &p_path, const S
 	script->bytecode = module->get_bytecode();
 	script->set_source_code(module->get_source_code());
 	err = script->reload();
-	if (r_error) *r_error = err;
+	if (r_error)
+		*r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Parse source code from file '" + p_path + "' failed.");
 #ifdef TOOLS_ENABLED
 	JavaScriptLanguage::get_singleton()->get_scripts().insert(script);
@@ -252,8 +254,6 @@ Ref<Resource> ResourceFormatLoaderJavaScript::load(const String &p_path, const S
 
 void ResourceFormatLoaderJavaScript::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_front(EXT_JSCLASS);
-	p_extensions->push_front(EXT_JSCLASS_BYTECODE);
-	p_extensions->push_front(EXT_JSCLASS_ENCRYPTED);
 }
 
 void ResourceFormatLoaderJavaScript::get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const {
@@ -266,11 +266,16 @@ bool ResourceFormatLoaderJavaScript::handles_type(const String &p_type) const {
 
 String ResourceFormatLoaderJavaScript::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == EXT_JSCLASS || el == EXT_JSCLASS_BYTECODE || el == EXT_JSCLASS_ENCRYPTED) return JavaScript::get_class_static();
+	if (el == EXT_JSCLASS)
+		return JavaScript::get_class_static();
 	return "";
 }
 
-Error ResourceFormatSaverJavaScript::save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags) {
+bool ResourceFormatLoaderJavaScript::recognize_path(const String &p_path, const String &p_for_type) const {
+	return p_path.get_extension() == EXT_JSCLASS;
+}
+
+Error ResourceFormatSaverJavaScript::save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags) {
 	Ref<JavaScript> script = p_resource;
 	ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
 
@@ -321,8 +326,6 @@ Ref<Resource> ResourceFormatLoaderJavaScriptModule::load(const String &p_path, c
 
 void ResourceFormatLoaderJavaScriptModule::get_recognized_extensions(List<String> *p_extensions) const {
 	p_extensions->push_front(EXT_JSMODULE);
-	p_extensions->push_front(EXT_JSMODULE_BYTECODE);
-	p_extensions->push_front(EXT_JSMODULE_ENCRYPTED);
 }
 
 void ResourceFormatLoaderJavaScriptModule::get_recognized_extensions_for_type(const String &p_type, List<String> *p_extensions) const {
@@ -335,7 +338,7 @@ bool ResourceFormatLoaderJavaScriptModule::handles_type(const String &p_type) co
 
 String ResourceFormatLoaderJavaScriptModule::get_resource_type(const String &p_path) const {
 	String el = p_path.get_extension().to_lower();
-	if (el == EXT_JSMODULE || el == EXT_JSMODULE_BYTECODE || el == EXT_JSMODULE_ENCRYPTED)
+	if (el == EXT_JSMODULE)
 		return JavaScriptModule::get_class_static();
 	return "";
 }
@@ -350,7 +353,10 @@ Ref<Resource> ResourceFormatLoaderJavaScriptModule::load_static(const String &p_
 		if (r_error) *r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load source code from file '" + p_path + "'.");
 		module->set_source_code(code);
-	} else if (p_path.ends_with("." EXT_JSMODULE_BYTECODE) || p_path.ends_with("." EXT_JSCLASS_BYTECODE)) {
+	}
+
+#if 0
+	else if (p_path.ends_with("." EXT_JSMODULE_BYTECODE) || p_path.ends_with("." EXT_JSCLASS_BYTECODE)) {
 		module->set_bytecode(FileAccess::get_file_as_array(p_path, &err));
 		if (r_error) *r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load bytecode from file '" + p_path + "'.");
@@ -380,6 +386,8 @@ Ref<Resource> ResourceFormatLoaderJavaScriptModule::load_static(const String &p_
 			err = ERR_CANT_OPEN;
 		}
 	}
+#endif
+
 	if (r_error) *r_error = err;
 	ERR_FAIL_COND_V(err != OK, Ref<Resource>());
 	return module;

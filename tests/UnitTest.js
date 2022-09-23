@@ -32,7 +32,7 @@ test('Object.prototype.connect', () => {
 		console.log(`signal 'script_changed' emited with:`, ...args);
 		ok = true;
 	});
-	obj.emit_signal('script_changed');
+	obj.emit_signal('script_changed', 123, 'hello');
 	obj.free();
 	return ok;
 }, 'core')

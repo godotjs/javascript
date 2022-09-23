@@ -17,7 +17,7 @@ bool QuickJSCallable::compare_less(const CallableCustom *p_a, const CallableCust
 }
 
 QuickJSCallable::QuickJSCallable(JSContext *ctx, const JSValue &p_value) {
-	ERR_FAIL_COND(JS_IsFunction(ctx, p_value));
+	ERR_FAIL_COND(!JS_IsFunction(ctx, p_value));
 	JSValue v = JS_DupValue(ctx, p_value);
 	js_function.context = ctx;
 	js_function.javascript_object = JS_VALUE_GET_PTR(v);

@@ -56,7 +56,10 @@ Variant JavaScriptInstance::callp(const StringName &p_method, const Variant **p_
 		r_error.error = Callable::CallError::CALL_ERROR_INSTANCE_IS_NULL;
 		ERR_FAIL_V(Variant());
 	}
-	return binder->call_method(javascript_object, p_method, p_args, p_argcount, r_error);
+	if (binder->has_method(javascript_object, p_method)) {
+		return binder->call_method(javascript_object, p_method, p_args, p_argcount, r_error);
+	}
+	return Variant();
 }
 
 ScriptLanguage *JavaScriptInstance::get_language() {
