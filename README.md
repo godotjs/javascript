@@ -47,7 +47,7 @@ export default class MySprite extends godot.Sprite {
 	}
 }
 ```
-2. Save the script with extension `.msx`
+2. Save the script with extension `.mjs`
 3. Attach the script file to the node or resource object like you do with GDScript
 
 ##### How to export signals
