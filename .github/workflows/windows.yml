@@ -1,9 +1,9 @@
 name: 🚪 Windows Builds
 on:
   push:
-    branches: [master, github_actions]
+    branches: [gd4, master, github_actions]
   pull_request:
-    branches: [master]
+    branches: [gd4, master]
 
 # Global Cache Settings
 # SCONS_CACHE for windows must be set in the build environment
