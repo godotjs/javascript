@@ -1,5 +1,5 @@
 def can_build(env, platform):
-	return True
+	return not env.msvc
 
 def configure(env):
 	pass
