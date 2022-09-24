@@ -1322,8 +1322,8 @@ if JS_ENGINE == "quickjs":
         classes.append(parse_class(data))
     json.dump(
         classes,
-        open(
-            env_module.Dir("#modules").srcnode().abspath + "/builtin_api.gen.json", "w"
+        os.path.join(
+            env_module.Dir("#modules").srcnode().abspath, "builtin_api.gen.json"
         ),
         ensure_ascii=False,
         indent=2,
