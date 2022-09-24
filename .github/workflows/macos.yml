@@ -25,7 +25,7 @@ jobs:
       # Clone our module under the correct directory
       - uses: actions/checkout@v2
         with:
-          path: modules/javascript
+          path: custom_modules/javascript
 
       # Upload cache on completion and check it out now
       - name: Load .scons_cache directory
@@ -59,13 +59,13 @@ jobs:
       - name: Setup Vulkan SDK
         run: |
           sh misc/scripts/install_vulkan_sdk_macos.sh
-          
+
       # We should always be explicit with our flags usage here since it's gonna be sure to always set those flags
       - name: Compilation
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=osx tools=yes tests=no target=release_debug production=yes module_text_server_fb_enabled=yes
+          scons -j2 verbose=yes warnings=all werror=yes platform=osx tools=yes tests=no target=release_debug production=yes module_text_server_fb_enabled=yes custom_modules=custom_modules
 
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor

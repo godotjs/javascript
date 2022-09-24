@@ -25,7 +25,7 @@ jobs:
       # Clone our module under the correct directory
       - uses: actions/checkout@v2
         with:
-          path: modules/javascript
+          path: custom_modules/javascript
 
       # Azure repositories are not reliable, we need to prevent azure giving us packages.
       - name: Make apt sources.list use the default Ubuntu repositories
@@ -74,7 +74,7 @@ jobs:
         env:
           SCONS_CACHE: ${{github.workspace}}/.scons_cache/
         run: |
-          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug production=yes
+          scons -j2 verbose=yes warnings=all werror=yes platform=linuxbsd tools=yes tests=no target=release_debug production=yes custom_modules=custom_modules
 
       # TODO Such tests are able to run from Godot 4.0 only
       # Execute unit tests for the editor
