@@ -293,7 +293,7 @@ public:
 	virtual Thread::ID get_thread_id() const override { return thread_id; }
 
 	_FORCE_INLINE_ static QuickJSBinder *get_runtime_binder(JSRuntime *rt) {
-		return static_cast<QuickJSBinder *>(JS_GetMollocState(rt)->opaque);
+		return static_cast<QuickJSBinder *>(JS_GetMallocState(rt)->opaque);
 	}
 
 	_FORCE_INLINE_ static JavaScriptGCHandler *new_gc_handler(JSContext *ctx) {
