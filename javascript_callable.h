@@ -6,12 +6,13 @@
 
 class JavaScriptCallable : public CallableCustom {
 protected:
-	JavaScriptGCHandler js_function;
+  JavaScriptGCHandler js_function;
 
 public:
-	JavaScriptCallable() {}
-	JavaScriptCallable(const JavaScriptGCHandler &p_function) : js_function(p_function) {}
-	virtual ~JavaScriptCallable() {}
+  JavaScriptCallable() {}
+  JavaScriptCallable(const JavaScriptGCHandler &p_function)
+      : js_function(p_function) {}
+  virtual ~JavaScriptCallable() {}
 };
 
 #endif // JAVASCRIPT_CALLABLE_H

@@ -187,7 +187,6 @@
 // 		configurable: true
 // 	});
 
-
 // 	const godot_node_get_node = godot.Node.prototype.get_node;
 // 	Object.defineProperty(godot.Node.prototype, 'get_node', {
 // 		value: function(arg) {

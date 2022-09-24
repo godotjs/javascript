@@ -61,7 +61,9 @@ def checkout_local_godot_install(tag: str):
     cmd = ["git", "checkout", f"tags/{tag}"]
     ret = subprocess.run(cmd, cwd="../../")
     if ret.returncode != 0:
-        raise RuntimeError(f"godot not setup properly, could not checkout '{' '.join(cmd)}'")
+        raise RuntimeError(
+            f"godot not setup properly, could not checkout '{' '.join(cmd)}'"
+        )
 
 
 def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
@@ -69,7 +71,11 @@ def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
         {
             "name": "setup-msys2",
             "uses": "msys2/setup-msys2@v2",
-            "with": {"msystem": "MINGW64", "update": True, "install": "mingw-w64-x86_64-gcc"},
+            "with": {
+                "msystem": "MINGW64",
+                "update": True,
+                "install": "mingw-w64-x86_64-gcc",
+            },
         },
         {
             "name": "update mingw2",
@@ -88,7 +94,10 @@ def get_js_checkout_steps() -> List[Dict[str, Any]]:
         {
             "name": "Checkout Godot",
             "uses": "actions/checkout@v2",
-            "with": {"repository": "godotengine/godot", "ref": "${{ env.GODOT_BASE_BRANCH }}"},
+            "with": {
+                "repository": "godotengine/godot",
+                "ref": "${{ env.GODOT_BASE_BRANCH }}",
+            },
         },
         {
             "name": "Checkout javascript",
@@ -101,13 +110,22 @@ def get_js_checkout_steps() -> List[Dict[str, Any]]:
 
 def get_rid_of_ubsan_asan_linux(matrix_step: Dict[str, Any]) -> Dict[str, Any]:
     for get_rid_of in ["use_ubsan=yes", "use_asan=yes"]:
-        matrix_step["name"] = matrix_step["name"].replace(get_rid_of, "").replace(" , ", " ").replace(", )", ")")
-        matrix_step["sconsflags"] = matrix_step["sconsflags"].replace(get_rid_of, "").replace(", )", ")")
+        matrix_step["name"] = (
+            matrix_step["name"]
+            .replace(get_rid_of, "")
+            .replace(" , ", " ")
+            .replace(", )", ")")
+        )
+        matrix_step["sconsflags"] = (
+            matrix_step["sconsflags"].replace(get_rid_of, "").replace(", )", ")")
+        )
     return matrix_step
 
 
 def fix_all_workflows(
-    js_github_folder: str, workflows: Dict[str, BuildOpts], wf_actions_that_require_shell: List[str]
+    js_github_folder: str,
+    workflows: Dict[str, BuildOpts],
+    wf_actions_that_require_shell: List[str],
 ) -> List[str]:
     wf_names: List[str] = []
     for wf_base_fn, build_opts in workflows.items():
@@ -136,12 +154,19 @@ def fix_all_workflows(
         if "windows" in wf_base_fn:
             # quickjs can't build under msvc, must use mingw, install it here
             new_steps += get_windows_mingw_checkout_steps()
-            data["jobs"][only_template_name]["defaults"] = {"run": {"shell": "msys2 {0}"}}
+            data["jobs"][only_template_name]["defaults"] = {
+                "run": {"shell": "msys2 {0}"}
+            }
 
         elif "linux" in wf_base_fn:
-            for matrix_step in data["jobs"][only_template_name]["strategy"]["matrix"]["include"]:
+            for matrix_step in data["jobs"][only_template_name]["strategy"]["matrix"][
+                "include"
+            ]:
                 # quickjs fails under ubsan & asan, don't include those flags
-                if "name" in matrix_step and "Editor and sanitizers" in matrix_step["name"]:
+                if (
+                    "name" in matrix_step
+                    and "Editor and sanitizers" in matrix_step["name"]
+                ):
                     matrix_step = get_rid_of_ubsan_asan_linux(matrix_step)
 
         base_github_string = "./.github/"
@@ -154,7 +179,9 @@ def fix_all_workflows(
                 and base_github_string in step["uses"]
                 and any(x in step["uses"] for x in wf_actions_that_require_shell)
             ):
-                step["uses"] = step["uses"].replace(base_github_string, "./modules/javascript/.github/")
+                step["uses"] = step["uses"].replace(
+                    base_github_string, "./modules/javascript/.github/"
+                )
                 to_add = {"shell": "msys2 {0}" if "windows" in wf_base_fn else "sh"}
                 if "with" not in step:
                     step["with"] = to_add
@@ -188,7 +215,10 @@ def fix_all_actions(js_github_folder: str, actions: List[str]) -> List[str]:
                     cp_step["shell"] = shell
                     cp_step["if"] = f"inputs.shell == '{shell}'"
                     new_steps.append(cp_step)
-                data["inputs"]["shell"] = {"description": "the shell to run this under", "default": "sh"}
+                data["inputs"]["shell"] = {
+                    "description": "the shell to run this under",
+                    "default": "sh",
+                }
                 actions_that_require_shell_set.add(action_base_fn)
             else:
                 new_steps.append(step)
@@ -314,7 +344,12 @@ def main():
     for x in ["actions", "workflows"]:
         subprocess.call(["rm", "-rf", os.path.join(args.js_github_folder, x)])
         subprocess.call(
-            ["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.js_github_folder, x)]
+            [
+                "cp",
+                "-r",
+                os.path.join(args.godot_github_folder, x),
+                os.path.join(args.js_github_folder, x),
+            ]
         )
 
     basic_flags = " "
@@ -332,10 +367,16 @@ def main():
         "linux_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "macos_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
-        "windows_builds.yml": BuildOpts(f"{basic_flags} use_mingw=yes", args.godot_version),
+        "windows_builds.yml": BuildOpts(
+            f"{basic_flags} use_mingw=yes", args.godot_version
+        ),
     }
-    wf_names = fix_all_workflows(args.js_github_folder, workflows, wf_actions_that_require_shell)
-    subprocess.call(["rm", os.path.join(args.js_github_folder, "workflows", "static_checks.yml")])
+    wf_names = fix_all_workflows(
+        args.js_github_folder, workflows, wf_actions_that_require_shell
+    )
+    subprocess.call(
+        ["rm", os.path.join(args.js_github_folder, "workflows", "static_checks.yml")]
+    )
 
     out_publish_fn = os.path.join(args.js_github_folder, "workflows", "on_tag.yml")
     add_publish_workflow(out_publish_fn, wf_names)

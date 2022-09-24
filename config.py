@@ -1,11 +1,14 @@
 def can_build(env, platform):
-	return not env.msvc
+    return not env.msvc
+
 
 def configure(env):
-	pass
+    pass
+
 
 def get_doc_classes():
     return []
+
 
 def get_doc_path():
     return "doc_classes"
