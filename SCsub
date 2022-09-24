@@ -12,9 +12,7 @@ import json, os
 OUTPUT_FILE = os.path.join("quickjs/quickjs_builtin_binder.gen.cpp")
 API = json.load(
     open(
-        os.path.join(
-            env_module.Dir("#modules").srcnode().abspath, "builtin_api.gen.json"
-        ),
+        env_module.Dir("#modules").srcnode().abspath + "/builtin_api.gen.json",
         "r",
     )
 )
@@ -1322,8 +1320,8 @@ if JS_ENGINE == "quickjs":
         classes.append(parse_class(data))
     json.dump(
         classes,
-        os.path.join(
-            env_module.Dir("#modules").srcnode().abspath, "builtin_api.gen.json"
+        open(
+            env_module.Dir("#modules").srcnode().abspath + "/builtin_api.gen.json", "w"
         ),
         ensure_ascii=False,
         indent=2,
