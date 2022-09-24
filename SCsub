@@ -9,14 +9,6 @@ JS_ENGINE = "quickjs"
 
 import json, os
 
-OUTPUT_FILE = os.path.join("quickjs/quickjs_builtin_binder.gen.cpp")
-API = json.load(
-    open(
-        env_module.Dir("#modules").srcnode().abspath + "/builtin_api.gen.json",
-        "r",
-    )
-)
-
 VariantTypes = {
     "Variant": "Variant::NIL",
     "boolean": "Variant::BOOL",
@@ -836,6 +828,13 @@ def generate_class_bind_action(cls, constructor):
         },
     )
 
+OUTPUT_FILE = os.path.join("quickjs/quickjs_builtin_binder.gen.cpp")
+API = json.load(
+    open(
+        env_module.Dir("#modules").srcnode().abspath + "/builtin_api.gen.json",
+        "r",
+    )
+)
 
 def generate_builtin_bindings():
     Template = """\
