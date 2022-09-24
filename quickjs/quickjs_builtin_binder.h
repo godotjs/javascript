@@ -1,7 +1,7 @@
 #ifndef QUICKJS_BUILTIN_BINDER_H
 #define QUICKJS_BUILTIN_BINDER_H
 
-#include "quickjs/quickjs.h"
+#include "../thirdparty/quickjs/quickjs.h"
 #include "core/variant/variant.h"
 struct JavaScriptGCHandler;
 class QuickJSBinder;

@@ -4,7 +4,6 @@
 JavaScriptLanguage *JavaScriptLanguage::singleton = NULL;
 
 namespace JavaScriptInstanceBindingCallbacks {
-
 static void *create_callback(void *p_token, void *p_instance) {
 	if (JavaScriptBinder *binder = JavaScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
 		return binder->alloc_object_binding_data(static_cast<Object *>(p_instance));
@@ -29,7 +28,6 @@ static GDNativeBool reference_callback(void *p_token, void *p_binding, GDNativeB
 	}
 	return true;
 }
-
 } // namespace JavaScriptInstanceBindingCallbacks
 
 JavaScriptLanguage::JavaScriptLanguage() {
@@ -188,7 +186,6 @@ void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 	const char **w = _reserved_words;
 
 	while (*w) {
-
 		p_words->push_back(*w);
 		w++;
 	}

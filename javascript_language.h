@@ -1,4 +1,4 @@
-﻿#ifndef JAVASCRIPT_LANGUAGE_H
+#ifndef JAVASCRIPT_LANGUAGE_H
 #define JAVASCRIPT_LANGUAGE_H
 
 #include "core/object/script_language.h"

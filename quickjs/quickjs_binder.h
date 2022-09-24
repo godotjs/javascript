@@ -2,7 +2,7 @@
 #define QUICKJS_BINDING_HELPER_H
 
 #include "../javascript_binder.h"
-#include "./quickjs/quickjs.h"
+#include "../thirdparty/quickjs/quickjs.h"
 
 #ifdef QUICKJS_WITH_DEBUGGER
 #include "quickjs_debugger.h"
@@ -84,7 +84,7 @@ public:
 #define CONFIG_ATOMICS
 #endif
 #define DEF(name, str) JS_ATOM_##name,
-#include "quickjs/quickjs-atom.h"
+#include "../thirdparty/quickjs/quickjs-atom.h"
 #undef DEF
 #ifdef CONFIG_ATOMICS
 #undef CONFIG_ATOMICS

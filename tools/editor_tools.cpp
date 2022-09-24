@@ -62,7 +62,6 @@ void JavaScriptPlugin::_on_menu_item_pressed(int item) {
 }
 
 JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
-
 	PopupMenu *menu = memnew(PopupMenu);
 	add_tool_submenu_item(TTR("JavaScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLARE_FILE);

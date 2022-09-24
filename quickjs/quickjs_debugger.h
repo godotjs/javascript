@@ -6,7 +6,7 @@
 #include "core/io/tcp_server.h"
 #include "core/io/ip_address.h"
 #include "core/object/ref_counted.h"
-#include "quickjs/quickjs-debugger.h"
+#include "../thirdparty/quickjs/quickjs-debugger.h"
 #define QJS_DEBUGGER_MAX_BUFFER_SIZE 4194304
 
 class QuickJSDebugger : public RefCounted {

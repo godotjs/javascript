@@ -68,7 +68,7 @@ export function onready<T extends godot.Node>(path: string | (new()=>godot.Node)
 }
 
 /**
- * Register the member as a node property  
+ * Register the member as a node property
  * **Note: The value is null before current node is ready**
  * @param path The default path name of the node
  */

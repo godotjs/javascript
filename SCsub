@@ -546,7 +546,7 @@ ${getters}
 		}
 		return JS_UNDEFINED;
 	};
-	
+
 	JSCFunctionMagic *setter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
 		JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 		${class} *ptr = bind->get${class}();\
@@ -852,7 +852,6 @@ def generate_builtin_bindings():
 ${declarations}
 
 void QuickJSBuiltinBinder::bind_builtin_classes_gen() {
-
 ${bindings}
 }
 
@@ -1332,20 +1331,20 @@ if JS_ENGINE == "quickjs":
     )
     generate_builtin_bindings()
     # build quickjs source
-    version = open("quickjs/quickjs/VERSION.txt", "r").read().split("\n")[0]
+    version = open("thirdparty/quickjs/VERSION.txt", "r").read().split("\n")[0]
     env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"' + version + '"'})
     env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
     if env_module["target"] != "release":
         env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
         env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
-    env_module.Append(CPPPATH=["quickjs/quickjs"])
+    env_module.Append(CPPPATH=["thirdparty/quickjs"])
     if env["tools"]:
         env_module.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
     env_module.add_source_files(
         env.modules_sources, "quickjs/quickjs_builtin_binder.gen.cpp"
     )
     env_module.add_source_files(env.modules_sources, "quickjs/*.cpp")
-    env_module.add_source_files(env.modules_sources, "quickjs/quickjs/*.c")
+    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/*.c")
 
 # Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:

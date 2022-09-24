@@ -31,7 +31,6 @@ StringName JavaScript::get_instance_base_type() const {
 }
 
 ScriptInstance *JavaScript::instance_create(Object *p_this) {
-
 	JavaScriptBinder *binder = JavaScriptLanguage::get_thread_binder(Thread::get_caller_id());
 	ERR_FAIL_NULL_V_MSG(binder, NULL, "Cannot create instance from this thread");
 	const JavaScriptClassInfo *cls = NULL;
@@ -191,7 +190,6 @@ bool JavaScript::get_property_default_value(const StringName &p_property, Varian
 }
 
 void JavaScript::update_exports() {
-
 #ifdef TOOLS_ENABLED
 	if (!javascript_class)
 		return;

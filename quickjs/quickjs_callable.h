@@ -1,7 +1,7 @@
 #ifndef QUICKJS_CALLABLE_H
 #define QUICKJS_CALLABLE_H
 #include "../javascript_callable.h"
-#include "quickjs/quickjs.h"
+#include "../thirdparty/quickjs/quickjs.h"
 struct JSValue;
 
 class QuickJSCallable : public JavaScriptCallable {

@@ -97,4 +97,4 @@ async function run() {
 	const logFunc = passed == count ? console.log : console.warn;
 	logFunc(`Test complete: ${passed}/${count} passed`);
 }
-const _ = run(); // QuickJS BUG ? 返回的是一个 Promise 对象，不赋给临时变量，会导致 Promise 对象无法被 GC 
+const _ = run(); // QuickJS BUG ? 返回的是一个 Promise 对象，不赋给临时变量，会导致 Promise 对象无法被 GC
