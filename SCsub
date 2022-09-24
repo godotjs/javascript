@@ -1384,5 +1384,6 @@ if env["tools"]:
         with open_file(fn, "w") as fh:
             fh.write(base_text.format(*subs))
         env_module.add_source_files(env.modules_sources, fn)
+env.Prepend(LIBS=["pthread"])
 env_module.Append(CPPPATH=["#modules/javascript", "quickjs"])
 env_module.add_source_files(env.modules_sources, sources)
