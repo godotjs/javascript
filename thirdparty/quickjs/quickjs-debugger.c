@@ -124,7 +124,6 @@ static inline JS_BOOL JS_IsInteger(JSValueConst v)
 static void js_debugger_get_variable_type(JSContext *ctx,
         struct DebuggerSuspendedState *state,
         JSValue var, JSValue var_val) {
-
     // 0 means not expandible
     uint32_t reference = 0;
     if (JS_IsString(var_val))
@@ -357,7 +356,6 @@ static void js_process_request(JSDebuggerInfo *info, struct DebuggerSuspendedSta
 
         if (!JS_GetOwnPropertyNames(ctx, &tab_atom, &tab_atom_count, variable,
             JS_GPN_STRING_MASK | JS_GPN_SYMBOL_MASK)) {
-
             for(int i = 0; i < tab_atom_count; i++) {
                 JSValue value = JS_GetProperty(ctx, variable, tab_atom[i].atom);
                 JSValue variable_json = js_debugger_get_variable(ctx, state, JS_AtomToString(ctx, tab_atom[i].atom), value);
@@ -407,7 +405,7 @@ static void js_process_breakpoints(JSDebuggerInfo *info, JSValue message) {
 JSValue js_debugger_file_breakpoints(JSContext *ctx, const char* path) {
     JSDebuggerInfo *info = js_debugger_info(JS_GetRuntime(ctx));
     JSValue path_data = JS_GetPropertyStr(ctx, info->breakpoints, path);
-    return path_data;    
+    return path_data;
 }
 
 static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur_pc) {
@@ -448,7 +446,7 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
 
         if (!js_transport_read_fully(info, info->message_buffer, message_length))
             goto done;
-        
+
         info->message_buffer[message_length] = '\0';
 
         JSValue message = JS_ParseJSON(ctx, info->message_buffer, message_length, "<debugger>");
@@ -659,7 +657,7 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
     if (js_process_debugger_messages(info, cur_pc))
         goto done;
 
-    fail: 
+    fail:
         js_debugger_free(JS_GetRuntime(ctx), info);
     done:
         info->is_debugging = 0;

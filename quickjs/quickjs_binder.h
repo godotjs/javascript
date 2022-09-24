@@ -23,7 +23,6 @@
 
 class QuickJSWorker;
 class QuickJSBinder : public JavaScriptBinder {
-
 	friend class QuickJSBuiltinBinder;
 	friend class QuickJSWorker;
 	QuickJSBuiltinBinder builtin_binder;
