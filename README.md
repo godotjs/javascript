@@ -1,6 +1,6 @@
-## JavaScript language binding for godot game engine
+## JavaScript language binding for Godot Engine
 
-This module implements JavaScript/TypeScript language support for the godot game engine. [QuickJS](https://bellard.org/quickjs/) is used as the JavaScript engine.
+This module implements JavaScript/TypeScript language support for the Godot Engine. [QuickJS](https://bellard.org/quickjs/) is used as the JavaScript engine.
 
 ---
 
@@ -22,9 +22,9 @@ You can also get the binaries with lastest commits from the [github build action
 
 ### Compilation
 
-- Clone the source code of [godot](https://github.com/godotengine/godot)
+- Clone the source code of [Godot Engine](https://github.com/godotengine/godot)
 - Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `javascript`
-- [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
+- [Recompile the Godot Engine](https://docs.godotengine.org/en/latest/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
 ![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
 
@@ -36,15 +36,20 @@ You can also get the binaries with lastest commits from the [github build action
 
 ```js
 // The default export entry is treated as an exported class to godot
-export default class MySprite extends godot.Sprite {
-  // this is _init() in GDScript
-  constructor() {
-    super();
-  }
-
-  _ready() {}
-
-  _process(delta) {}
+export default class Node extends godot.Node {
+	constructor() {
+		super();
+	}
+	
+	// Called when the node enters the scene tree for the first time.
+	_ready() {
+		console.log('Hello World');
+		console.log(godot.Time.get_time_string_from_system())
+	}
+	
+	// Called every frame. 'delta' is the elapsed time since the previous frame.
+	_process(delta) {
+	}
 }
 ```
 
@@ -282,8 +287,6 @@ You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScrip
 ## Developer notes
 
 - This package is not compatible with MSVC, you will get build errors in quickjs.
-- To update the github actions scripts we have the file `build_github_actions.py`. This script will copy the actions from the godot repo (usually at `../../`) and modify them to fix the requirements of quickjs and this repo.
-  \*\* If you are updating this repo's compatibility, you should run that script (a brief description is at the top of the script) and it will re-create the actions `.yml` files for you.
 - The script also build the `on_tag.yml` script which automates the github release publishing.
   \*\* The `on_tag.yml` functionality tries to sleep until all jobs with the same `sha` are completed. It should be fine to run whenever, but depending on how github actions culls long running jobs you might want to make sure that all/(most of) the builds look good before tagging.
 - Linux ubsan asan build woes:
