@@ -14,6 +14,9 @@ This module implements JavaScript/TypeScript language support for the godot game
 - Full code completion support for all godot APIs including signals and enumerations
 - Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug)
 
+### Installation
+No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with Javascript/Typescript language support.
+
 ### Download
 You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)  
 You can also get the binaries with lastest commits from the [github build action result](https://github.com/GodotExplorer/ECMAScript/actions)
