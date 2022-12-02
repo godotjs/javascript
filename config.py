@@ -1,6 +1,6 @@
 def can_build(env, platform):
     # crashes on linux right now
-    return False # not env.msvc
+    return not env.msvc
 
 
 def configure(env):
