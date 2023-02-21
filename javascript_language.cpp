@@ -163,7 +163,7 @@ void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 		"RegExp",
 		"ArrayBuffer",
 		"SharedArrayBuffer",
-		"Uint8ClampedArray"
+		"Uint8ClampedArray",
 		"Int8Array",
 		"Uint8Array",
 		"Int16Array",
