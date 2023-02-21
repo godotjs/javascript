@@ -43,6 +43,7 @@ public:
 	virtual Ref<Script> get_base_script() const override { return nullptr; }
 	virtual bool inherits_script(const Ref<Script> &p_script) const override { return false; }
 
+	StringName get_global_name() const override;
 	virtual StringName get_instance_base_type() const override;
 	virtual ScriptInstance *instance_create(Object *p_this) override;
 	virtual PlaceHolderScriptInstance *placeholder_instance_create(Object *p_this) override;

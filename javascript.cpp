@@ -23,6 +23,10 @@ bool JavaScript::can_instantiate() const {
 #endif
 }
 
+StringName JavaScript::get_global_name() const {
+	return StringName();
+}
+
 StringName JavaScript::get_instance_base_type() const {
 	static StringName empty;
 	ERR_FAIL_NULL_V(javascript_class, empty);
