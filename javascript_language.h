@@ -21,7 +21,7 @@ private:
 	static JavaScriptLanguage *singleton;
 	JavaScriptBinder *main_binder;
 	HashMap<Thread::ID, JavaScriptBinder *> thread_binder_map;
-	GDNativeInstanceBindingCallbacks instance_binding_callbacks;
+	GDExtensionInstanceBindingCallbacks instance_binding_callbacks;
 
 	CallableMiddleman *callable_middleman;
 #ifdef TOOLS_ENABLED
@@ -43,7 +43,7 @@ public:
 	}
 
 	_FORCE_INLINE_ virtual String get_name() const override { return "JavaScript"; }
-	const GDNativeInstanceBindingCallbacks *get_instance_binding_callbacks() const { return &instance_binding_callbacks; }
+	const GDExtensionInstanceBindingCallbacks *get_instance_binding_callbacks() const { return &instance_binding_callbacks; }
 #ifdef TOOLS_ENABLED
 	_FORCE_INLINE_ HashSet<Ref<JavaScript> > &get_scripts() { return scripts; }
 #endif

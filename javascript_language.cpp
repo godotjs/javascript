@@ -18,7 +18,7 @@ static void free_callback(void *p_token, void *p_instance, void *p_binding) {
 	}
 }
 
-static GDNativeBool reference_callback(void *p_token, void *p_binding, GDNativeBool p_reference) {
+static GDExtensionBool reference_callback(void *p_token, void *p_binding, GDExtensionBool p_reference) {
 	if (JavaScriptBinder *binder = JavaScriptLanguage::get_singleton()->get_thread_binder(Thread::get_caller_id())) {
 		if (p_reference) {
 			binder->godot_refcount_incremented(static_cast<JavaScriptGCHandler *>(p_binding));
@@ -163,7 +163,7 @@ void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 		"RegExp",
 		"ArrayBuffer",
 		"SharedArrayBuffer",
-		"Uint8ClampedArray"
+		"Uint8ClampedArray",
 		"Int8Array",
 		"Uint8Array",
 		"Int16Array",
