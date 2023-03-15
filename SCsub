@@ -5,7 +5,7 @@ Import('env')
 Import('env_modules')
 env_module = env_modules.Clone()
 JS_ENGINE = 'quickjs'
-TOOLS = env.get('TOOLS');
+TOOLS = ('editor' == env_module['target']) #env.get('TOOLS');
 
 def open_file(path, mode):
 	if platform.python_version() > '3':
@@ -36,7 +36,7 @@ if JS_ENGINE == 'quickjs':
 	version = open('quickjs/quickjs/VERSION.txt', 'r').read().split('\n')[0]
 	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
 	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
-	if env_module['target'] != 'release':
+	if 'release' not in (env_module['target'] or ''):
 		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
 		env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
 	env_module.Append(CPPPATH=["quickjs/quickjs"])

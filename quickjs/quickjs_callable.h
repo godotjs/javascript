@@ -2,7 +2,11 @@
 #define QUICKJS_CALLABLE_H
 #include "../javascript_callable.h"
 #include "quickjs/quickjs.h"
+
+#if !defined(JS_NAN_BOXING)
+///typedef uint64_t JSValue; defined in quickjs.h if defined(JS_NAN_BOXING)
 struct JSValue;
+#endif
 
 class QuickJSCallable : public JavaScriptCallable {
 	static bool compare_equal(const CallableCustom *p_a, const CallableCustom *p_b);

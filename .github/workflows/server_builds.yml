@@ -3,9 +3,11 @@ name: ☁ Server Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: 3.5-stable
-  SCONSFLAGS: '  verbose=yes   debug_symbols=no module_mono_enabled=yes mono_static=yes
-    mono_glue=no'
+  GODOT_BASE_BRANCH: "4.0"
+  SCONSFLAGS: '  verbose=yes warnings=extra module_text_server_fb_enabled=yes  '
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-server
   cancel-in-progress: true
@@ -17,14 +19,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: Linux Headless w/ Mono (target=release_debug, tools=yes)
+        - name: Linux Headless w/ Mono (target=editor, tools=yes)
           cache-name: server-editor-mono
-          target: release_debug
+          target: editor
+          tests: false # Disabled due freeze caused by mix Mono build and CI
           tools: true
+          sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no
+          bin: ./bin/godot.x11.opt.tools.64.mono
+          build-mono: true
+          artifact: true
         - name: Linux Server w/ Mono (target=release, tools=no)
           cache-name: server-template-mono
-          target: release
+          target: template_release
+          tests: false # Disabled due freeze caused by mix Mono build and CI
           tools: false
+          sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no
+          build-mono: true
+          artifact: true
     steps:
     - name: Checkout Godot
       uses: actions/checkout@v2
@@ -34,13 +45,13 @@ jobs:
     - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
-        path: ${{github.workspace}}/modules/ECMAScript/
+        path: ${{github.workspace}}/modules/javascript/
     - name: Linux dependencies
       shell: bash
       run: |
         # Azure repositories are not reliable, we need to prevent azure giving us packages.
-        sudo rm -f /etc/apt/sources.list.d/*
-        sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+        # sudo rm -f /etc/apt/sources.list.d/*
+        # sudo cp -f misc/ci/sources.list /etc/apt/sources.list
         sudo apt-get update
         # The actual dependencies
         sudo apt-get install build-essential pkg-config libx11-dev libxcursor-dev \
@@ -52,14 +63,14 @@ jobs:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMAScript/.github/actions/godot-deps
+      uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
     - name: Compilation
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
-        platform: server
+        platform: linuxbsd
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
         shell: sh

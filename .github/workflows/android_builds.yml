@@ -3,8 +3,8 @@ name: 🤖 Android Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: 3.5-stable
-  SCONSFLAGS: '  verbose=yes   debug_symbols=no'
+  GODOT_BASE_BRANCH: "4.0"
+  SCONSFLAGS: verbose=yes warnings=extra debug_symbols=no module_text_server_fb_enabled=yes
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-android
   cancel-in-progress: true
@@ -21,37 +21,38 @@ jobs:
     - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
-        path: ${{github.workspace}}/modules/ECMAScript/
+        path: ${{github.workspace}}/modules/javascript/
     - name: Make apt sources.list use the default Ubuntu repositories
       run: |
-        sudo rm -f /etc/apt/sources.list.d/*
-        sudo cp -f misc/ci/sources.list /etc/apt/sources.list
+        # sudo rm -f /etc/apt/sources.list.d/*
+        # sudo cp -f misc/ci/sources.list /etc/apt/sources.list
         sudo apt-get update
     - name: Set up Java 11
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v3
       with:
+        distribution: temurin
         java-version: 11
     - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMAScript/.github/actions/godot-deps
+      uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
     - name: Compilation (armv7)
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=armv7
         platform: android
-        target: release
+        target: template_release
         tools: false
         shell: sh
     - name: Compilation (arm64v8)
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=arm64v8
         platform: android
-        target: release
+        target: template_release
         tools: false
         shell: sh
     - name: Generate Godot templates
