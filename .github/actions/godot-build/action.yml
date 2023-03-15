@@ -2,7 +2,7 @@ name: Build Godot
 description: Build Godot with the provided options.
 inputs:
   target:
-    description: The scons target (debug/release_debug/release).
+    description: The scons target (debug/editor/release).
     default: debug
   tools:
     description: If tools are to be built.

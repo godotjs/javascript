@@ -17,9 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: Linux Headless w/ Mono (target=release_debug, tools=yes)
+        - name: Linux Headless w/ Mono (target=editor, tools=yes)
           cache-name: server-editor-mono
-          target: release_debug
+          target: editor
           tools: true
         - name: Linux Server w/ Mono (target=release, tools=no)
           cache-name: server-template-mono

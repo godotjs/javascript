@@ -16,9 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: Editor w/ Mono (target=release_debug, tools=yes)
+        - name: Editor w/ Mono (target=editor, tools=yes)
           cache-name: linux-editor-mono
-          target: release_debug
+          target: editor
           tools: true
           sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no
           bin: ./bin/godot.x11.opt.tools.64.mono
