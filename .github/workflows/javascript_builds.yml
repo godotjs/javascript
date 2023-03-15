@@ -50,7 +50,7 @@ jobs:
       with:
         sconsflags: ${{ env.SCONSFLAGS }}
         platform: javascript
-        target: release
+        target: template_release
         tools: false
         shell: sh
     - name: Upload artifact

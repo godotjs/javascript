@@ -26,7 +26,7 @@ jobs:
           artifact: true
         - name: Editor and sanitizers (target=debug, tools=yes)
           cache-name: linux-editor-sanitizers
-          target: debug
+          target: template_debug
           tools: true
           sconsflags: ' '
           test: true
@@ -35,7 +35,7 @@ jobs:
           artifact: false
         - name: Template w/ Mono (target=release, tools=no)
           cache-name: linux-template-mono
-          target: release
+          target: template_release
           tools: false
           sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no debug_symbols=no
           build-mono: false

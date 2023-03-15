@@ -43,7 +43,7 @@ jobs:
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=armv7
         platform: android
-        target: release
+        target: template_release
         tools: false
         shell: sh
     - name: Compilation (arm64v8)
@@ -51,7 +51,7 @@ jobs:
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=arm64v8
         platform: android
-        target: release
+        target: template_release
         tools: false
         shell: sh
     - name: Generate Godot templates

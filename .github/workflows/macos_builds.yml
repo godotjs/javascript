@@ -23,7 +23,7 @@ jobs:
           bin: ./bin/godot.osx.opt.tools.64
         - name: Template (target=release, tools=no)
           cache-name: macos-template
-          target: release
+          target: template_release
           tools: false
     steps:
     - name: Checkout Godot

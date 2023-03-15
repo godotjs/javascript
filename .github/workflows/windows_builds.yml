@@ -24,7 +24,7 @@ jobs:
           bin: ./bin/godot.windows.opt.tools.64.exe
         - name: Template (target=release, tools=no)
           cache-name: windows-template
-          target: release
+          target: template_release
           tools: false
     steps:
     - name: setup-msys2
