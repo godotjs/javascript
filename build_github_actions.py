@@ -4,7 +4,7 @@ run this every time you upgrade the godot-base version to generate new matching 
 You must be in this directory, and in the modules subfolder of godot (just as if you would install this project into godot)
 
 usage:
-python build_github_actions.py --godot-version "3.5-stable" --godot-github-folder ../../.github --js-github-folder .github
+python build_github_actions.py --godot-version "4.0" --godot-github-folder ../../.github --js-github-folder .github
 
 """
 
