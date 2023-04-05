@@ -59,7 +59,7 @@ jobs:
       uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
-        platform: server
+        platform: linuxbsd
         target: ${{ matrix.target }}
         tools: ${{ matrix.tools }}
         shell: sh

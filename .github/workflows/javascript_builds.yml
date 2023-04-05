@@ -49,7 +49,7 @@ jobs:
       uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }}
-        platform: javascript
+        platform: web
         target: template_release
         tools: false
         shell: sh
