@@ -21,7 +21,7 @@ jobs:
     - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
-        path: ${{github.workspace}}/modules/ECMAScript/
+        path: ${{github.workspace}}/modules/javascript/
     - name: Make apt sources.list use the default Ubuntu repositories
       run: |
         # sudo rm -f /etc/apt/sources.list.d/*
@@ -35,11 +35,11 @@ jobs:
       uses: ./.github/actions/godot-cache
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMAScript/.github/actions/godot-deps
+      uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
     - name: Compilation (armv7)
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=armv7
         platform: android
@@ -47,7 +47,7 @@ jobs:
         tools: false
         shell: sh
     - name: Compilation (arm64v8)
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} android_arch=arm64v8
         platform: android

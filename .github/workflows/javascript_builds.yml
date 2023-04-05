@@ -23,7 +23,7 @@ jobs:
     - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
-        path: ${{github.workspace}}/modules/ECMAScript/
+        path: ${{github.workspace}}/modules/javascript/
     - name: Load Emscripten cache
       id: javascript-template-emscripten-cache
       uses: actions/cache@v2
@@ -42,11 +42,11 @@ jobs:
       uses: ./.github/actions/godot-cache
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMAScript/.github/actions/godot-deps
+      uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
     - name: Compilation
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }}
         platform: javascript

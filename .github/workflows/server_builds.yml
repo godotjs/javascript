@@ -34,7 +34,7 @@ jobs:
     - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
-        path: ${{github.workspace}}/modules/ECMAScript/
+        path: ${{github.workspace}}/modules/javascript/
     - name: Linux dependencies
       shell: bash
       run: |
@@ -52,11 +52,11 @@ jobs:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMAScript/.github/actions/godot-deps
+      uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
     - name: Compilation
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
         platform: server
