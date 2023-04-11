@@ -20,6 +20,7 @@ jobs:
           cache-name: macos-editor
           target: editor
           tools: true
+          tests: false
           bin: ./bin/godot.osx.opt.tools.64
         - name: Template (target=release, tools=no)
           cache-name: macos-template

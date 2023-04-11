@@ -20,6 +20,7 @@ jobs:
         - name: Editor (target=editor, tools=yes)
           cache-name: windows-editor
           target: editor
+          tests: false
           tools: true
           bin: ./bin/godot.windows.opt.tools.64.exe
         - name: Template (target=release, tools=no)
