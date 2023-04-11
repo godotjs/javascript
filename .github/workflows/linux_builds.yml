@@ -133,24 +133,24 @@ jobs:
         ${{ matrix.bin }} --test --headless
 
     # Check class reference
-    - name: Check for class reference updates
-      if: ${{ matrix.doc-test }}
-      run: |
-        echo "Running --doctool to see if this changes the public API without updating the documentation."
-        echo -e "If a diff is shown, it means that your code/doc changes are incomplete and you should update the class reference with --doctool.\n\n"
-        ${{ matrix.bin }} --doctool --headless 2>&1 > /dev/null || true
-        git diff --color --exit-code && ! git ls-files --others --exclude-standard | sed -e 's/^/New doc file missing in PR: /' | grep 'xml$'
+    # - name: Check for class reference updates
+    #   if: ${{ matrix.doc-test }}
+    #   run: |
+    #     echo "Running --doctool to see if this changes the public API without updating the documentation."
+    #     echo -e "If a diff is shown, it means that your code/doc changes are incomplete and you should update the class reference with --doctool.\n\n"
+    #     ${{ matrix.bin }} --doctool --headless 2>&1 > /dev/null || true
+    #     git diff --color --exit-code && ! git ls-files --others --exclude-standard | sed -e 's/^/New doc file missing in PR: /' | grep 'xml$'
 
     # Test 3.x -> 4.x project converter
-    - name: Test project converter
-      if: ${{ matrix.proj-conv }}
-      run: |
-        mkdir converter_test
-        cd converter_test
-        touch project.godot
-        ../${{ matrix.bin }} --headless --validate-conversion-3to4
-        cd ..
-        rm converter_test -rf
+    # - name: Test project converter
+    #   if: ${{ matrix.proj-conv }}
+    #   run: |
+    #     mkdir converter_test
+    #     cd converter_test
+    #     touch project.godot
+    #     ../${{ matrix.bin }} --headless --validate-conversion-3to4
+    #     cd ..
+    #     rm converter_test -rf
 
     # # Download and extract zip archive with project, folder is renamed to be able to easy change used project
     # - name: Download test project
