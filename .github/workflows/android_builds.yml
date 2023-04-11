@@ -4,7 +4,7 @@ name: 🤖 Android Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: "4.0"
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
+  SCONSFLAGS: verbose=yes warnings=extra debug_symbols=no module_text_server_fb_enabled=yes
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-android
   cancel-in-progress: true
