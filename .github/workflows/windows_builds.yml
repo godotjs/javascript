@@ -4,7 +4,7 @@ name: 🏁 Windows Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: "4.0"
-  SCONSFLAGS: '  use_mingw=yes  verbose=yes   debug_symbols=no'
+  SCONSFLAGS: '  use_mingw=yes  debug_symbols=no verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes'
   SCONS_CACHE_MSVC_CONFIG: true
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
@@ -26,6 +26,8 @@ jobs:
           cache-name: windows-template
           target: template_release
           tools: false
+          tests: false
+          sconsflags: debug_symbols=no
     steps:
     - name: setup-msys2
       uses: msys2/setup-msys2@v2
@@ -56,12 +58,17 @@ jobs:
       uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: msys2 {0}
+
+    - name: Setup MSVC problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+
     - name: Compilation
       uses: ./modules/javascript/.github/actions/godot-build
       with:
-        sconsflags: ${{ env.SCONSFLAGS }}
+        sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
         platform: windows
         target: ${{ matrix.target }}
+        tests: ${{ matrix.tests }}
         tools: ${{ matrix.tools }}
         scons-cache-limit: 3072
         shell: msys2 {0}

@@ -3,7 +3,7 @@ description: Build Godot with the provided options.
 inputs:
   target:
     description: The scons target (debug/editor/release).
-    default: debug
+    default: editor
   tools:
     description: If tools are to be built.
     default: false
@@ -20,7 +20,7 @@ inputs:
     default: ${{ github.workspace }}/.scons-cache/
   scons-cache-limit:
     description: The scons cache size limit.
-    default: 4096
+    default: 7168
   shell:
     description: the shell to run this under
     default: sh
@@ -47,7 +47,7 @@ runs:
       SCONS_CACHE_LIMIT: ${{ inputs.scons-cache-limit }}
     run: |
       echo "Building with flags:" ${{ env.SCONSFLAGS }}
-      if [ "${{ inputs.target }}" != "editor" ]; then rm -rf editor; fi  # Ensure we don't include editor code.
+      if [ "${{ inputs.target }}" != "editor" ]; then rm -rf editor; rm -rf tools; fi  # Ensure we don't include editor code.
       scons platform=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
       ls -l bin/
     if: inputs.shell == 'msys2 {0}'

@@ -4,7 +4,7 @@ name: 🍏 iOS Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: "4.0"
-  SCONSFLAGS: '  verbose=yes   debug_symbols=no'
+  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-ios
   cancel-in-progress: true
@@ -29,13 +29,11 @@ jobs:
       uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
-    - name: Install Vulkan SDK
-      run:  brew cask install apenngrace/vulkan/vulkan-sdk
     - name: Compilation (armv7)
       uses: ./modules/javascript/.github/actions/godot-build
       with:
         sconsflags: ${{ env.SCONSFLAGS }}
-        platform: iphone
+        platform: ios
         target: template_release
         tools: false
         shell: sh

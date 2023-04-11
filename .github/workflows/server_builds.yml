@@ -4,8 +4,10 @@ name: ☁ Server Builds
 - pull_request
 env:
   GODOT_BASE_BRANCH: "4.0"
-  SCONSFLAGS: '  verbose=yes   debug_symbols=no module_mono_enabled=yes mono_static=yes
-    mono_glue=no'
+  SCONSFLAGS: '  verbose=yes warnings=extra module_text_server_fb_enabled=yes  '
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-server
   cancel-in-progress: true
@@ -20,11 +22,20 @@ jobs:
         - name: Linux Headless w/ Mono (target=editor, tools=yes)
           cache-name: server-editor-mono
           target: editor
+          tests: false # Disabled due freeze caused by mix Mono build and CI
           tools: true
+          sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no
+          bin: ./bin/godot.x11.opt.tools.64.mono
+          build-mono: true
+          artifact: true
         - name: Linux Server w/ Mono (target=release, tools=no)
           cache-name: server-template-mono
           target: template_release
+          tests: false # Disabled due freeze caused by mix Mono build and CI
           tools: false
+          sconsflags: module_mono_enabled=yes mono_static=yes mono_glue=no
+          build-mono: true
+          artifact: true
     steps:
     - name: Checkout Godot
       uses: actions/checkout@v2
