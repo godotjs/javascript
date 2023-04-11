@@ -29,6 +29,8 @@ jobs:
       uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: sh
+    - name: Install Vulkan SDK
+      run:  brew cask install apenngrace/vulkan/vulkan-sdk
     - name: Compilation (armv7)
       uses: ./modules/javascript/.github/actions/godot-build
       with:

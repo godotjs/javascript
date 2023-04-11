@@ -35,7 +35,8 @@ runs:
       SCONS_CACHE_LIMIT: ${{ inputs.scons-cache-limit }}
     run: |
       echo "Building with flags:" ${{ env.SCONSFLAGS }}
-      scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
+      if [ "${{ inputs.target }}" != "editor" ]; then rm -rf editor; fi  # Ensure we don't include editor code.
+      scons platform=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
       ls -l bin/
     if: inputs.shell == 'sh'
   - name: Scons Build
@@ -46,6 +47,7 @@ runs:
       SCONS_CACHE_LIMIT: ${{ inputs.scons-cache-limit }}
     run: |
       echo "Building with flags:" ${{ env.SCONSFLAGS }}
-      scons p=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
+      if [ "${{ inputs.target }}" != "editor" ]; then rm -rf editor; fi  # Ensure we don't include editor code.
+      scons platform=${{ inputs.platform }} target=${{ inputs.target }} tools=${{ inputs.tools }} tests=${{ inputs.tests }} --jobs=2 ${{ env.SCONSFLAGS }}
       ls -l bin/
     if: inputs.shell == 'msys2 {0}'
