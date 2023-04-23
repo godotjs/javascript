@@ -4,7 +4,7 @@ run this every time you upgrade the godot-base version to generate new matching 
 You must be in this directory, and in the modules subfolder of godot (just as if you would install this project into godot)
 
 usage:
-python build_github_actions.py --godot-version "3.5-stable" --godot-github-folder ../../.github --ECMAS-github-folder .github
+python build_github_actions.py --godot-version "4.0" --godot-github-folder ../../.github --js-github-folder .github
 
 """
 
@@ -15,6 +15,7 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Dict, List, Any
 import copy
+
 
 # https://stackoverflow.com/a/33300001 + some changes
 def str_presenter(dumper, data):
@@ -53,7 +54,7 @@ def parseargs():
     parser = argparse.ArgumentParser()
     parser.add_argument("--godot-version", required=True)
     parser.add_argument("--godot-github-folder", required=True)
-    parser.add_argument("--ECMAS-github-folder", required=True)
+    parser.add_argument("--js-github-folder", required=True)
     return parser.parse_args()
 
 
@@ -64,7 +65,7 @@ def checkout_local_godot_install(tag: str):
         raise RuntimeError(f"godot not setup properly, could not checkout '{' '.join(cmd)}'")
 
 
-def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
+def get_windows_mingw_checkout_steps() -> List[object]:
     out = [
         {
             "name": "setup-msys2",
@@ -83,7 +84,7 @@ def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
     return out
 
 
-def get_ECMAScript_checkout_steps() -> List[Dict[str, Any]]:
+def get_js_checkout_steps() -> List[Dict[str, Any]]:
     out = [
         {
             "name": "Checkout Godot",
@@ -91,9 +92,9 @@ def get_ECMAScript_checkout_steps() -> List[Dict[str, Any]]:
             "with": {"repository": "godotengine/godot", "ref": "${{ env.GODOT_BASE_BRANCH }}"},
         },
         {
-            "name": "Checkout ECMAScript",
+            "name": "Checkout javascript",
             "uses": "actions/checkout@v2",
-            "with": {"path": "${{github.workspace}}/modules/ECMAScript/"},
+            "with": {"path": "${{github.workspace}}/modules/javascript/"},
         },
     ]
     return out
@@ -107,11 +108,11 @@ def get_rid_of_ubsan_asan_linux(matrix_step: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def fix_all_workflows(
-    ECMAS_github_folder: str, workflows: Dict[str, BuildOpts], wf_actions_that_require_shell: List[str]
+    js_github_folder: str, workflows: Dict[str, BuildOpts], wf_actions_that_require_shell: List[str]
 ) -> List[str]:
     wf_names: List[str] = []
     for wf_base_fn, build_opts in workflows.items():
-        full_fn = os.path.join(ECMAS_github_folder, "workflows", wf_base_fn)
+        full_fn = os.path.join(js_github_folder, "workflows", wf_base_fn)
         data = yaml.safe_load(open(full_fn))
         wf_names.append(data["name"])
 
@@ -148,13 +149,13 @@ def fix_all_workflows(
         for step in data["jobs"][only_template_name]["steps"]:
             # replace godot checkout routine with this checkout routine
             if "uses" in step and "checkout" in step["uses"]:
-                new_steps += get_ECMAScript_checkout_steps()
+                new_steps += get_js_checkout_steps()
             elif (
                 "uses" in step
                 and base_github_string in step["uses"]
                 and any(x in step["uses"] for x in wf_actions_that_require_shell)
             ):
-                step["uses"] = step["uses"].replace(base_github_string, "./modules/ECMAScript/.github/")
+                step["uses"] = step["uses"].replace(base_github_string, "./modules/javascript/.github/")
                 to_add = {"shell": "msys2 {0}" if "windows" in wf_base_fn else "sh"}
                 if "with" not in step:
                     step["with"] = to_add
@@ -170,7 +171,7 @@ def fix_all_workflows(
     return wf_names
 
 
-def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
+def fix_all_actions(js_github_folder: str, actions: List[str]) -> List[str]:
     """
     This can be simplified once:
     https://github.com/actions/runner/pull/1767
@@ -178,7 +179,7 @@ def fix_all_actions(ECMAS_github_folder: str, actions: List[str]) -> List[str]:
     """
     actions_that_require_shell_set = set()
     for action_base_fn in actions:
-        full_action_fn = os.path.join(ECMAS_github_folder, action_base_fn)
+        full_action_fn = os.path.join(js_github_folder, action_base_fn)
         data = yaml.safe_load(open(full_action_fn))
         new_steps = []
         for step in data["runs"]["steps"]:
@@ -308,14 +309,12 @@ console.log(downloaded_files);"""
 def main():
     args = parseargs()
     assert os.path.isdir(args.godot_github_folder)
-    assert os.path.isdir(args.ECMAS_github_folder)
+    assert os.path.isdir(args.js_github_folder)
     checkout_local_godot_install(args.godot_version)
 
     for x in ["actions", "workflows"]:
-        subprocess.call(["rm", "-rf", os.path.join(args.ECMAS_github_folder, x)])
-        subprocess.call(
-            ["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.ECMAS_github_folder, x)]
-        )
+        subprocess.call(["rm", "-rf", os.path.join(args.js_github_folder, x)])
+        subprocess.call(["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.js_github_folder, x)])
 
     basic_flags = " "
     actions = [
@@ -324,7 +323,7 @@ def main():
         "actions/godot-deps/action.yml",
         "actions/upload-artifact/action.yml",
     ]
-    wf_actions_that_require_shell = fix_all_actions(args.ECMAS_github_folder, actions)
+    wf_actions_that_require_shell = fix_all_actions(args.js_github_folder, actions)
     workflows = {
         "android_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "ios_builds.yml": BuildOpts(basic_flags, args.godot_version),
@@ -334,10 +333,10 @@ def main():
         "server_builds.yml": BuildOpts(basic_flags, args.godot_version),
         "windows_builds.yml": BuildOpts(f"{basic_flags} use_mingw=yes", args.godot_version),
     }
-    wf_names = fix_all_workflows(args.ECMAS_github_folder, workflows, wf_actions_that_require_shell)
-    subprocess.call(["rm", os.path.join(args.ECMAS_github_folder, "workflows", "static_checks.yml")])
+    wf_names = fix_all_workflows(args.js_github_folder, workflows, wf_actions_that_require_shell)
+    subprocess.call(["rm", os.path.join(args.js_github_folder, "workflows", "static_checks.yml")])
 
-    out_publish_fn = os.path.join(args.ECMAS_github_folder, "workflows", "on_tag.yml")
+    out_publish_fn = os.path.join(args.js_github_folder, "workflows", "on_tag.yml")
     add_publish_workflow(out_publish_fn, wf_names)
 
 

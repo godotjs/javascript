@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  register_types.h                                                      */
+/*  javascript_callable.h                                                 */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,11 +28,21 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef JAVASCRIPT_REGISTER_TYPES_H
-#define JAVASCRIPT_REGISTER_TYPES_H
+#ifndef JAVASCRIPT_CALLABLE_H
+#define JAVASCRIPT_CALLABLE_H
 
-#include "modules/register_module_types.h"
-void initialize_javascript_module(ModuleInitializationLevel p_level);
-void uninitialize_javascript_module(ModuleInitializationLevel p_level);
+#include "core/variant/callable.h"
+#include "javascript_gc_handler.h"
 
-#endif // JAVASCRIPT_REGISTER_TYPES_H
+class JavaScriptCallable : public CallableCustom {
+protected:
+	JavaScriptGCHandler js_function;
+
+public:
+	JavaScriptCallable() {}
+	JavaScriptCallable(const JavaScriptGCHandler &p_function) :
+			js_function(p_function) {}
+	virtual ~JavaScriptCallable() {}
+};
+
+#endif // JAVASCRIPT_CALLABLE_H

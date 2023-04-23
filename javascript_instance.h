@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  register_types.h                                                      */
+/*  javascript_instance.h                                                 */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,11 +28,45 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef JAVASCRIPT_REGISTER_TYPES_H
-#define JAVASCRIPT_REGISTER_TYPES_H
+#ifndef JAVASCRIPT_INSTANCE_H
+#define JAVASCRIPT_INSTANCE_H
 
-#include "modules/register_module_types.h"
-void initialize_javascript_module(ModuleInitializationLevel p_level);
-void uninitialize_javascript_module(ModuleInitializationLevel p_level);
+#include "core/object/script_language.h"
+#include "core/variant/callable.h"
+#include "javascript.h"
+#include "javascript_binder.h"
 
-#endif // JAVASCRIPT_REGISTER_TYPES_H
+class JavaScriptInstance : public ScriptInstance {
+	friend class JavaScript;
+	friend class QuickJSBinder;
+
+	Object *owner;
+	Ref<JavaScript> script;
+	JavaScriptGCHandler javascript_object;
+	JavaScriptBinder *binder;
+	const JavaScriptClassInfo *javascript_class;
+
+public:
+	virtual bool set(const StringName &p_name, const Variant &p_value) override;
+	virtual bool get(const StringName &p_name, Variant &r_ret) const override;
+	virtual void get_property_list(List<PropertyInfo> *p_properties) const override;
+	virtual Variant::Type get_property_type(const StringName &p_name, bool *r_is_valid = nullptr) const override;
+	virtual bool property_can_revert(const StringName &p_name) const override { return false; };
+	virtual bool property_get_revert(const StringName &p_name, Variant &r_ret) const override { return false; };
+
+	virtual void get_method_list(List<MethodInfo> *p_list) const override;
+	virtual bool has_method(const StringName &p_method) const override;
+
+	virtual Variant callp(const StringName &p_method, const Variant **p_args, int p_argcount, Callable::CallError &r_error) override;
+
+	virtual Object *get_owner() override { return owner; }
+	virtual Ref<Script> get_script() const override;
+	virtual ScriptLanguage *get_language() override;
+
+	virtual void notification(int p_notification) override{};
+
+	JavaScriptInstance();
+	~JavaScriptInstance();
+};
+
+#endif // JAVASCRIPT_INSTANCE_H

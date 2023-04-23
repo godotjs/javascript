@@ -1,54 +1,83 @@
+/**************************************************************************/
+/*  editor_tools.cpp                                                      */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             GODOT ENGINE                               */
+/*                        https://godotengine.org                         */
+/**************************************************************************/
+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+
 #include "editor_tools.h"
-#include "../ecmascript_language.h"
+#include "../javascript_language.h"
 #include "core/math/expression.h"
 #include "core/os/keyboard.h"
 #include "editor/filesystem_dock.h"
 
 #define TS_IGNORE "//@ts-ignore\n"
-static Map<String, Set<String> > ts_ignore_errors;
-static Map<String, Set<String> > removed_members;
-static Map<String, List<String> > added_apis;
-typedef Map<String, Vector<const DocData::ConstantDoc *> > ClassEnumerations;
-static Map<String, ClassEnumerations> class_enumerations;
+static HashMap<String, HashSet<String>> ts_ignore_errors;
+static HashMap<String, HashSet<String>> removed_members;
+static HashMap<String, List<String>> added_apis;
+typedef HashMap<String, Vector<const DocData::ConstantDoc *>> ClassEnumerations;
+static HashMap<String, ClassEnumerations> class_enumerations;
 
-struct ECMAScriptAlphCompare {
-	_FORCE_INLINE_ bool operator()(const Ref<ECMAScript> &l, const Ref<ECMAScript> &r) const {
+struct JavaScriptAlphCompare {
+	_FORCE_INLINE_ bool operator()(const Ref<JavaScript> &l, const Ref<JavaScript> &r) const {
 		return String(l->get_class_name()) < String(r->get_class_name());
 	}
 };
 
 static Error dump_to_file(const String &p_path, const String &p_content) {
-	FileAccessRef tsconfig = FileAccess::open(p_path, FileAccess::WRITE);
-	if (tsconfig.f && tsconfig->is_open()) {
+	Ref<FileAccess> tsconfig = FileAccess::open(p_path, FileAccess::WRITE);
+	if (tsconfig.is_valid() && tsconfig->is_open()) {
 		tsconfig->store_string(p_content);
-		tsconfig->close();
 		return OK;
 	}
 	return FAILED;
 }
 
-void ECMAScriptPlugin::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &ECMAScriptPlugin::_on_menu_item_pressed);
-	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &ECMAScriptPlugin::_export_typescript_declare_file);
-	ClassDB::bind_method(D_METHOD("_export_enumeration_binding_file"), &ECMAScriptPlugin::_export_enumeration_binding_file);
+void JavaScriptPlugin::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("_on_menu_item_pressed"), &JavaScriptPlugin::_on_menu_item_pressed);
+	ClassDB::bind_method(D_METHOD("_export_typescript_declare_file"), &JavaScriptPlugin::_export_typescript_declare_file);
+	ClassDB::bind_method(D_METHOD("_export_enumeration_binding_file"), &JavaScriptPlugin::_export_enumeration_binding_file);
 }
 
-void ECMAScriptPlugin::_notification(int p_what) {
+void JavaScriptPlugin::_notification(int p_what) {
 	switch (p_what) {
-		case MainLoop::NOTIFICATION_WM_FOCUS_IN: {
-			Set<Ref<ECMAScript> > &scripts = ECMAScriptLanguage::get_singleton()->get_scripts();
-			for (Set<Ref<ECMAScript> >::Element *E = scripts.front(); E; E = E->next()) {
-				uint64_t last_time = E->get()->get_last_modified_time();
-				uint64_t time = FileAccess::get_modified_time(E->get()->get_script_path());
+		case MainLoop::NOTIFICATION_APPLICATION_FOCUS_IN: {
+			const HashSet<Ref<JavaScript>> &scripts = JavaScriptLanguage::get_singleton()->get_scripts();
+			for (const Ref<JavaScript> &s : scripts) {
+				uint64_t last_time = s->get_last_modified_time();
+				uint64_t time = FileAccess::get_modified_time(s->get_script_path());
 				if (last_time != time) {
-					ECMAScriptLanguage::get_singleton()->reload_tool_script(E->get(), true);
+					JavaScriptLanguage::get_singleton()->reload_tool_script(s, true);
 				}
 			}
 		} break;
 	}
 }
 
-void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
+void JavaScriptPlugin::_on_menu_item_pressed(int item) {
 	switch (item) {
 		case MenuItem::ITEM_GEN_DECLARE_FILE:
 			declaration_file_dialog->popup_centered_ratio();
@@ -62,35 +91,34 @@ void ECMAScriptPlugin::_on_menu_item_pressed(int item) {
 	}
 }
 
-ECMAScriptPlugin::ECMAScriptPlugin(EditorNode *p_node) {
-
+JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
 	PopupMenu *menu = memnew(PopupMenu);
-	add_tool_submenu_item(TTR("ECMAScript"), menu);
+	add_tool_submenu_item(TTR("JavaScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLARE_FILE);
 	menu->add_item(TTR("Generate Enumeration Binding Script"), ITEM_GEN_ENUM_BINDING_SCRIPT);
 	menu->add_item(TTR("Generate TypeScript Project"), ITEM_GEN_TYPESCRIPT_PROJECT);
-	menu->connect("id_pressed", this, "_on_menu_item_pressed");
+	menu->connect("id_pressed", callable_mp(this, &JavaScriptPlugin::_on_menu_item_pressed));
 
 	declaration_file_dialog = memnew(EditorFileDialog);
 	declaration_file_dialog->set_title(TTR("Generate TypeScript Declaration File"));
-	declaration_file_dialog->set_mode(EditorFileDialog::MODE_SAVE_FILE);
+	declaration_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	declaration_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	declaration_file_dialog->add_filter(TTR("*.d.ts;TypeScript Declaration file"));
 	declaration_file_dialog->set_current_file("godot.d.ts");
-	declaration_file_dialog->connect("file_selected", this, "_export_typescript_declare_file");
+	declaration_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_typescript_declare_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
 
 	enumberation_file_dialog = memnew(EditorFileDialog);
 	enumberation_file_dialog->set_title(TTR("Generate Enumeration Binding Script"));
-	enumberation_file_dialog->set_mode(EditorFileDialog::MODE_SAVE_FILE);
+	enumberation_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	enumberation_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	enumberation_file_dialog->add_filter(TTR("*.jsx;JavaScript file"));
 	enumberation_file_dialog->set_current_file("enumerations.jsx");
-	enumberation_file_dialog->connect("file_selected", this, "_export_enumeration_binding_file");
+	enumberation_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_enumeration_binding_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(enumberation_file_dialog);
 
 	ts_ignore_errors.clear();
-	Set<String> ts_ignore_error_members;
+	HashSet<String> ts_ignore_error_members;
 	ts_ignore_errors.insert("ArrayMesh", ts_ignore_error_members);
 	ts_ignore_error_members.clear();
 	ts_ignore_error_members.insert("FLAG_MAX");
@@ -172,7 +200,7 @@ static String format_doc_text(const String &p_bbcode, const String &p_indent = "
 
 static String format_identifier(const String &p_ident) {
 	List<String> reserved_words;
-	ECMAScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+	JavaScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
 	if (reserved_words.find(p_ident)) {
 		return String("p_") + p_ident;
 	}
@@ -181,7 +209,7 @@ static String format_identifier(const String &p_ident) {
 
 static String format_property_name(const String &p_ident) {
 	List<String> reserved_words;
-	ECMAScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
+	JavaScriptLanguage::get_singleton()->get_reserved_words(&reserved_words);
 	if (reserved_words.find(p_ident) || p_ident.find("/") != -1) {
 		return String("'") + p_ident + "'";
 	}
@@ -196,7 +224,7 @@ static String format_enum_name(const String &enum_name) {
 }
 
 static String get_type_name(const String &p_type) {
-	if (p_type.empty())
+	if (p_type.is_empty())
 		return "void";
 	if (p_type == "int" || p_type == "float")
 		return "number";
@@ -223,18 +251,18 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	bool arg_default_value_started = false;
 	for (int i = 0; i < p_method.arguments.size(); i++) {
 		const DocData::ArgumentDoc &arg = p_method.arguments[i];
-		if (!arg_default_value_started && !arg.default_value.empty()) {
+		if (!arg_default_value_started && !arg.default_value.is_empty()) {
 			arg_default_value_started = true;
 		}
 		String arg_type = get_type_name(arg.type);
-		if (!arg.enumeration.empty()) {
+		if (!arg.enumeration.is_empty()) {
 			arg_type = format_enum_name(arg.enumeration);
 		}
 
 		String default_value;
 		if (arg_default_value_started) {
 			default_value += " = ";
-			if (arg.default_value.empty()) {
+			if (arg.default_value.is_empty()) {
 				if (arg.type == "string") {
 					default_value += "''";
 				} else {
@@ -253,7 +281,7 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	}
 
 	if (p_method.qualifiers.find("vararg") != -1) {
-		params += params.empty() ? "...args" : ", ...args";
+		params += params.is_empty() ? "...args" : ", ...args";
 	}
 	dict["params"] = params;
 
@@ -300,8 +328,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	class_template = class_template.replace("${TS_IGNORE}", ts_ignore_errors.has(class_doc.name) ? "\t" TS_IGNORE : "");
 	Dictionary dict;
 	dict["name"] = class_doc.name;
-	dict["inherits"] = class_doc.inherits.empty() ? "" : get_type_name(class_doc.inherits);
-	dict["extends"] = class_doc.inherits.empty() ? "" : " extends ";
+	dict["inherits"] = class_doc.inherits.is_empty() ? "" : get_type_name(class_doc.inherits);
+	dict["extends"] = class_doc.inherits.is_empty() ? "" : " extends ";
 	String brief_description = format_doc_text(class_doc.brief_description, "\t ");
 	dict["brief_description"] = brief_description;
 	String description = format_doc_text(class_doc.description, "\t ");
@@ -311,43 +339,44 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		dict["description"] = description;
 	}
 
-	Set<String> ignore_members;
+	HashSet<String> ignore_members;
 	if (removed_members.has(class_doc.name)) {
 		ignore_members = removed_members[class_doc.name];
 	}
 
 	String constants = "";
-	Map<String, Vector<const DocData::ConstantDoc *> > enumerations;
-	for (int i = 0; i < class_doc.constants.size(); i++) {
-		const DocData::ConstantDoc &const_doc = class_doc.constants[i];
-		if (ignore_members.has(const_doc.name)) continue;
+	HashMap<String, Vector<const DocData::ConstantDoc *>> enumerations;
+	for (const DocData::ConstantDoc &const_doc : class_doc.constants) {
+		if (ignore_members.has(const_doc.name)) {
+			continue;
+		}
 
-		Dictionary dict;
-		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
-		dict["name"] = format_property_name(const_doc.name);
-		dict["value"] = const_doc.value;
+		Dictionary new_dict;
+		new_dict["description"] = format_doc_text(const_doc.description, "\t\t ");
+		new_dict["name"] = format_property_name(const_doc.name);
+		new_dict["value"] = const_doc.value;
 		String type = "number";
-		if (!const_doc.enumeration.empty()) {
+		if (!const_doc.enumeration.is_empty()) {
 			type = const_doc.enumeration + "." + const_doc.name;
 		} else if (const_doc.value.find("(") != -1) {
 			type = const_doc.value.split("(")[0];
-		} else if (const_doc.value.is_valid_integer()) {
-			type = dict["value"];
+		} else if (const_doc.value.is_valid_int()) {
+			type = new_dict["value"];
 		}
-		dict["type"] = type;
+		new_dict["type"] = type;
 
-		String const_str = "\n"
-						   "\t\t/** ${description} */\n"
-						   "${TS_IGNORE}"
-						   "\t\tconst ${name}: ${type};\n";
+		String new_const_str = "\n"
+							   "\t\t/** ${description} */\n"
+							   "${TS_IGNORE}"
+							   "\t\tconst ${name}: ${type};\n";
 		if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(const_doc.name)) {
-			const_str = const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
+			new_const_str = new_const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
 		} else {
-			const_str = const_str.replace("${TS_IGNORE}", "");
+			new_const_str = new_const_str.replace("${TS_IGNORE}", "");
 		}
-		constants += apply_pattern(const_str, dict);
+		constants += apply_pattern(new_const_str, new_dict);
 
-		if (!const_doc.enumeration.empty()) {
+		if (!const_doc.enumeration.is_empty()) {
 			if (!enumerations.has(const_doc.enumeration)) {
 				Vector<const DocData::ConstantDoc *> e;
 				e.push_back(&const_doc);
@@ -361,20 +390,20 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 
 	dict["constants"] = constants;
 	String enumerations_str = "";
-	for (auto E = enumerations.front(); E; E = E->next()) {
-		if (ignore_members.has(E->key())) {
+	for (const KeyValue<String, Vector<const DocData::ConstantDoc *>> &E : enumerations) {
+		if (ignore_members.has(E.key)) {
 			continue;
 		}
-		String enum_str = "\t\tenum " + E->key() + " {\n";
-		const Vector<const DocData::ConstantDoc *> &enums = E->get();
+		String enum_str = "\t\tenum " + E.key + " {\n";
+		const Vector<const DocData::ConstantDoc *> &enums = E.value;
 		for (int i = 0; i < enums.size(); i++) {
 			String const_str = "\t\t\t/** ${description} */\n"
 							   "\t\t\t${name} = ${value},\n";
-			Dictionary dict;
-			dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
-			dict["name"] = format_property_name(enums[i]->name);
-			dict["value"] = enums[i]->value;
-			enum_str += apply_pattern(const_str, dict);
+			Dictionary new_dict;
+			new_dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
+			new_dict["name"] = format_property_name(enums[i]->name);
+			new_dict["value"] = enums[i]->value;
+			enum_str += apply_pattern(const_str, new_dict);
 		}
 		enum_str += "\t\t}\n";
 		enumerations_str += enum_str;
@@ -383,9 +412,9 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 
 	Vector<DocData::MethodDoc> method_list = class_doc.methods;
 	String properties = "";
-	for (int i = 0; i < class_doc.properties.size(); i++) {
-		const DocData::PropertyDoc &prop_doc = class_doc.properties[i];
-		if (ignore_members.has(prop_doc.name)) continue;
+	for (const DocData::PropertyDoc &prop_doc : class_doc.properties) {
+		if (ignore_members.has(prop_doc.name))
+			continue;
 
 		String prop_str = "\n"
 						  "\t\t/** ${description} */\n"
@@ -397,14 +426,14 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			prop_str = prop_str.replace("${TS_IGNORE}", "");
 		}
 
-		Dictionary dict;
-		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
-		dict["name"] = format_property_name(prop_doc.name);
-		dict["type"] = get_type_name(prop_doc.type);
-		dict["static"] = Engine::get_singleton()->has_singleton(class_doc.name) ? "static " : "";
-		properties += apply_pattern(prop_str, dict);
+		Dictionary new_dict;
+		new_dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
+		new_dict["name"] = format_property_name(prop_doc.name);
+		new_dict["type"] = get_type_name(prop_doc.type);
+		new_dict["static"] = Engine::get_singleton()->has_singleton(class_doc.name) ? "static " : "";
+		properties += apply_pattern(prop_str, new_dict);
 
-		if (!prop_doc.getter.empty()) {
+		if (!prop_doc.getter.is_empty()) {
 			DocData::MethodDoc md;
 			md.name = prop_doc.getter;
 			md.return_type = get_type_name(prop_doc.type);
@@ -412,7 +441,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			method_list.push_back(md);
 		}
 
-		if (!prop_doc.setter.empty()) {
+		if (!prop_doc.setter.is_empty()) {
 			DocData::MethodDoc md;
 			md.name = prop_doc.setter;
 			DocData::ArgumentDoc arg;
@@ -429,7 +458,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String signals = "";
 	for (int i = 0; i < class_doc.signals.size(); ++i) {
 		const DocData::MethodDoc &signal = class_doc.signals[i];
-		if (ignore_members.has(signal.name)) continue;
+		if (ignore_members.has(signal.name))
+			continue;
 
 		String signal_str = "\n"
 							"\t\t/** ${description} */\n"
@@ -440,10 +470,10 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		} else {
 			signal_str = signal_str.replace("${TS_IGNORE}", "");
 		}
-		Dictionary dict;
-		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
-		dict["name"] = signal.name;
-		signals += apply_pattern(signal_str, dict);
+		Dictionary new_dict;
+		new_dict["description"] = format_doc_text(signal.description, "\t\t\t ");
+		new_dict["name"] = signal.name;
+		signals += apply_pattern(signal_str, new_dict);
 	}
 	dict["signals"] = signals;
 
@@ -451,7 +481,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String methods = "";
 	for (int i = 0; i < method_list.size(); i++) {
 		const DocData::MethodDoc &method_doc = method_list[i];
-		if (ignore_members.has(method_doc.name)) continue;
+		if (ignore_members.has(method_doc.name))
+			continue;
 
 		if (method_doc.name == class_doc.name) {
 			continue;
@@ -472,8 +503,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	return apply_pattern(class_template, dict);
 }
 
-void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
-	modified_api = &ECMAScriptLanguage::get_singleton()->get_main_binder()->get_modified_api();
+void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
+	modified_api = &JavaScriptLanguage::get_singleton()->get_main_binder()->get_modified_api();
 
 	removed_members.clear();
 	if (modified_api->has("removed")) {
@@ -482,7 +513,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		while (class_key) {
 			String class_name = *class_key;
 			Array arr = removed[*class_key];
-			Set<String> members;
+			HashSet<String> members;
 			for (int i = 0; i < arr.size(); i++) {
 				members.insert(arr[i]);
 			}
@@ -506,7 +537,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		}
 	}
 
-	DocData *doc = EditorHelp::get_doc_data();
+	const DocTools *doc = EditorHelp::get_doc_data();
 	Dictionary dict;
 
 	const String godot_module = "// This file is generated by godot editor\n"
@@ -520,7 +551,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 								"}\n"
 								"\n";
 
-	Set<String> ignored_classes;
+	HashSet<String> ignored_classes;
 	ignored_classes.insert("int");
 	ignored_classes.insert("float");
 	ignored_classes.insert("bool");
@@ -537,18 +568,18 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("RID");
 	ignored_classes.insert("NodePath");
 	ignored_classes.insert("Transform2D");
-	ignored_classes.insert("Transform");
+	ignored_classes.insert("Transform3D");
 	ignored_classes.insert("Basis");
-	ignored_classes.insert("Quat");
+	ignored_classes.insert("Quaternion");
 	ignored_classes.insert("Plane");
 	ignored_classes.insert("AABB");
-	ignored_classes.insert("PoolByteArray");
-	ignored_classes.insert("PoolIntArray");
-	ignored_classes.insert("PoolRealArray");
-	ignored_classes.insert("PoolStringArray");
-	ignored_classes.insert("PoolVector2Array");
-	ignored_classes.insert("PoolVector3Array");
-	ignored_classes.insert("PoolColorArray");
+	ignored_classes.insert("PackedByteArray");
+	ignored_classes.insert("PackedInt32Array");
+	ignored_classes.insert("PackedFloat32Array");
+	ignored_classes.insert("PackedStringArray");
+	ignored_classes.insert("PackedVector2Array");
+	ignored_classes.insert("PackedVector3Array");
+	ignored_classes.insert("PackedColorArray");
 #endif
 	ignored_classes.insert("Semaphore");
 	ignored_classes.insert("Thread");
@@ -559,34 +590,34 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	String enumerations_str = "";
 	String functions = "";
 
-	for (Map<String, DocData::ClassDoc>::Element *E = doc->class_list.front(); E; E = E->next()) {
-		DocData::ClassDoc class_doc = E->get();
+	for (const KeyValue<String, DocData::ClassDoc> &E : doc->class_list) {
+		DocData::ClassDoc class_doc = E.value;
 		if (ignored_classes.has(class_doc.name)) {
 			continue;
 		}
 		class_doc.name = get_type_name(class_doc.name);
 		if (class_doc.name.begins_with("@")) {
-			Map<String, Vector<const DocData::ConstantDoc *> > enumerations;
+			HashMap<String, Vector<const DocData::ConstantDoc *>> enumerations;
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
 				String const_str = "\n"
 								   "\t/** ${description} */\n"
 								   "\tconst ${name}: ${type};\n";
 				for (int i = 0; i < class_doc.constants.size(); i++) {
 					const DocData::ConstantDoc &const_doc = class_doc.constants[i];
-					Dictionary dict;
-					dict["description"] = format_doc_text(const_doc.description, "\t ");
-					dict["name"] = format_property_name(const_doc.name);
-					dict["value"] = const_doc.value;
+					Dictionary new_dict;
+					new_dict["description"] = format_doc_text(const_doc.description, "\t ");
+					new_dict["name"] = format_property_name(const_doc.name);
+					new_dict["value"] = const_doc.value;
 					if (const_doc.name == "NAN" || const_doc.name == "INF") {
-						dict["type"] = "number";
-					} else if (!const_doc.enumeration.empty()) {
-						dict["type"] = format_enum_name(const_doc.enumeration) + "." + const_doc.name;
+						new_dict["type"] = "number";
+					} else if (!const_doc.enumeration.is_empty()) {
+						new_dict["type"] = format_enum_name(const_doc.enumeration) + "." + const_doc.name;
 					} else {
-						dict["type"] = dict["value"];
+						new_dict["type"] = new_dict["value"];
 					}
-					constants += apply_pattern(const_str, dict);
+					constants += apply_pattern(const_str, new_dict);
 
-					if (!const_doc.enumeration.empty()) {
+					if (!const_doc.enumeration.is_empty()) {
 						if (!enumerations.has(const_doc.enumeration)) {
 							Vector<const DocData::ConstantDoc *> e;
 							e.push_back(&const_doc);
@@ -598,33 +629,23 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 				}
 				class_enumerations.insert(GODOT_OBJECT_NAME, enumerations);
 
-				for (auto E = enumerations.front(); E; E = E->next()) {
-					String enum_str = "\tenum " + format_enum_name(E->key()) + " {\n";
-					const Vector<const DocData::ConstantDoc *> &enums = E->value();
+				for (auto F : enumerations) {
+					String enum_str = "\tenum " + format_enum_name(F.key) + " {\n";
+					const Vector<const DocData::ConstantDoc *> &enums = F.value;
 					for (int i = 0; i < enums.size(); i++) {
-						String const_str = "\t\t/** ${description} */\n"
-										   "\t\t${name} = ${value},\n";
-						Dictionary dict;
-						dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
-						dict["name"] = format_property_name(enums[i]->name);
-						dict["value"] = enums[i]->value;
+						String new_const_str = "\t\t/** ${description} */\n"
+											   "\t\t${name} = ${value},\n";
+						Dictionary new_dict;
+						new_dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
+						new_dict["name"] = format_property_name(enums[i]->name);
+						new_dict["value"] = enums[i]->value;
 
-						// Exceptions
-
-						/**
-						 * KEY_MASK_CMD docs has value listed as "platform-dependent",
-						 * so we have to retreive the actual value manually
-						 */
-						if (dict["name"] == "KEY_MASK_CMD") {
-							dict["value"] = KEY_MASK_CMD;
-						}
-
-						enum_str += apply_pattern(const_str, dict);
+						enum_str += apply_pattern(new_const_str, new_dict);
 					}
 					enum_str += "\t}\n";
 					enumerations_str += enum_str;
 				}
-
+#if 0
 				for (int i = 0; i < class_doc.methods.size(); i++) {
 					const DocData::MethodDoc &method_doc = class_doc.methods[i];
 					if (Expression::find_function(method_doc.name) == Expression::FUNC_MAX) {
@@ -635,6 +656,7 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 					}
 					functions += _export_method(method_doc, true, false, ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(method_doc.name));
 				}
+#endif
 			}
 			continue;
 		}
@@ -647,14 +669,13 @@ void ECMAScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	dict["builtins"] = BUILTIN_DECLARATION_TEXT;
 
 	String text = apply_pattern(godot_module, dict);
-	FileAccessRef f = FileAccess::open(p_path, FileAccess::WRITE);
-	if (f.f && f->is_open()) {
+	Ref<FileAccess> f = FileAccess::open(p_path, FileAccess::WRITE);
+	if (f.is_valid() && f->is_open()) {
 		f->store_string(text);
-		f->close();
 	}
 }
 
-void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
+void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	_export_typescript_declare_file("");
 	String file_content = "// Tool generated file DO NOT modify mannually\n"
 						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
@@ -669,17 +690,18 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 						  "export default class extends godot.Node {};\n";
 
 	String enumerations = "";
-	for (auto cls = class_enumerations.front(); cls; cls = cls->next()) {
-		const ClassEnumerations &enumeration = cls->value();
-		const String &name = cls->key();
+	for (const auto &cls : class_enumerations) {
+		const ClassEnumerations &enumeration = cls.value;
+		const String &name = cls.key;
 		String class_name = name;
 		if (class_name != "godot") {
 			class_name = "godot." + class_name;
 		}
 		String class_enums = "";
-		for (auto E = enumeration.front(); E; E = E->next()) {
+		uint32_t idx = 0;
+		for (const auto &E : enumeration) {
 			String enum_items_text = "{";
-			const Vector<const DocData::ConstantDoc *> &consts = E->value();
+			const Vector<const DocData::ConstantDoc *> &consts = E.value;
 			for (int i = 0; i < consts.size(); ++i) {
 				const DocData::ConstantDoc *c = consts[i];
 				enum_items_text += c->name + ": " + c->value;
@@ -688,30 +710,31 @@ void ECMAScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 				}
 			}
 			enum_items_text += " }";
-			Dictionary dict;
-			dict["name"] = format_enum_name(E->key());
-			dict["values"] = enum_items_text;
-			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", dict);
-			if (E->next()) {
+			Dictionary new_dict;
+			new_dict["name"] = format_enum_name(E.key);
+			new_dict["values"] = enum_items_text;
+			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", new_dict);
+			if (idx < enumeration.size() - 1) {
 				class_enums += ", ";
 			} else {
 				class_enums += "\n\t";
 			}
+			idx++;
 		}
 		static String class_template = "\tbind(${class}, {${enumerations}});\n";
-		Dictionary dict;
-		dict["class"] = class_name;
-		dict["enumerations"] = class_enums;
-		enumerations += apply_pattern(class_template, dict);
+		Dictionary class_dict;
+		class_dict["class"] = class_name;
+		class_dict["enumerations"] = class_enums;
+		enumerations += apply_pattern(class_template, class_dict);
 	}
-	Dictionary dict;
-	dict["enumerations"] = enumerations;
-	file_content = apply_pattern(file_content, dict);
+	Dictionary enum_dict;
+	enum_dict["enumerations"] = enumerations;
+	file_content = apply_pattern(file_content, enum_dict);
 
 	dump_to_file(p_path, file_content);
 }
 
-void ECMAScriptPlugin::_generate_typescript_project() {
+void JavaScriptPlugin::_generate_typescript_project() {
 	_export_typescript_declare_file("res://godot.d.ts");
 	dump_to_file("res://tsconfig.json", TSCONFIG_CONTENT);
 	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
