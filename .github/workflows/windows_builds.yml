@@ -3,8 +3,8 @@ name: 🏁 Windows Builds
 - push
 - pull_request
 env:
-  GODOT_BASE_BRANCH: 3.5-stable
-  SCONSFLAGS: '  use_mingw=yes  verbose=yes   debug_symbols=no'
+  GODOT_BASE_BRANCH: "4.0"
+  SCONSFLAGS: '  use_mingw=yes  debug_symbols=no verbose=yes warnings=extra module_text_server_fb_enabled=yes'
   SCONS_CACHE_MSVC_CONFIG: true
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
@@ -17,15 +17,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - name: Editor (target=release_debug, tools=yes)
+        - name: Editor (target=editor, tools=yes)
           cache-name: windows-editor
-          target: release_debug
+          target: editor
+          tests: false
           tools: true
           bin: ./bin/godot.windows.opt.tools.64.exe
         - name: Template (target=release, tools=no)
           cache-name: windows-template
-          target: release
+          target: template_release
           tools: false
+          tests: false
+          sconsflags: debug_symbols=no
     steps:
     - name: setup-msys2
       uses: msys2/setup-msys2@v2
@@ -46,22 +49,27 @@ jobs:
     - name: Checkout ECMAScript
       uses: actions/checkout@v2
       with:
-        path: ${{github.workspace}}/modules/ECMAScript/
+        path: ${{github.workspace}}/modules/javascript/
     - name: Setup Godot build cache
       uses: ./.github/actions/godot-cache
       with:
         cache-name: ${{ matrix.cache-name }}
       continue-on-error: true
     - name: Setup python and scons
-      uses: ./modules/ECMAScript/.github/actions/godot-deps
+      uses: ./modules/javascript/.github/actions/godot-deps
       with:
         shell: msys2 {0}
+
+    - name: Setup MSVC problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+
     - name: Compilation
-      uses: ./modules/ECMAScript/.github/actions/godot-build
+      uses: ./modules/javascript/.github/actions/godot-build
       with:
-        sconsflags: ${{ env.SCONSFLAGS }}
+        sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
         platform: windows
         target: ${{ matrix.target }}
+        tests: ${{ matrix.tests }}
         tools: ${{ matrix.tools }}
         scons-cache-limit: 3072
         shell: msys2 {0}

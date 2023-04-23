@@ -54,7 +54,7 @@ public:
 
 	virtual void init() override;
 	virtual void finish() override;
-	virtual Error execute_file(const String &p_path) override;
+	virtual Error execute_file(const String &p_path);
 
 	virtual void get_reserved_words(List<String> *p_words) const override;
 	virtual bool is_control_flow_keyword(String p_keywords) const override;
