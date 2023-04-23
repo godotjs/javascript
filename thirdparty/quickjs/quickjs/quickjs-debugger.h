@@ -30,7 +30,7 @@ typedef struct JSDebuggerInfo {
     // JSContext that is used to for the JSON transport and debugger state.
     JSContext *ctx;
     JSContext *debugging_ctx;
- 
+
     int attempted_connect;
     int attempted_wait;
     int peek_ticks;

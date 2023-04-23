@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any
 import copy
 
+
 # https://stackoverflow.com/a/33300001 + some changes
 def str_presenter(dumper, data):
     if len(data.splitlines()) > 1 or "\n" in data:  # check for multiline string
@@ -64,7 +65,7 @@ def checkout_local_godot_install(tag: str):
         raise RuntimeError(f"godot not setup properly, could not checkout '{' '.join(cmd)}'")
 
 
-def get_windows_mingw_checkout_steps() -> List[Dict[str, Any]]:
+def get_windows_mingw_checkout_steps() -> List[object]:
     out = [
         {
             "name": "setup-msys2",
@@ -313,9 +314,7 @@ def main():
 
     for x in ["actions", "workflows"]:
         subprocess.call(["rm", "-rf", os.path.join(args.js_github_folder, x)])
-        subprocess.call(
-            ["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.js_github_folder, x)]
-        )
+        subprocess.call(["cp", "-r", os.path.join(args.godot_github_folder, x), os.path.join(args.js_github_folder, x)])
 
     basic_flags = " "
     actions = [

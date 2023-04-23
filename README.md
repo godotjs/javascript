@@ -8,7 +8,7 @@ This module implements JavaScript/TypeScript language support for the godot game
 - Almost complete ES2020 support
 - All godot api avaliable
 - Operator overriding for builtin types (Vector3, Color, etc)
-- TypeScript support 
+- TypeScript support
 - [Using thirdpart libraries from npm](https://github.com/GodotExplorer/ECMAScriptDemos/tree/master/npm_module)
 - Multi-thread support with Worker API
 - Full code completion support for all godot APIs including signals and enumerations
@@ -18,7 +18,7 @@ This module implements JavaScript/TypeScript language support for the godot game
 No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with Javascript/Typescript language support.
 
 ### Download
-You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)  
+You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)
 You can also get the binaries with lastest commits from the [github build action result](https://github.com/GodotExplorer/ECMAScript/actions)
 
 ### Compilation
@@ -35,18 +35,18 @@ You can also get the binaries with lastest commits from the [github build action
 ```js
 // The default export entry is treated as an exported class to godot
 export default class MySprite extends godot.Sprite {
-	
+
 	// this is _init() in GDScript
 	constructor() {
 		super();
 	}
-	
+
 	_ready() {
-		
+
 	}
-	
+
 	_process(delta) {
-		
+
 	}
 }
 ```
@@ -173,7 +173,7 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 		// In worker thread
 		let id = godot.abandon_value(object);
 		postMessage({ type: 'return_value', id: id });
-		
+
 		// In the host thread
 		worker.onmessage = function(msg) {
 			if (typeof msg === 'object' && msg.type === 'return_value') {
@@ -181,7 +181,7 @@ Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 			}
 		}
 		```
-	
+
 ### TypeScript support
 - Run the menu command `Project > Tools > JavaScript > Generate TypeScript Project` from the godot editor to generate a TypeScript project
 - Run `tsc -w -p .` under your project folder in the terminal to compile scripts
@@ -213,7 +213,7 @@ export default class InputLine extends godot.HBoxContainer {
 	// register offset property with the godot inspector with default value of Vector2(0, 0)
 	@property({ default: godot.Vector2.ZERO })
 	offset: godot.Vector2;
-	
+
 	// register properties for godot editor inspector
 	@property({ type: godot.VariantType.TYPE_STRING })
 	get title() { return this._title; }
@@ -250,7 +250,7 @@ export default class InputLine extends godot.HBoxContainer {
 	_ready() {
 		// get first child with the type of godot.Label
 		this._label = this.get_node(godot.Label);
-		
+
 		// Apply the inspector filled values with property setters
 		this.title = this.title;
 		this.hint = this.hint;

@@ -1,3 +1,33 @@
+/**************************************************************************/
+/*  editor_tools.cpp                                                      */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             GODOT ENGINE                               */
+/*                        https://godotengine.org                         */
+/**************************************************************************/
+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+
 #include "editor_tools.h"
 #include "../javascript_language.h"
 #include "core/math/expression.h"
@@ -62,7 +92,6 @@ void JavaScriptPlugin::_on_menu_item_pressed(int item) {
 }
 
 JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
-
 	PopupMenu *menu = memnew(PopupMenu);
 	add_tool_submenu_item(TTR("JavaScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLARE_FILE);
@@ -318,32 +347,34 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String constants = "";
 	HashMap<String, Vector<const DocData::ConstantDoc *>> enumerations;
 	for (const DocData::ConstantDoc &const_doc : class_doc.constants) {
-		if (ignore_members.has(const_doc.name)) continue;
+		if (ignore_members.has(const_doc.name)) {
+			continue;
+		}
 
-		Dictionary dict;
-		dict["description"] = format_doc_text(const_doc.description, "\t\t ");
-		dict["name"] = format_property_name(const_doc.name);
-		dict["value"] = const_doc.value;
+		Dictionary new_dict;
+		new_dict["description"] = format_doc_text(const_doc.description, "\t\t ");
+		new_dict["name"] = format_property_name(const_doc.name);
+		new_dict["value"] = const_doc.value;
 		String type = "number";
 		if (!const_doc.enumeration.is_empty()) {
 			type = const_doc.enumeration + "." + const_doc.name;
 		} else if (const_doc.value.find("(") != -1) {
 			type = const_doc.value.split("(")[0];
 		} else if (const_doc.value.is_valid_int()) {
-			type = dict["value"];
+			type = new_dict["value"];
 		}
-		dict["type"] = type;
+		new_dict["type"] = type;
 
-		String const_str = "\n"
-						   "\t\t/** ${description} */\n"
-						   "${TS_IGNORE}"
-						   "\t\tconst ${name}: ${type};\n";
+		String new_const_str = "\n"
+							   "\t\t/** ${description} */\n"
+							   "${TS_IGNORE}"
+							   "\t\tconst ${name}: ${type};\n";
 		if (ts_ignore_errors.has(class_doc.name) && ts_ignore_errors[class_doc.name].has(const_doc.name)) {
-			const_str = const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
+			new_const_str = new_const_str.replace("${TS_IGNORE}", "\t\t" TS_IGNORE);
 		} else {
-			const_str = const_str.replace("${TS_IGNORE}", "");
+			new_const_str = new_const_str.replace("${TS_IGNORE}", "");
 		}
-		constants += apply_pattern(const_str, dict);
+		constants += apply_pattern(new_const_str, new_dict);
 
 		if (!const_doc.enumeration.is_empty()) {
 			if (!enumerations.has(const_doc.enumeration)) {
@@ -368,11 +399,11 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		for (int i = 0; i < enums.size(); i++) {
 			String const_str = "\t\t\t/** ${description} */\n"
 							   "\t\t\t${name} = ${value},\n";
-			Dictionary dict;
-			dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
-			dict["name"] = format_property_name(enums[i]->name);
-			dict["value"] = enums[i]->value;
-			enum_str += apply_pattern(const_str, dict);
+			Dictionary new_dict;
+			new_dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
+			new_dict["name"] = format_property_name(enums[i]->name);
+			new_dict["value"] = enums[i]->value;
+			enum_str += apply_pattern(const_str, new_dict);
 		}
 		enum_str += "\t\t}\n";
 		enumerations_str += enum_str;
@@ -382,7 +413,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	Vector<DocData::MethodDoc> method_list = class_doc.methods;
 	String properties = "";
 	for (const DocData::PropertyDoc &prop_doc : class_doc.properties) {
-		if (ignore_members.has(prop_doc.name)) continue;
+		if (ignore_members.has(prop_doc.name))
+			continue;
 
 		String prop_str = "\n"
 						  "\t\t/** ${description} */\n"
@@ -394,12 +426,12 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			prop_str = prop_str.replace("${TS_IGNORE}", "");
 		}
 
-		Dictionary dict;
-		dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
-		dict["name"] = format_property_name(prop_doc.name);
-		dict["type"] = get_type_name(prop_doc.type);
-		dict["static"] = Engine::get_singleton()->has_singleton(class_doc.name) ? "static " : "";
-		properties += apply_pattern(prop_str, dict);
+		Dictionary new_dict;
+		new_dict["description"] = format_doc_text(prop_doc.description, "\t\t ");
+		new_dict["name"] = format_property_name(prop_doc.name);
+		new_dict["type"] = get_type_name(prop_doc.type);
+		new_dict["static"] = Engine::get_singleton()->has_singleton(class_doc.name) ? "static " : "";
+		properties += apply_pattern(prop_str, new_dict);
 
 		if (!prop_doc.getter.is_empty()) {
 			DocData::MethodDoc md;
@@ -426,7 +458,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String signals = "";
 	for (int i = 0; i < class_doc.signals.size(); ++i) {
 		const DocData::MethodDoc &signal = class_doc.signals[i];
-		if (ignore_members.has(signal.name)) continue;
+		if (ignore_members.has(signal.name))
+			continue;
 
 		String signal_str = "\n"
 							"\t\t/** ${description} */\n"
@@ -437,10 +470,10 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		} else {
 			signal_str = signal_str.replace("${TS_IGNORE}", "");
 		}
-		Dictionary dict;
-		dict["description"] = format_doc_text(signal.description, "\t\t\t ");
-		dict["name"] = signal.name;
-		signals += apply_pattern(signal_str, dict);
+		Dictionary new_dict;
+		new_dict["description"] = format_doc_text(signal.description, "\t\t\t ");
+		new_dict["name"] = signal.name;
+		signals += apply_pattern(signal_str, new_dict);
 	}
 	dict["signals"] = signals;
 
@@ -448,7 +481,8 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	String methods = "";
 	for (int i = 0; i < method_list.size(); i++) {
 		const DocData::MethodDoc &method_doc = method_list[i];
-		if (ignore_members.has(method_doc.name)) continue;
+		if (ignore_members.has(method_doc.name))
+			continue;
 
 		if (method_doc.name == class_doc.name) {
 			continue;
@@ -570,18 +604,18 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 								   "\tconst ${name}: ${type};\n";
 				for (int i = 0; i < class_doc.constants.size(); i++) {
 					const DocData::ConstantDoc &const_doc = class_doc.constants[i];
-					Dictionary dict;
-					dict["description"] = format_doc_text(const_doc.description, "\t ");
-					dict["name"] = format_property_name(const_doc.name);
-					dict["value"] = const_doc.value;
+					Dictionary new_dict;
+					new_dict["description"] = format_doc_text(const_doc.description, "\t ");
+					new_dict["name"] = format_property_name(const_doc.name);
+					new_dict["value"] = const_doc.value;
 					if (const_doc.name == "NAN" || const_doc.name == "INF") {
-						dict["type"] = "number";
+						new_dict["type"] = "number";
 					} else if (!const_doc.enumeration.is_empty()) {
-						dict["type"] = format_enum_name(const_doc.enumeration) + "." + const_doc.name;
+						new_dict["type"] = format_enum_name(const_doc.enumeration) + "." + const_doc.name;
 					} else {
-						dict["type"] = dict["value"];
+						new_dict["type"] = new_dict["value"];
 					}
-					constants += apply_pattern(const_str, dict);
+					constants += apply_pattern(const_str, new_dict);
 
 					if (!const_doc.enumeration.is_empty()) {
 						if (!enumerations.has(const_doc.enumeration)) {
@@ -595,18 +629,18 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 				}
 				class_enumerations.insert(GODOT_OBJECT_NAME, enumerations);
 
-				for (auto E : enumerations) {
-					String enum_str = "\tenum " + format_enum_name(E.key) + " {\n";
-					const Vector<const DocData::ConstantDoc *> &enums = E.value;
+				for (auto F : enumerations) {
+					String enum_str = "\tenum " + format_enum_name(F.key) + " {\n";
+					const Vector<const DocData::ConstantDoc *> &enums = F.value;
 					for (int i = 0; i < enums.size(); i++) {
-						String const_str = "\t\t/** ${description} */\n"
-										   "\t\t${name} = ${value},\n";
-						Dictionary dict;
-						dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
-						dict["name"] = format_property_name(enums[i]->name);
-						dict["value"] = enums[i]->value;
+						String new_const_str = "\t\t/** ${description} */\n"
+											   "\t\t${name} = ${value},\n";
+						Dictionary new_dict;
+						new_dict["description"] = format_doc_text(enums[i]->description, "\t\t\t ");
+						new_dict["name"] = format_property_name(enums[i]->name);
+						new_dict["value"] = enums[i]->value;
 
-						enum_str += apply_pattern(const_str, dict);
+						enum_str += apply_pattern(new_const_str, new_dict);
 					}
 					enum_str += "\t}\n";
 					enumerations_str += enum_str;
@@ -676,10 +710,10 @@ void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 				}
 			}
 			enum_items_text += " }";
-			Dictionary dict;
-			dict["name"] = format_enum_name(E.key);
-			dict["values"] = enum_items_text;
-			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", dict);
+			Dictionary new_dict;
+			new_dict["name"] = format_enum_name(E.key);
+			new_dict["values"] = enum_items_text;
+			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", new_dict);
 			if (idx < enumeration.size() - 1) {
 				class_enums += ", ";
 			} else {
@@ -688,14 +722,14 @@ void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 			idx++;
 		}
 		static String class_template = "\tbind(${class}, {${enumerations}});\n";
-		Dictionary dict;
-		dict["class"] = class_name;
-		dict["enumerations"] = class_enums;
-		enumerations += apply_pattern(class_template, dict);
+		Dictionary class_dict;
+		class_dict["class"] = class_name;
+		class_dict["enumerations"] = class_enums;
+		enumerations += apply_pattern(class_template, class_dict);
 	}
-	Dictionary dict;
-	dict["enumerations"] = enumerations;
-	file_content = apply_pattern(file_content, dict);
+	Dictionary enum_dict;
+	enum_dict["enumerations"] = enumerations;
+	file_content = apply_pattern(file_content, enum_dict);
 
 	dump_to_file(p_path, file_content);
 }

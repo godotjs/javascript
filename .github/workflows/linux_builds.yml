@@ -56,7 +56,7 @@ jobs:
           cache-name: linux-template-minimal
           target: template_release
           tests: false
-          sconsflags: modules_enabled_by_default=no disable_3d=yes disable_advanced_gui=yes deprecated=no 
+          sconsflags: modules_enabled_by_default=no disable_3d=yes disable_advanced_gui=yes deprecated=no
     steps:
     - name: Checkout Godot
       uses: actions/checkout@v2

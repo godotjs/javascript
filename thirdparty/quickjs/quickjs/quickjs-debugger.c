@@ -407,7 +407,7 @@ static void js_process_breakpoints(JSDebuggerInfo *info, JSValue message) {
 JSValue js_debugger_file_breakpoints(JSContext *ctx, const char* path) {
     JSDebuggerInfo *info = js_debugger_info(JS_GetRuntime(ctx));
     JSValue path_data = JS_GetPropertyStr(ctx, info->breakpoints, path);
-    return path_data;    
+    return path_data;
 }
 
 static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur_pc) {
@@ -448,7 +448,7 @@ static int js_process_debugger_messages(JSDebuggerInfo *info, const uint8_t *cur
 
         if (!js_transport_read_fully(info, info->message_buffer, message_length))
             goto done;
-        
+
         info->message_buffer[message_length] = '\0';
 
         JSValue message = JS_ParseJSON(ctx, info->message_buffer, message_length, "<debugger>");
@@ -659,7 +659,7 @@ void js_debugger_check(JSContext* ctx, const uint8_t *cur_pc) {
     if (js_process_debugger_messages(info, cur_pc))
         goto done;
 
-    fail: 
+    fail:
         js_debugger_free(JS_GetRuntime(ctx), info);
     done:
         info->is_debugging = 0;

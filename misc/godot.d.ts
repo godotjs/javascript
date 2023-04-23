@@ -18,7 +18,7 @@ declare module globalThis {
 	 * @param request_id The ID value returned by the call to `godot.requestAnimationFrame()` that requested the callback.
 	 */
 	function cancelAnimationFrame(request_id: FrameRequetID): void;
-	
+
 	/**
 	 * The Console API provides functionality to allow developers to perform debugging tasks, such as logging messages or the values of variables at set points in your code, or timing how long an operation takes to complete.
 	 */
@@ -29,19 +29,19 @@ declare module globalThis {
 		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
 		 */
 		log(...message): void;
-		
+
 		/**
 		 * Outputs a warning message to the console.
 		 * @param message  list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
 		 */
 		warn(...message): void;
-		
+
 		/**
 		 * Outputs an error message to the console.
 		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
 		 */
 		error(...message): void;
-		
+
 		/** Outputs a stack trace to the console.
 		 * @param message A list of JavaScript objects to output. The string representations of each of these objects are appended together in the order listed and output.
 		*/
@@ -55,9 +55,9 @@ declare module globalThis {
 	 * A worker is an object created using a constructor of `Worker` that runs a named JavaScript file — this file contains the code that will run in the worker thread;
 	 *
 	 * Workers run in another global context that is different from the current context.
-	 * 
+	 *
 	 * You can run whatever code you like inside the worker thread. All of the godot API are avaliable inside workers.
-	 * 
+	 *
 	 * Data is sent between workers and the main thread via a system of messages — both sides send their messages using the `postMessage()` method, and respond to messages via the `onmessage` event handler (the message is contained within the Message event's data attribute.) The data is copied rather than shared.
 	 *
 	 * You can **transfer** value with `Worker.abandonValue` and `Worker.adoptValue`. After a value is abandoned you cannot using it anymore in the context.
@@ -66,67 +66,67 @@ declare module globalThis {
 	 */
 	//@ts-ignore
 	class Worker {
-		
+
 		/**
 		 * Creates a dedicated worker thread that executes the script at the specified file
 		 */
 		constructor(script: string);
-		
+
 		/**
 		 * The `onmessage` property of the Worker interface represents an event handler, that is a function to be called when the message event occurs.
 		 * It will be called when the worker's parent receives a message from the worker context by `postMessage` method.
 		 */
 		onmessage(message: any): void;
-		
+
 		/**
 		 * Sends a message to the worker's inner scope. This accepts a single parameter, which is the data to send to the worker.
 		 * @param message The object to deliver to the worker; this will be in the data field in the event delivered to the `onmessage` handler.
 		 * @note The data cannot be instance of `godot.Object` or any other JavaScript object conains functions.
 		 */
 		postMessage(message: any): void;
-		
+
 		/**
 		 * Stop the worker thread
 		 */
 		terminate(): void;
 	}
-	
+
 	/** **Worker context only**
-	 * 
+	 *
 	 *  Stop the worker thread of current context
 	 */
 	function close(): void;
-	
+
 	/** **Worker context only**
-	 * 
+	 *
 	 * The message handler to handle messages send from the host context
 	 */
 	//@ts-ignore
 	function onmessage(message: any): void;
-	
+
 	/** **Worker context only**
-	 * 
+	 *
 	 * Sends a message to the host thread context that spawned it.
 	 *
 	 * @param {*} message The message to send
 	 */
 	function postMessage(message: any): void;
-	
+
 	/** **Worker context only**
-	 * 
+	 *
 	 * Synchronously load and run one or more scripts in the worker thread.
 	 */
 	function importScripts(...scripts: string[]): void;
-	
+
 	/** **Worker context only**
-	 * 
+	 *
 	 * The flag is `true` if current context is inside a worker thread.
 	 */
 	const INSIDE_WORKER: true | undefined;
 }
 
 declare module godot {
-	
+
 	type GodotClass = new() => godot.Object;
 
 	interface PropertyInfo {
@@ -140,7 +140,7 @@ declare module godot {
 		/** Default value of the property */
 		default?: any;
 	}
-	
+
 	/**
 	 * Export class to godot
 	 *
@@ -163,77 +163,77 @@ declare module godot {
 	 * @param value The default value of the property
 	 */
 	function register_property(target: GodotClass | godot.Object, name: string, value: any);
-	
+
 	/**
 	 * The meta data of an script
 	 * @param target The script class
 	 * @param tool is tooled of this class
 	 */
 	function set_script_tooled(target: GodotClass, tool: boolean);
-	
+
 	/**
 	 * The meta data of an script
 	 * @param target The script class
 	 * @param icon The icon of the class
 	 */
 	function set_script_icon(target: GodotClass, icon: string);
-	
+
 	/**
 	 * Returns the internal type of the given `Variant` object, using the `godot.TYPE_*`
 	 */
 	function get_type(val: any): number;
-	
+
 	/**
 	 * Loads a resource from the filesystem located at `path`.
-	 * 
+	 *
 	 * **Note:** Resource paths can be obtained by right-clicking on a resource in the FileSystem dock and choosing **Copy Path**.
 	 * ```
 	 * // Load a scene called main located in the root of the project directory
 	 * const main = godot.load("res://main.tscn")
 	 * ```*/
 	function load(path: string): Resource;
-	
+
 	/**
-	 * Returns the Object that corresponds to `instance_id`. All Objects have a unique instance ID. 
+	 * Returns the Object that corresponds to `instance_id`. All Objects have a unique instance ID.
 	 */
 	function instance_from_id(instance_id: number): Object;
 
 	/**
 	 * Drop the `value` in the context. You should never touching an abandoned value anymore before it is adopted.
-	 * 
+	 *
 	 * You can adopt the value in another thread context to transfer the `value` in threads.
-	 * 
+	 *
 	 * A `non zero` ID is return if no error happen.
 	 * @param value The value to abandon in the context
 	 * @note You can only transfer values the godot `Variant` can represent.
 	 * @returns The ID of the abandoned value
 	*/
 	function abandon_value(value: any): number;
-	
+
 	/**
 	* Adopt an abandoned value.
 	* @param value_id The ID of the abandoned value
 	*/
 	function adopt_value(value_id: number): any;
-	
+
 	/**
 	 * Wait a signal of an object
 	 * @param target The owner of the signal to wait
 	 * @param signal The signal to wait
 	 */
 	function yield(target: godot.Object, signal: string): Promise<any[]>;
-	
+
 	const E: 2.7182818284590452353602874714;
 	const LN2: 0.6931471805599453094172321215;
 	const SQRT2: 1.4142135623730950488016887242;
 	const SQRT12: 0.7071067811865475244008443621048490;
-	
+
 	/** The flag is `true` if current binary is compiled with `target=debug` or `target=release_debug` */
 	const DEBUG_ENABLED: boolean;
-	
+
 	/** The flag is `true` if current binary is godot editor which is compiled with `tool=yes` */
 	const TOOLS_ENABLED: boolean;
-	
+
 	/** The flag is `true` if current binary enable debug method information */
 	const DEBUG_METHODS_ENABLED: boolean;
 }
@@ -372,36 +372,36 @@ declare module godot {
 		/** Enumerated value for the Y axis. */
 		const AXIS_Y: Axis.AXIS_Y;
 
-		/** Zero vector. 
+		/** Zero vector.
 		 * @value `Vector2( 0, 0 )` */
 		const ZERO: Readonly<Vector2>;
 
-		/** One vector. 
+		/** One vector.
 		 * @value `Vector2( 1, 1 )` */
 		const ONE: Readonly<Vector2>;
 
-		/** Infinity vector. 
+		/** Infinity vector.
 		 * @value `Vector2( inf, inf )` */
 		const INF: Readonly<Vector2>;
 
-		/** Left unit vector. 
+		/** Left unit vector.
 		 * @value `Vector2( -1, 0 )` */
 		const LEFT: Readonly<Vector2>;
 
-		/** Right unit vector. 
+		/** Right unit vector.
 		 * @value `Vector2( 1, 0 )` */
 		const RIGHT: Readonly<Vector2>;
 
-		/** Up unit vector. 
+		/** Up unit vector.
 		 * @value `Vector2( 0, -1 )` */
 		const UP: Readonly<Vector2>;
 
-		/** Down unit vector. 
+		/** Down unit vector.
 		 * @value `Vector2( 0, 1 )` */
 		const DOWN: Readonly<Vector2>;
 
 	}
-	
+
 	/** 2D axis-aligned bounding box.
 	 Rect2 consists of a position, a size, and several utility functions. It is typically used for fast overlap tests. */
 	class Rect2 {
@@ -414,7 +414,7 @@ declare module godot {
 
 		/** Size from position to end. */
 		size: Vector2;
-		
+
 		/** Ending corner. */
 		end: Vector2;
 
@@ -589,43 +589,43 @@ declare module godot {
 		const AXIS_Y: Axis.AXIS_Y;
 		const AXIS_Z: Axis.AXIS_Z;
 
-		/** Zero vector. 
+		/** Zero vector.
 		 * @value `Vector3( 0, 0, 0 )` */
 		const ZERO: Readonly<Vector3>;
 
-		/** One vector. 
+		/** One vector.
 		 * @value `Vector3( 1, 1, 1 )` */
 		const ONE: Readonly<Vector3>;
 
-		/** Infinity vector. 
+		/** Infinity vector.
 		 * @value `Vector3( inf, inf, inf )` */
 		const INF: Readonly<Vector3>;
 
-		/** Left unit vector. 
+		/** Left unit vector.
 		 * @value `Vector3( -1, 0, 0 )` */
 		const LEFT: Readonly<Vector3>;
 
-		/** Right unit vector. 
+		/** Right unit vector.
 		 * @value `Vector3( 1, 0, 0 )` */
 		const RIGHT: Readonly<Vector3>;
 
-		/** Up unit vector. 
+		/** Up unit vector.
 		 * @value `Vector3( 0, 1, 0 )` */
 		const UP: Readonly<Vector3>;
 
-		/** Down unit vector. 
+		/** Down unit vector.
 		 * @value `Vector3( 0, -1, 0 )` */
 		const DOWN: Readonly<Vector3>;
 
-		/** Forward unit vector. 
+		/** Forward unit vector.
 		 * @value `Vector3( 0, 0, -1 )` */
 		const FORWARD: Readonly<Vector3>;
 
-		/** Back unit vector. 
+		/** Back unit vector.
 		 * @value `Vector3( 0, 0, 1 )` */
 		const BACK: Readonly<Vector3>;
 	}
-	
+
 	/** 3×3 matrix datatype.
 	 3×3 matrix used for 3D rotation and scale. Contains 3 vector fields X, Y and Z as its columns, which can be interpreted as the local basis vectors of a transformation. Can also be accessed as array of 3D vectors. These vectors are orthogonal to each other, but are not necessarily normalized (due to scaling). Almost always used as an orthogonal basis for a `Transform`.
 
@@ -717,7 +717,7 @@ declare module godot {
 		/** @value `Basis( 1, 0, 0, 0, 1, 0, 0, 0, -1 )` */
 		const FLIP_Z: Readonly<Basis>;
 	}
-	
+
 	/** 3D transformation (3×4 matrix).
 	 Represents one or many transformations in 3D space such as translation, rotation, or scaling. It consists of a `basis` and an `origin`. It is similar to a 3×4 matrix. */
 	class Transform {
@@ -774,19 +774,19 @@ declare module godot {
 	}
 
 	namespace Transform {
-		/** `Transform` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation. 
+		/** `Transform` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation.
 		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )` */
 		const IDENTITY: Readonly<Transform>;
 
-		/** `Transform` with mirroring applied perpendicular to the YZ plane. 
+		/** `Transform` with mirroring applied perpendicular to the YZ plane.
 		 * @value `Transform( -1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0 )` */
 		const FLIP_X: Readonly<Transform>;
 
-		/** `Transform` with mirroring applied perpendicular to the XZ plane. 
+		/** `Transform` with mirroring applied perpendicular to the XZ plane.
 		 * @value `Transform( 1, 0, 0, 0, -1, 0, 0, 0, 1, 0, 0, 0 )` */
 		const FLIP_Y: Readonly<Transform>;
 
-		/** `Transform` with mirroring applied perpendicular to the XY plane. 
+		/** `Transform` with mirroring applied perpendicular to the XY plane.
 		 * @value `Transform( 1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, 0 )` */
 		const FLIP_Z: Readonly<Transform>;
 	}
@@ -858,19 +858,19 @@ declare module godot {
 	}
 
 	namespace Transform2D {
-		/** `Transform2D` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation. 
+		/** `Transform2D` with no translation, rotation or scaling applied. When applied to other data structures, `IDENTITY` performs no transformation.
 		 * @value `Transform2D( 1, 0, 0, 1, 0, 0 )` */
 		const IDENTITY: Readonly<Transform2D>;
 
-		/** `Transform2D` with mirroring applied parallel to the X axis. 
+		/** `Transform2D` with mirroring applied parallel to the X axis.
 		 * @value `Transform2D( -1, 0, 0, 1, 0, 0 )` */
 		const FLIP_X: Readonly<Transform2D>;
 
-		/** `Transform2D` with mirroring applied parallel to the Y axis. 
+		/** `Transform2D` with mirroring applied parallel to the Y axis.
 		 * @value `Transform2D( 1, 0, 0, -1, 0, 0 )` */
 		const FLIP_Y: Readonly<Transform2D>;
 	}
-	
+
 	/** Color in RGBA format with some support for ARGB format.
 	 A color is represented by red, green, and blue `(r, g, b)` components. Additionally, `a` represents the alpha component, often used for transparency. Values are in floating-point and usually range from 0 to 1. Some properties (such as `CanvasItem.modulate`) may accept values greater than 1.
 
@@ -917,7 +917,7 @@ declare module godot {
 
 		/** Returns a new color resulting from blending this color over another. If the color is opaque, the result is also opaque. The second color may have a range of alpha values.
 
-		 
+
 
 		 	var bg = Color(0.0, 1.0, 0.0, 0.5) # Green with alpha of 50%
 		 	var fg = Color(1.0, 0.0, 0.0, 0.5) # Red with alpha of 50%
@@ -927,7 +927,7 @@ declare module godot {
 
 		/** Returns the most contrasting color.
 
-		 
+
 
 		 	var c = Color(0.3, 0.4, 0.9)
 		 	var contrasted_color = c.contrasted() # Equivalent to RGBA(204, 229, 102, 255)
@@ -936,7 +936,7 @@ declare module godot {
 
 		/** Returns a new color resulting from making this color darker by the specified percentage (ratio from 0 to 1).
 
-		 
+
 
 		 	var green = Color(0.0, 1.0, 0.0)
 		 	var darkgreen = green.darkened(0.2) # 20% darker than regular green
@@ -945,7 +945,7 @@ declare module godot {
 
 		/** Constructs a color from an HSV profile. `h`, `s`, and `v` are values between 0 and 1.
 
-		 
+
 
 		 	var c = Color.from_hsv(0.58, 0.5, 0.79, 0.8) # Equivalent to HSV(210, 50, 79, 0.8) or Color8(100, 151, 201, 0.8)
 		  */
@@ -955,7 +955,7 @@ declare module godot {
 
 		 The gray value is calculated as `(r + g + b) / 3`.
 
-		 
+
 
 		 	var c = Color(0.2, 0.45, 0.82)
 		 	var gray = c.gray() # A value of 0.466667
@@ -964,7 +964,7 @@ declare module godot {
 
 		/** Returns the inverted color `(1 - r, 1 - g, 1 - b, a)`.
 
-		 
+
 
 		 	var c = Color(0.3, 0.4, 0.9)
 		 	var inverted_color = c.inverted() # A color of an RGBA(178, 153, 26, 255)
@@ -976,7 +976,7 @@ declare module godot {
 
 		/** Returns a new color resulting from making this color lighter by the specified percentage (ratio from 0 to 1).
 
-		 
+
 
 		 	var green = Color(0.0, 1.0, 0.0)
 		 	var lightgreen = green.lightened(0.2) # 20% lighter than regular green
@@ -985,7 +985,7 @@ declare module godot {
 
 		/** Returns the linear interpolation with another color. The interpolation factor `t` is between 0 and 1.
 
-		 
+
 
 		 	var c1 = Color(1.0, 0.0, 0.0)
 		 	var c2 = Color(0.0, 1.0, 0.0)
@@ -995,7 +995,7 @@ declare module godot {
 
 		/** Returns the color's 32-bit integer in ABGR format (each byte represents a component of the ABGR profile). ABGR is the reversed version of the default format.
 
-		 
+
 
 		 	var c = Color(1, 0.5, 0.2)
 		 	print(c.to_abgr32()) # Prints 4281565439
@@ -1004,7 +1004,7 @@ declare module godot {
 
 		/** Returns the color's 64-bit integer in ABGR format (each word represents a component of the ABGR profile). ABGR is the reversed version of the default format.
 
-		 
+
 
 		 	var c = Color(1, 0.5, 0.2)
 		 	print(c.to_abgr64()) # Prints -225178692812801
@@ -1013,7 +1013,7 @@ declare module godot {
 
 		/** Returns the color's 32-bit integer in ARGB format (each byte represents a component of the ARGB profile). ARGB is more compatible with DirectX.
 
-		 
+
 
 		 	var c = Color(1, 0.5, 0.2)
 		 	print(c.to_argb32()) # Prints 4294934323
@@ -1022,7 +1022,7 @@ declare module godot {
 
 		/** Returns the color's 64-bit integer in ARGB format (each word represents a component of the ARGB profile). ARGB is more compatible with DirectX.
 
-		 
+
 
 		 	var c = Color(1, 0.5, 0.2)
 		 	print(c.to_argb64()) # Prints -2147470541
@@ -1033,7 +1033,7 @@ declare module godot {
 
 		 Setting `with_alpha` to `false` excludes alpha from the hexadecimal string.
 
-		 
+
 
 		 	var c = Color(1, 1, 1, 0.5)
 		 	var s1 = c.to_html() # Returns "7fffffff"
@@ -1043,7 +1043,7 @@ declare module godot {
 
 		/** Returns the color's 32-bit integer in RGBA format (each byte represents a component of the RGBA profile). RGBA is Godot's default format.
 
-		 
+
 
 		 	var c = Color(1, 0.5, 0.2)
 		 	print(c.to_rgba32()) # Prints 4286526463
@@ -1052,7 +1052,7 @@ declare module godot {
 
 		/** Returns the color's 64-bit integer in RGBA format (each word represents a component of the RGBA profile). RGBA is Godot's default format.
 
-		 
+
 
 		 	var c = Color(1, 0.5, 0.2)
 		 	print(c.to_rgba64()) # Prints -140736629309441
@@ -1062,598 +1062,598 @@ declare module godot {
 	}
 
 	namespace Color {
-		/**  
+		/**
 		 * @value `Color( 0.75, 0.75, 0.75, 1 )` */
 		const gray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.94, 0.97, 1, 1 )` */
 		const aliceblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.98, 0.92, 0.84, 1 )` */
 		const antiquewhite: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 1, 1, 1 )` */
 		const aqua: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.5, 1, 0.83, 1 )` */
 		const aquamarine: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.94, 1, 1, 1 )` */
 		const azure: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.96, 0.96, 0.86, 1 )` */
 		const beige: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.89, 0.77, 1 )` */
 		const bisque: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0, 0, 1 )` */
 		const black: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.92, 0.8, 1 )` */
 		const blanchedalmond: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0, 1, 1 )` */
 		const blue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.54, 0.17, 0.89, 1 )` */
 		const blueviolet: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.65, 0.16, 0.16, 1 )` */
 		const brown: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.87, 0.72, 0.53, 1 )` */
 		const burlywood: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.37, 0.62, 0.63, 1 )` */
 		const cadetblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.5, 1, 0, 1 )` */
 		const chartreuse: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.82, 0.41, 0.12, 1 )` */
 		const chocolate: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.5, 0.31, 1 )` */
 		const coral: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.39, 0.58, 0.93, 1 )` */
 		const cornflower: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.97, 0.86, 1 )` */
 		const cornsilk: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.86, 0.08, 0.24, 1 )` */
 		const crimson: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 1, 1, 1 )` */
 		const cyan: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0, 0.55, 1 )` */
 		const darkblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.55, 0.55, 1 )` */
 		const darkcyan: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.72, 0.53, 0.04, 1 )` */
 		const darkgoldenrod: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.66, 0.66, 0.66, 1 )` */
 		const darkgray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.39, 0, 1 )` */
 		const darkgreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.74, 0.72, 0.42, 1 )` */
 		const darkkhaki: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.55, 0, 0.55, 1 )` */
 		const darkmagenta: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.33, 0.42, 0.18, 1 )` */
 		const darkolivegreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.55, 0, 1 )` */
 		const darkorange: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.6, 0.2, 0.8, 1 )` */
 		const darkorchid: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.55, 0, 0, 1 )` */
 		const darkred: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.91, 0.59, 0.48, 1 )` */
 		const darksalmon: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.56, 0.74, 0.56, 1 )` */
 		const darkseagreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.28, 0.24, 0.55, 1 )` */
 		const darkslateblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.18, 0.31, 0.31, 1 )` */
 		const darkslategray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.81, 0.82, 1 )` */
 		const darkturquoise: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.58, 0, 0.83, 1 )` */
 		const darkviolet: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.08, 0.58, 1 )` */
 		const deeppink: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.75, 1, 1 )` */
 		const deepskyblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.41, 0.41, 0.41, 1 )` */
 		const dimgray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.12, 0.56, 1, 1 )` */
 		const dodgerblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.7, 0.13, 0.13, 1 )` */
 		const firebrick: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.98, 0.94, 1 )` */
 		const floralwhite: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.13, 0.55, 0.13, 1 )` */
 		const forestgreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0, 1, 1 )` */
 		const fuchsia: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.86, 0.86, 0.86, 1 )` */
 		const gainsboro: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.97, 0.97, 1, 1 )` */
 		const ghostwhite: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.84, 0, 1 )` */
 		const gold: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.85, 0.65, 0.13, 1 )` */
 		const goldenrod: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 1, 0, 1 )` */
 		const green: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.68, 1, 0.18, 1 )` */
 		const greenyellow: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.94, 1, 0.94, 1 )` */
 		const honeydew: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.41, 0.71, 1 )` */
 		const hotpink: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.8, 0.36, 0.36, 1 )` */
 		const indianred: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.29, 0, 0.51, 1 )` */
 		const indigo: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 1, 0.94, 1 )` */
 		const ivory: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.94, 0.9, 0.55, 1 )` */
 		const khaki: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.9, 0.9, 0.98, 1 )` */
 		const lavender: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.94, 0.96, 1 )` */
 		const lavenderblush: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.49, 0.99, 0, 1 )` */
 		const lawngreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.98, 0.8, 1 )` */
 		const lemonchiffon: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.68, 0.85, 0.9, 1 )` */
 		const lightblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.94, 0.5, 0.5, 1 )` */
 		const lightcoral: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.88, 1, 1, 1 )` */
 		const lightcyan: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.98, 0.98, 0.82, 1 )` */
 		const lightgoldenrod: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.83, 0.83, 0.83, 1 )` */
 		const lightgray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.56, 0.93, 0.56, 1 )` */
 		const lightgreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.71, 0.76, 1 )` */
 		const lightpink: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.63, 0.48, 1 )` */
 		const lightsalmon: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.13, 0.7, 0.67, 1 )` */
 		const lightseagreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.53, 0.81, 0.98, 1 )` */
 		const lightskyblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.47, 0.53, 0.6, 1 )` */
 		const lightslategray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.69, 0.77, 0.87, 1 )` */
 		const lightsteelblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 1, 0.88, 1 )` */
 		const lightyellow: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 1, 0, 1 )` */
 		const lime: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.2, 0.8, 0.2, 1 )` */
 		const limegreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.98, 0.94, 0.9, 1 )` */
 		const linen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0, 1, 1 )` */
 		const magenta: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.69, 0.19, 0.38, 1 )` */
 		const maroon: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.4, 0.8, 0.67, 1 )` */
 		const mediumaquamarine: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0, 0.8, 1 )` */
 		const mediumblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.73, 0.33, 0.83, 1 )` */
 		const mediumorchid: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.58, 0.44, 0.86, 1 )` */
 		const mediumpurple: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.24, 0.7, 0.44, 1 )` */
 		const mediumseagreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.48, 0.41, 0.93, 1 )` */
 		const mediumslateblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.98, 0.6, 1 )` */
 		const mediumspringgreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.28, 0.82, 0.8, 1 )` */
 		const mediumturquoise: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.78, 0.08, 0.52, 1 )` */
 		const mediumvioletred: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.1, 0.1, 0.44, 1 )` */
 		const midnightblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.96, 1, 0.98, 1 )` */
 		const mintcream: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.89, 0.88, 1 )` */
 		const mistyrose: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.89, 0.71, 1 )` */
 		const moccasin: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.87, 0.68, 1 )` */
 		const navajowhite: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0, 0.5, 1 )` */
 		const navyblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.99, 0.96, 0.9, 1 )` */
 		const oldlace: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.5, 0.5, 0, 1 )` */
 		const olive: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.42, 0.56, 0.14, 1 )` */
 		const olivedrab: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.65, 0, 1 )` */
 		const orange: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.27, 0, 1 )` */
 		const orangered: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.85, 0.44, 0.84, 1 )` */
 		const orchid: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.93, 0.91, 0.67, 1 )` */
 		const palegoldenrod: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.6, 0.98, 0.6, 1 )` */
 		const palegreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.69, 0.93, 0.93, 1 )` */
 		const paleturquoise: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.86, 0.44, 0.58, 1 )` */
 		const palevioletred: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.94, 0.84, 1 )` */
 		const papayawhip: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.85, 0.73, 1 )` */
 		const peachpuff: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.8, 0.52, 0.25, 1 )` */
 		const peru: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.75, 0.8, 1 )` */
 		const pink: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.87, 0.63, 0.87, 1 )` */
 		const plum: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.69, 0.88, 0.9, 1 )` */
 		const powderblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.63, 0.13, 0.94, 1 )` */
 		const purple: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.4, 0.2, 0.6, 1 )` */
 		const rebeccapurple: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0, 0, 1 )` */
 		const red: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.74, 0.56, 0.56, 1 )` */
 		const rosybrown: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.25, 0.41, 0.88, 1 )` */
 		const royalblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.55, 0.27, 0.07, 1 )` */
 		const saddlebrown: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.98, 0.5, 0.45, 1 )` */
 		const salmon: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.96, 0.64, 0.38, 1 )` */
 		const sandybrown: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.18, 0.55, 0.34, 1 )` */
 		const seagreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.96, 0.93, 1 )` */
 		const seashell: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.63, 0.32, 0.18, 1 )` */
 		const sienna: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.75, 0.75, 0.75, 1 )` */
 		const silver: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.53, 0.81, 0.92, 1 )` */
 		const skyblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.42, 0.35, 0.8, 1 )` */
 		const slateblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.44, 0.5, 0.56, 1 )` */
 		const slategray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.98, 0.98, 1 )` */
 		const snow: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 1, 0.5, 1 )` */
 		const springgreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.27, 0.51, 0.71, 1 )` */
 		const steelblue: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.82, 0.71, 0.55, 1 )` */
 		const tan: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.5, 0.5, 1 )` */
 		const teal: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.85, 0.75, 0.85, 1 )` */
 		const thistle: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 0.39, 0.28, 1 )` */
 		const tomato: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 1, 1, 0 )` */
 		const transparent: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.25, 0.88, 0.82, 1 )` */
 		const turquoise: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.93, 0.51, 0.93, 1 )` */
 		const violet: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.5, 0.5, 0.5, 1 )` */
 		const webgray: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0, 0.5, 0, 1 )` */
 		const webgreen: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.5, 0, 0, 1 )` */
 		const webmaroon: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.5, 0, 0.5, 1 )` */
 		const webpurple: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.96, 0.87, 0.7, 1 )` */
 		const wheat: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 1, 1, 1 )` */
 		const white: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.96, 0.96, 0.96, 1 )` */
 		const whitesmoke: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 1, 1, 0, 1 )` */
 		const yellow: Readonly<Color>
 
-		/**  
+		/**
 		 * @value `Color( 0.6, 0.8, 0.2, 1 )` */
 		const yellowgreen: Readonly<Color>
 	}
-	
+
 	/** Handle for a `Resource`'s unique ID.
 	 The RID type is used to access the unique integer ID of a resource. They are opaque, which means they do not grant access to the associated resource by themselves. They are used by and with the low-level Server classes such as `VisualServer`. */
 	class RID {
 		/** Returns the ID of the referenced resource. */
 		get_id() : number;
 	}
-	
+
 	/** Plane in hessian form.
 	 Plane represents a normalized plane equation. Basically, "normal" is the normal of the plane (a,b,c normalized), and "d" is the distance from the origin to the plane (in the direction of "normal"). "Over" or "Above" the plane is considered the side of the plane towards where the normal is pointing. */
 	class Plane {
@@ -1724,7 +1724,7 @@ declare module godot {
 		/** @value `Plane( 0, 0, 1, 0 )` */
 		const PLANE_XY: Plane;
 	}
-	
+
 	/** Quaternion.
 	 A unit quaternion used for representing 3D rotations.
 
@@ -1799,7 +1799,7 @@ declare module godot {
 		/** @value `Quaternion( 0, 0, 0, 1 )` */
 		const IDENTITY: Readonly<Quaternion>;
 	}
-	
+
 	/** Axis-Aligned Bounding Box.
 	 AABB consists of a position, a size, and several utility functions. It is typically used for fast overlap tests. */
 	class AABB {
@@ -1880,20 +1880,20 @@ declare module godot {
 		merge(p_with: AABB) : AABB;
 
 	}
-	
-	
+
+
 	/** A pooled `Array` of bytes.
 	 An `Array` specifically designed to hold bytes. Optimized for memory usage, does not fragment the memory.
 
 	 **Note:** This type is passed by value and not by reference. */
 	class PackedByteArray {
-		
+
 		constructor(source?: number[]);
 		constructor(from: PackedByteArray);
 		constructor(from: ArrayBuffer);
 		constructor(from: DataView);
 		[Symbol.iterator](): IterableIterator<number>;
-		
+
 		/** Appends an element at the end of the array (alias of `push_back`). */
 		append(byte: number) : void;
 
@@ -1935,7 +1935,7 @@ declare module godot {
 
 		/** Changes the byte at the given index. */
 		set(idx: number, byte: number) : void;
-		
+
 		/** Get the `byte` at the given index */
 		get(idx: number): number;
 
@@ -1944,7 +1944,7 @@ declare module godot {
 
 		/** Returns the slice of the `PackedByteArray` between indices (inclusive) as a new `PackedByteArray`. Any negative index is considered to be from the end of the array. */
 		subarray(p_from: number, to: number) : PackedByteArray;
-		
+
 		/** Returns the content of the array as an `ArrayBuffer` */
 		get_buffer() : ArrayBuffer;
 	}
@@ -1988,7 +1988,7 @@ declare module godot {
 
 		/** Changes the `Color` at the given index. */
 		set(idx: number, color: Color) : void;
-		
+
 		/** Get the `Color` at the given index */
 		get(idx: number): Color;
 
@@ -2040,7 +2040,7 @@ declare module godot {
 
 		/** Changes the int at the given index. */
 		set(idx: number, integer: number) : void;
-		
+
 		/** Get the `int` at the given index */
 		get(idx: number): number;
 
@@ -2089,7 +2089,7 @@ declare module godot {
 
 		/** Changes the float at the given index. */
 		set(idx: number, value: number) : void;
-		
+
 		/** Get the `number` at the given index */
 		get(idx: number): number;
 
@@ -2140,7 +2140,7 @@ declare module godot {
 
 		/** Changes the `String` at the given index. */
 		set(idx: number, p_string: string) : void;
-		
+
 		/** Get the `string` at the given index */
 		get(idx: number): string;
 
@@ -2186,13 +2186,13 @@ declare module godot {
 
 		/** Changes the `Vector2` at the given index. */
 		set(idx: number, vector2: Vector2) : void;
-		
+
 		/** Get the `Vector2` at the given index */
 		get(idx: number): Vector2;
 
 		/** Returns the size of the array. */
 		size() : number;
-		
+
 		/** Returns the content of the array as an `ArrayBuffer` */
 		get_buffer() : ArrayBuffer;
 	}
@@ -2235,13 +2235,13 @@ declare module godot {
 
 		/** Changes the `Vector3` at the given index. */
 		set(idx: number, vector3: Vector3) : void;
-		
+
 		/** Get the `Vector3` at the given index */
 		get(idx: number): Vector3;
 
 		/** Returns the size of the array. */
 		size() : number;
-		
+
 		/** Returns the content of the array as an `ArrayBuffer` */
 		get_buffer() : ArrayBuffer;
 	}

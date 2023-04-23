@@ -1,6 +1,36 @@
+/**************************************************************************/
+/*  javascript_language.cpp                                               */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             GODOT ENGINE                               */
+/*                        https://godotengine.org                         */
+/**************************************************************************/
+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+
 #include "javascript_language.h"
-#include "core/object/class_db.h"
 #include "core/io/file_access.h"
+#include "core/object/class_db.h"
 JavaScriptLanguage *JavaScriptLanguage::singleton = NULL;
 
 namespace JavaScriptInstanceBindingCallbacks {
@@ -188,7 +218,6 @@ void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 	const char **w = _reserved_words;
 
 	while (*w) {
-
 		p_words->push_back(*w);
 		w++;
 	}
@@ -196,19 +225,19 @@ void JavaScriptLanguage::get_reserved_words(List<String> *p_words) const {
 
 bool JavaScriptLanguage::is_control_flow_keyword(String p_keyword) const {
 	return p_keyword == "if" ||
-		   p_keyword == "else" ||
-		   p_keyword == "return" ||
-		   p_keyword == "do" ||
-		   p_keyword == "while" ||
-		   p_keyword == "for" ||
-		   p_keyword == "break" ||
-		   p_keyword == "continue" ||
-		   p_keyword == "switch" ||
-		   p_keyword == "case" ||
-		   p_keyword == "throw" ||
-		   p_keyword == "try" ||
-		   p_keyword == "catch" ||
-		   p_keyword == "finally";
+			p_keyword == "else" ||
+			p_keyword == "return" ||
+			p_keyword == "do" ||
+			p_keyword == "while" ||
+			p_keyword == "for" ||
+			p_keyword == "break" ||
+			p_keyword == "continue" ||
+			p_keyword == "switch" ||
+			p_keyword == "case" ||
+			p_keyword == "throw" ||
+			p_keyword == "try" ||
+			p_keyword == "catch" ||
+			p_keyword == "finally";
 }
 
 void JavaScriptLanguage::get_comment_delimiters(List<String> *p_delimiters) const {
@@ -236,38 +265,38 @@ Vector<ScriptLanguage::ScriptTemplate> JavaScriptLanguage::get_built_in_template
 	constexpr size_t len = 2;
 	static const struct ScriptLanguage::ScriptTemplate TEMPLATES[len] = {
 		{ "Node",
-			"Default",
-			"Base template for Node with default Godot cycle methods",
-			"export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
-			"    \n"
-			"    constructor() {\n"
-			"        super();\n"
-			"    }\n"
-			"    \n"
-			"    // Called when the node enters the scene tree for the first time.\n"
-			"    _ready() {\n"
-			"        \n"
-			"    }\n"
-			"    \n"
-			"    // Called every frame. 'delta' is the elapsed time since the previous frame.\n"
-			"    _process(delta) {\n"
-			"        \n"
-			"    }\n"
-			"}\n" },
+				"Default",
+				"Base template for Node with default Godot cycle methods",
+				"export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
+				"    \n"
+				"    constructor() {\n"
+				"        super();\n"
+				"    }\n"
+				"    \n"
+				"    // Called when the node enters the scene tree for the first time.\n"
+				"    _ready() {\n"
+				"        \n"
+				"    }\n"
+				"    \n"
+				"    // Called every frame. 'delta' is the elapsed time since the previous frame.\n"
+				"    _process(delta) {\n"
+				"        \n"
+				"    }\n"
+				"}\n" },
 		{ "Object",
-			"Empty",
-			"Empty template suitable for all Objects",
-			"export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
-			"    \n"
-			"    // Declare member variables here. Examples:\n"
-			"    a = 2;\n"
-			"    b = \"text\";\n"
-			"    \n"
-			"    constructor() {\n"
-			"        super();\n"
-			"    }\n"
-			"    \n"
-			"}\n" },
+				"Empty",
+				"Empty template suitable for all Objects",
+				"export default class %CLASS% extends " GODOT_OBJECT_NAME ".%BASE% {\n"
+				"    \n"
+				"    // Declare member variables here. Examples:\n"
+				"    a = 2;\n"
+				"    b = \"text\";\n"
+				"    \n"
+				"    constructor() {\n"
+				"        super();\n"
+				"    }\n"
+				"    \n"
+				"}\n" },
 	};
 
 	for (int i = 0; i < len; i++) {
@@ -350,7 +379,8 @@ String JavaScriptLanguage::globalize_relative_path(const String &p_relative, con
 				break;
 			}
 		}
-		if (!base_dir.ends_with("/")) base_dir += "/";
+		if (!base_dir.ends_with("/"))
+			base_dir += "/";
 		file = base_dir + file_path;
 	}
 	return file;
