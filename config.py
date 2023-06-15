@@ -1,5 +1,5 @@
 def can_build(env, platform):
-    return True
+    return not (platform == "windows" and not env["use_mingw"])
 
 
 def configure(env):
