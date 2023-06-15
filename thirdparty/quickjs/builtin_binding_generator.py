@@ -122,9 +122,7 @@ def apply_pattern(template, values):
 
 def generate_constructor(cls):
     TemplateConstructorName = "${class}_constructor"
-    TemplateConstructorDeclare = (
-        "static JSValue ${class}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);\n"
-    )
+    TemplateConstructorDeclare = "static JSValue ${class}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);\n"
     TemplateConstructor = """
 static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
 	${class} tmp;
@@ -427,51 +425,94 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
 """,
         "PackedByteArray": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedByteArray", "type": "Variant::PACKED_BYTE_ARRAY", "element": "uint8_t"},
+            {
+                "class": "PackedByteArray",
+                "type": "Variant::PACKED_BYTE_ARRAY",
+                "element": "uint8_t",
+            },
         ),
         "PackedInt32Array": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedInt32Array", "type": "Variant::PACKED_INT32_ARRAY", "element": "int32_t"},
+            {
+                "class": "PackedInt32Array",
+                "type": "Variant::PACKED_INT32_ARRAY",
+                "element": "int32_t",
+            },
         ),
         "PackedInt64Array": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedInt64Array", "type": "Variant::PACKED_INT64_ARRAY", "element": "int64_t"},
+            {
+                "class": "PackedInt64Array",
+                "type": "Variant::PACKED_INT64_ARRAY",
+                "element": "int64_t",
+            },
         ),
         "PackedFloat32Array": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedFloat32Array", "type": "Variant::PACKED32_FLOAT_ARRAY", "element": "real_t"},
+            {
+                "class": "PackedFloat32Array",
+                "type": "Variant::PACKED32_FLOAT_ARRAY",
+                "element": "real_t",
+            },
         ),
         "PackedFloat64Array": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedFloat64Array", "type": "Variant::PACKED64_FLOAT_ARRAY", "element": "real_t"},
+            {
+                "class": "PackedFloat64Array",
+                "type": "Variant::PACKED64_FLOAT_ARRAY",
+                "element": "real_t",
+            },
         ),
         "PackedVector2Array": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedVector2Array", "type": "Variant::PACKED_VECTOR2_ARRAY", "element": "Vector2"},
+            {
+                "class": "PackedVector2Array",
+                "type": "Variant::PACKED_VECTOR2_ARRAY",
+                "element": "Vector2",
+            },
         ),
         "PackedVector3Array": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedVector3Array", "type": "Variant::PACKED_VECTOR3_ARRAY", "element": "Vector3"},
+            {
+                "class": "PackedVector3Array",
+                "type": "Variant::PACKED_VECTOR3_ARRAY",
+                "element": "Vector3",
+            },
         ),
         "PackedColorArray": apply_pattern(
             TemplatePackedArrays,
-            {"class": "PackedColorArray", "type": "Variant::PACKED_COLOR_ARRAY", "element": "Color"},
+            {
+                "class": "PackedColorArray",
+                "type": "Variant::PACKED_COLOR_ARRAY",
+                "element": "Color",
+            },
         ),
         "PackedStringArray": apply_pattern(
             TemplateSimplePackedArrays,
-            {"class": "PackedStringArray", "type": "Variant::PACKED_STRING_ARRAY", "element": "String"},
+            {
+                "class": "PackedStringArray",
+                "type": "Variant::PACKED_STRING_ARRAY",
+                "element": "String",
+            },
         ),
     }
     class_name = cls["name"]
     constructor_name = apply_pattern(TemplateConstructorName, {"class": class_name})
-    constructor_declare = apply_pattern(TemplateConstructorDeclare, {"class": class_name})
+    constructor_declare = apply_pattern(
+        TemplateConstructorDeclare, {"class": class_name}
+    )
 
     initializer = ""
     if class_name in ConstructorInitializers:
         initializer = ConstructorInitializers[class_name]
     constructor = apply_pattern(
         TemplateConstructor,
-        {"class": class_name, "type": VariantTypes[class_name], "func": constructor_name, "initializer": initializer},
+        {
+            "class": class_name,
+            "type": VariantTypes[class_name],
+            "func": constructor_name,
+            "initializer": initializer,
+        },
     )
     return constructor_name, constructor_declare, constructor
 
@@ -513,9 +554,7 @@ ${bindings}
 #endif
 				ptr->${native} = ${value};
 				break;"""
-        TemplateItemBinding = (
-            '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
-        )
+        TemplateItemBinding = '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
         getters = ""
         setters = ""
         bindings = ""
@@ -529,7 +568,12 @@ ${bindings}
                 {
                     "index": str(i),
                     "value": apply_pattern(
-                        GodotToJSTemplates[type], {"arg": apply_pattern("ptr->${native}", {"native": native_name})}
+                        GodotToJSTemplates[type],
+                        {
+                            "arg": apply_pattern(
+                                "ptr->${native}", {"native": native_name}
+                            )
+                        },
                     ),
                 },
             )
@@ -542,18 +586,28 @@ ${bindings}
                     "type": VariantTypes[type],
                     "type_name": type,
                     "class": class_name,
-                    "value": apply_pattern(JSToGodotTemplates[type], {"arg": "argv[0]"}),
+                    "value": apply_pattern(
+                        JSToGodotTemplates[type], {"arg": "argv[0]"}
+                    ),
                 },
             )
             bindings += apply_pattern(
-                TemplateItemBinding, {"index": str(i), "name": name, "type": VariantTypes[class_name]}
+                TemplateItemBinding,
+                {"index": str(i), "name": name, "type": VariantTypes[class_name]},
             )
         return apply_pattern(
             Template,
-            {"class": class_name, "getters": getters, "setters": setters, "bindings": bindings, "validation": ""},
+            {
+                "class": class_name,
+                "getters": getters,
+                "setters": setters,
+                "bindings": bindings,
+                "validation": "",
+            },
         )
+
     def generate_methods(cls):
-            TemplateMethod = """
+        TemplateMethod = """
         binder->get_builtin_binder().register_method(
             ${type},
             "${name}",
@@ -565,64 +619,77 @@ ${bindings}
                 return ${return};
             },
             ${argc});"""
-            TemplateArgDeclare = """
+        TemplateArgDeclare = """
         #ifdef DEBUG_METHODS_ENABLED
                 ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[${index}]), JS_ThrowTypeError(ctx, "${type_name} expected for argument ${index} of ${class}.${name}"));
         #endif
                 const ${godot_type} &arg${index} = ${arg};
         """
-            TemplateReturnValue = "${godot_type} ret = "
-            bindings = ""
-            for m in cls["methods"]:
-                args = ""
-                arg_declares = ""
-                for i in range(len(m["arguments"])):
-                    arg = m["arguments"][i]
-                    arg_type = arg["type"]
-                    arg_declares += apply_pattern(
-                        TemplateArgDeclare,
-                        {
-                            "index": str(i),
-                            "type": VariantTypes[arg_type],
-                            "type_name": arg_type,
-                            "class": class_name,
-                            "name": m["name"],
-                            "arg": apply_pattern(JSToGodotTemplates[arg_type], {"arg": "argv[" + str(i) + "]"}),
-                            "godot_type": GodotTypeNames[arg_type],
-                        },
-                    )
-                    if i > 0:
-                        args += ", "
-                    args += "arg" + str(i)
-                CallTemplate = (
-                    ""
-                    if m["return"] == "void"
-                    else (apply_pattern(TemplateReturnValue, {"godot_type": GodotTypeNames[m["return"]]}))
-                ) + "ptr->${native_method}(${args});"
-                call = apply_pattern(CallTemplate, {"native_method": m["native_method"], "args": args})
-                bindings += apply_pattern(
-                    TemplateMethod,
+        TemplateReturnValue = "${godot_type} ret = "
+        bindings = ""
+        for m in cls["methods"]:
+            args = ""
+            arg_declares = ""
+            for i in range(len(m["arguments"])):
+                arg = m["arguments"][i]
+                arg_type = arg["type"]
+                arg_declares += apply_pattern(
+                    TemplateArgDeclare,
                     {
+                        "index": str(i),
+                        "type": VariantTypes[arg_type],
+                        "type_name": arg_type,
                         "class": class_name,
-                        "type": VariantTypes[class_name],
                         "name": m["name"],
-                        "call": call,
-                        "arg_declares": arg_declares,
-                        "argc": str(len(m["arguments"])),
-                        "return": "JS_UNDEFINED"
-                        if m["return"] == "void"
-                        else apply_pattern(GodotToJSTemplates[m["return"]], {"arg": "ret"}),
+                        "arg": apply_pattern(
+                            JSToGodotTemplates[arg_type],
+                            {"arg": "argv[" + str(i) + "]"},
+                        ),
+                        "godot_type": GodotTypeNames[arg_type],
                     },
                 )
-            return bindings
-        
+                if i > 0:
+                    args += ", "
+                args += "arg" + str(i)
+            CallTemplate = (
+                ""
+                if m["return"] == "void"
+                else (
+                    apply_pattern(
+                        TemplateReturnValue, {"godot_type": GodotTypeNames[m["return"]]}
+                    )
+                )
+            ) + "ptr->${native_method}(${args});"
+            call = apply_pattern(
+                CallTemplate, {"native_method": m["native_method"], "args": args}
+            )
+            bindings += apply_pattern(
+                TemplateMethod,
+                {
+                    "class": class_name,
+                    "type": VariantTypes[class_name],
+                    "name": m["name"],
+                    "call": call,
+                    "arg_declares": arg_declares,
+                    "argc": str(len(m["arguments"])),
+                    "return": "JS_UNDEFINED"
+                    if m["return"] == "void"
+                    else apply_pattern(GodotToJSTemplates[m["return"]], {"arg": "ret"}),
+                },
+            )
+        return bindings
 
     def generate_constants(cls):
         ConstTemplate = '\tbinder->get_builtin_binder().register_constant(${type}, "${name}", ${value});\n'
         bindings = ""
         for c in cls["constants"]:
             bindings += apply_pattern(
-                ConstTemplate, {"name": c["name"], "type": VariantTypes[class_name], "value": c["value"]}
+                ConstTemplate,
+                {
+                    "name": c["name"],
+                    "type": VariantTypes[class_name],
+                    "value": c["value"],
+                },
             )
         return bindings
 
@@ -686,7 +753,9 @@ ${target_declare}
                 CallTemplate = (
                     ""
                     if o["return"] == "void"
-                    else apply_pattern(TemplateReturnValue, {"godot_type": GodotTypeNames[o["return"]]})
+                    else apply_pattern(
+                        TemplateReturnValue, {"godot_type": GodotTypeNames[o["return"]]}
+                    )
                 ) + "ptr->${op}(${args});"
                 call = apply_pattern(CallTemplate, {"op": op, "args": args})
                 bindings += apply_pattern(
@@ -700,7 +769,9 @@ ${target_declare}
                         "target_declare": target_declare,
                         "return": "JS_UNDEFINED"
                         if o["return"] == "void"
-                        else apply_pattern(GodotToJSTemplates[o["return"]], {"arg": "ret"}),
+                        else apply_pattern(
+                            GodotToJSTemplates[o["return"]], {"arg": "ret"}
+                        ),
                         "argc": str(argc),
                     },
                 )
@@ -740,7 +811,9 @@ ${methods}
 
 
 def generate_class_bind_action(cls, constructor):
-    Template = '\tregister_builtin_class(${type}, "${class}", ${constructor}, ${argc});\n'
+    Template = (
+        '\tregister_builtin_class(${type}, "${class}", ${constructor}, ${argc});\n'
+    )
     return apply_pattern(
         Template,
         {
@@ -782,7 +855,9 @@ ${definitions}
         definitions += constructor
         bindings += generate_class_bind_action(cls, constructor_name)
 
-        property_declare, property_defines, property_bind = generate_property_bindings(cls)
+        property_declare, property_defines, property_bind = generate_property_bindings(
+            cls
+        )
         declarations += property_declare
         definitions += property_defines
         bindings += property_bind
