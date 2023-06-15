@@ -51,11 +51,6 @@ if JS_ENGINE == "quickjs":
     env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
     env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
-    if env.msvc:
-        env.Append(CXXFLAGS=["/std:c++latest"])
-    else:
-        env_module.Append(CXXFLAGS=["-std=c++20"])
-
 
 # Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:
