@@ -338,7 +338,6 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 
 JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, int argc, JSValue *argv, int magic) {
 	Variant ret;
-	Callable::CallError err;
 	String err_msg;
 #if 0 // TODO: builtin functions
 	Expression::BuiltinFunc func = (Expression::BuiltinFunc)magic;
