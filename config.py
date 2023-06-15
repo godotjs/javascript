@@ -6,7 +6,6 @@ def configure(env):
     pass
 
 
-
 def get_doc_classes():
     return [
         "JavaScript",

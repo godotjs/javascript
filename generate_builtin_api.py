@@ -57,72 +57,97 @@ TYPE_MAP = {
 }
 
 METHOD_OP_EQUALS = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "equals",
     "native_method": "operator==",
     "return": "boolean",
 }
 
 METHOD_OP_ADD = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "add",
     "native_method": "operator+",
     "return": "${class_name}",
 }
 
 METHOD_OP_ADD_ASSIGN = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "add_assign",
     "native_method": "operator+=",
     "return": "this",
 }
 
 METHOD_OP_SUB = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "subtract",
     "native_method": "operator-",
     "return": "${class_name}",
 }
 
 METHOD_OP_SUB_ASSIGN = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "subtract_assign",
     "native_method": "operator-=",
     "return": "this",
 }
 
 METHOD_OP_MUL = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "multiply",
     "native_method": "operator*",
     "return": "${class_name}",
 }
 
 METHOD_OP_MUL_ASSIGN = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "multiply_assign",
     "native_method": "operator*=",
     "return": "this",
 }
 
 METHOD_OP_DIV = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "multiply",
     "native_method": "operator/",
     "return": "${class_name}",
 }
 
 METHOD_OP_DIV_ASSIGN = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "multiply_assign",
     "native_method": "operator/=",
     "return": "this",
 }
 
-METHOD_OP_NEG = {"arguments": [], "name": "negate", "native_method": "operator-", "return": "${class_name}"}
+METHOD_OP_NEG = {
+    "arguments": [],
+    "name": "negate",
+    "native_method": "operator-",
+    "return": "${class_name}",
+}
 
 METHOD_OP_LESS = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "less",
     "native_method": "operator<",
     "return": "boolean",
@@ -130,14 +155,18 @@ METHOD_OP_LESS = {
 
 
 METHOD_OP_LESS_EQAUL = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "${class_name}"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "${class_name}"}
+    ],
     "name": "less_equal",
     "native_method": "operator<=",
     "return": "boolean",
 }
 
 METHOD_PACKED_ARRAY_GET = {
-    "arguments": [{"default_value": None, "has_default_value": False, "type": "number"}],
+    "arguments": [
+        {"default_value": None, "has_default_value": False, "type": "number"}
+    ],
     "name": "get",
     "native_method": "operator[]",
     "return": "Variant",
@@ -312,11 +341,17 @@ def parse_class(cls):
             continue  # ignore constructors
         if class_name in IGNORED_PROPS and method_name in IGNORED_PROPS[class_name]:
             continue  # ignored methods
-        if class_name == "PackedByteArray" and method_name.startswith("encode_") or method_name.startswith("decode_"):
+        if (
+            class_name == "PackedByteArray"
+            and method_name.startswith("encode_")
+            or method_name.startswith("decode_")
+        ):
             continue  # ignore decode/encode methods
         if class_name == "PackedByteArray" and method_name == "get_string_from_wchar":
             continue
-        return_type = m.find("return").attrib["type"] if m.find("return") != None else "void"
+        return_type = (
+            m.find("return").attrib["type"] if m.find("return") != None else "void"
+        )
         if return_type in TYPE_MAP:
             return_type = TYPE_MAP[return_type]
         arguments = []
@@ -324,14 +359,20 @@ def parse_class(cls):
             dictArg = dict(arg.attrib)
             if "dictArg" in dictArg:
                 dictArg.pop("index")
-            dictArg["default_value"] = dictArg["default"] if "default" in dictArg else None
+            dictArg["default_value"] = (
+                dictArg["default"] if "default" in dictArg else None
+            )
             if "default" in dictArg:
                 dictArg.pop("default")
             type = dictArg["type"]
             if type in TYPE_MAP:
                 type = TYPE_MAP[type]
             arguments.append(
-                {"type": type, "default_value": dictArg["default_value"], "has_default_value": "default" in dictArg}
+                {
+                    "type": type,
+                    "default_value": dictArg["default_value"],
+                    "has_default_value": "default" in dictArg,
+                }
             )
         methods.append(
             {
@@ -374,7 +415,9 @@ def generate_api_json(MODULE_DIR):
         tree = ET.parse(open(os.path.join(DOCS_DIR, cls + ".xml"), "r"))
         data = tree.getroot()
         classes.append(parse_class(data))
-    json.dump(classes, open(OUTPUT_FILE, "w"), ensure_ascii=False, indent=2, sort_keys=True)
+    json.dump(
+        classes, open(OUTPUT_FILE, "w"), ensure_ascii=False, indent=2, sort_keys=True
+    )
 
 
 if __name__ == "__main__":
