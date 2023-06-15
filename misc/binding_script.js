@@ -1,8 +1,8 @@
 // (function start_script_binding() {
-	
+
 // 	const GodotAnonymousConnectionManager = new(class GodotAnonymousConnectionManager extends godot.RefCounted {
 // 		anonymous_connection_index = 0;
-		
+
 // 		get_slot_id(emitter, signal, target) {
 // 			return `__${emitter.get_instance_id()}:${signal}:${target.get_instance_id()}__`;
 // 		}
@@ -11,7 +11,7 @@
 // 			return `__anonymous_slot:${this.anonymous_connection_index++}`;
 // 		}
 // 	})();
-	
+
 // 	const godot_object_connect = godot.Object.prototype.connect;
 // 	Object.defineProperty(godot.Object.prototype, 'connect', {
 // 		// Object.prototype.connect(signal_name, target, method, params, flags)
@@ -19,7 +19,7 @@
 // 			if (args.length < 2) throw new Error('2 or more arguments expected');
 // 			let signal = args[0];
 // 			if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #0');
-			
+
 // 			let offset = 0;
 // 			let target = null;
 // 			let method = null;
@@ -27,7 +27,7 @@
 // 			let target_caller = null;
 // 			let params = [];
 // 			let flags = 0;
-			
+
 // 			if (typeof args[1] === 'function') {
 // 				offset = -1;
 // 				target = GodotAnonymousConnectionManager;
@@ -52,7 +52,7 @@
 // 				if (typeof p === 'number')
 // 					flags = p;
 // 			}
-			
+
 // 			if (typeof method === 'string' && method.length) {
 // 				method_name = method;
 // 			} else if (typeof method === 'function') {
@@ -69,14 +69,14 @@
 // 			} else {
 // 				throw new Error('method name or function expected for signal method');
 // 			}
-			
+
 // 			// console.log("connect", this, signal, target, method_name, params, flags);
 // 			return godot_object_connect.apply(this, [signal, target, method_name, params, flags]);
 // 		},
 // 		writable: false,
 // 		configurable: true
 // 	});
-	
+
 // 	const godot_object_disconnect = godot.Object.prototype.disconnect;
 // 	Object.defineProperty(godot.Object.prototype, 'disconnect', {
 // 		// Object.prototype.disconnect(signal_name, target, method)
@@ -84,12 +84,12 @@
 // 			if (args.length < 2) throw new Error('2 or more arguments expected');
 // 			let signal = args[0];
 // 			if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #0');
-			
+
 // 			let target = null;
 // 			let method_name = null;
 // 			let method = null;
 // 			let slot_id = undefined;
-			
+
 // 			if (typeof args[1] === 'function') {
 // 				target = GodotAnonymousConnectionManager;
 // 				method = args[1];
@@ -102,7 +102,7 @@
 // 			} else {
 // 				throw new Error('method name or function expected');
 // 			}
-			
+
 // 			if (typeof method === 'string' && method) {
 // 				method_name = method;
 // 			} else if (typeof method === 'function') {
@@ -112,7 +112,7 @@
 // 			} else {
 // 				throw new Error('method name or function expected');
 // 			}
-			
+
 // 			if (slot_id) {
 // 				if (typeof target[method_name] !== 'undefined') {
 // 					target[method_name] = undefined;
@@ -126,7 +126,7 @@
 // 		writable: false,
 // 		configurable: true
 // 	});
-	
+
 // 	const godot_object_is_connected = godot.Object.prototype.is_connected;
 // 	Object.defineProperty(godot.Object.prototype, 'is_connected', {
 // 		// Object.prototype.is_connected(signal_name, target, method)
@@ -134,12 +134,12 @@
 // 			if (args.length < 3) throw new Error('3 arguments expected');
 // 			let signal = args[0];
 // 			if (typeof signal !== 'string' || !signal) throw new Error('signal name expected for argument #1');
-			
+
 // 			let target = null;
 // 			let method = null;
 // 			let method_name = null;
 // 			let slot_id = undefined;
-			
+
 // 			if (typeof args[1] === 'function') {
 // 				target = GodotAnonymousConnectionManager;
 // 				method = args[1];
@@ -152,7 +152,7 @@
 // 			} else {
 // 				throw new Error('method name or function expected for argument #2');
 // 			}
-			
+
 // 			if (typeof method === 'string') {
 // 				method_name = method;
 // 			} else if (typeof method === 'function') {
@@ -161,13 +161,13 @@
 // 			} else {
 // 				throw new Error('method name or function expected');
 // 			}
-			
+
 // 			return godot_object_is_connected.apply(this, [signal, target, method_name]);
 // 		},
 // 		writable: false,
 // 		configurable: true
 // 	});
-	
+
 // 	function godot_yield(target, signal) {
 // 		return new Promise(function(resolve, reject) {
 // 			function callback(...args) {
@@ -181,7 +181,7 @@
 // 			target.connect(signal, GodotAnonymousConnectionManager, callback, [], godot.Object.CONNECT_ONESHOT);
 // 		});
 // 	}
-	
+
 // 	Object.defineProperty(godot, 'yield', {
 // 		value: godot_yield,
 // 		writable: false,
