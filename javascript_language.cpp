@@ -31,7 +31,11 @@
 #include "javascript_language.h"
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
-JavaScriptLanguage *JavaScriptLanguage::singleton = NULL;
+
+#include "javascript_binder.h"
+#include "quickjs_binder.h"
+
+JavaScriptLanguage *JavaScriptLanguage::singleton = nullptr;
 
 namespace JavaScriptInstanceBindingCallbacks {
 

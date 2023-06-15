@@ -755,8 +755,9 @@ def generate_class_bind_action(cls, constructor):
 def generate_builtin_bindings():
     Template = """\
 #include "core/variant/variant.h"
-#include "quickjs_binder.h"
+
 #include "quickjs_builtin_binder.h"
+#include "quickjs_worker.h"
 
 #ifndef inf
 #define inf INFINITY

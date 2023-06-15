@@ -29,6 +29,7 @@
 /**************************************************************************/
 
 #include "register_types.h"
+
 #include "javascript.h"
 #include "javascript_language.h"
 
@@ -45,31 +46,11 @@ class EditorExportJavaScript : public EditorExportPlugin {
 public:
 	virtual void _export_file(const String &p_path, const String &p_type, const HashSet<String> &p_features) override {
 		String script_key;
-		// int script_mode = EditorExportPreset::MODE_SCRIPT_COMPILED;
 		const Ref<EditorExportPreset> &preset = get_export_preset();
-
-		// if (preset.is_valid()) {
-		// 	script_mode = preset->get_file_export_mode(p_path);
-		// }
-
-		// if (script_mode == EditorExportPreset::MODE_SCRIPT_TEXT)
-		// 	return;
-
 		String extension = p_path.get_extension();
-		if (extension != EXT_JSCLASS && extension != EXT_JSMODULE)
+		if (extension != EXT_JSCLASS && extension != EXT_JSMODULE) {
 			return;
-
-// 		if (script_mode == EditorExportPreset::FileExportMode::MODE_SCRIPT_COMPILED) {
-// #if 0 // Disable compile to bytecode as it is not battle tested on all platform
-// 			Error err;
-// 			String code = FileAccess::get_file_as_string(p_path, &err);
-// 			ERR_FAIL_COND(err != OK);
-
-// 			Vector<uint8_t> file;
-// 			ERR_FAIL_COND(JavaScriptLanguage::get_singleton()->get_main_binder()->compile_to_bytecode(code, p_path, file) != OK);
-// 			add_file(p_path.get_basename() + "." + extension + "b", file, true);
-// #endif
-// 		}
+		}
 	}
 	virtual String _get_name() const override { return "JavaScript"; }
 };

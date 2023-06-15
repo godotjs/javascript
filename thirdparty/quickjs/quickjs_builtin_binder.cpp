@@ -1,10 +1,13 @@
-#include "quickjs_builtin_binder.h"
+#include "core/io/compression.h"
 #include "core/math/color.h"
+#include "core/os/memory.h"
 #include "core/variant/variant.h"
-#include "quickjs_binder.h"
-#include <core/io/compression.h>
-#include <core/os/memory.h>
+
 #include <cstring>
+
+#include "javascript_binder.h"
+#include "quickjs_binder.h"
+#include "quickjs_builtin_binder.h"
 
 QuickJSBuiltinBinder::QuickJSBuiltinBinder() {
 	ctx = NULL;
@@ -16,7 +19,6 @@ QuickJSBuiltinBinder::~QuickJSBuiltinBinder() {
 }
 
 void QuickJSBuiltinBinder::bind_builtin_object(JSContext *ctx, JSValue target, Variant::Type p_type, const void *p_object) {
-
 	void *ptr = NULL;
 	JavaScriptGCHandler *bind = NULL;
 	switch (p_type) {
@@ -636,7 +638,6 @@ JSValue QuickJSBuiltinBinder::new_object_from(JSContext *ctx, const PackedVector
 }
 
 void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
-
 	{ // Color
 		JSCFunctionMagic *getter = [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv, int magic) -> JSValue {
 			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
@@ -727,22 +728,22 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 		binder->get_builtin_binder().register_property(Variant::RECT2, "end", getter, setter, 0);
 
 		binder->get_builtin_binder().register_method(
-			Variant::RECT2,
-			"grow_side",
-			[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+				Variant::RECT2,
+				"grow_side",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
 #ifdef DEBUG_METHODS_ENABLED
-				ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Rect2.grow_margin")));
+					ERR_FAIL_COND_V(argc < 2, (JS_ThrowTypeError(ctx, "Two arguments expected for Rect2.grow_margin")));
 #endif
-				JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-				Rect2 *ptr = bind->getRect2();
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Rect2 *ptr = bind->getRect2();
 #ifdef DEBUG_METHODS_ENABLED
-				ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of Rect2.grow_margin")));
-				ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::FLOAT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 1 of Rect2.grow_margin")));
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::INT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 0 of Rect2.grow_margin")));
+					ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, Variant::FLOAT, argv[0]), (JS_ThrowTypeError(ctx, "number expected for argument 1 of Rect2.grow_margin")));
 #endif
-				Rect2 ret = ptr->grow_side(Side(QuickJSBinder::js_to_int(ctx, argv[0])), QuickJSBinder::js_to_number(ctx, argv[1]));
-				return QuickJSBinder::variant_to_var(ctx, ret);
-			},
-			2);
+					Rect2 ret = ptr->grow_side(Side(QuickJSBinder::js_to_int(ctx, argv[0])), QuickJSBinder::js_to_number(ctx, argv[1]));
+					return QuickJSBinder::variant_to_var(ctx, ret);
+				},
+				2);
 	}
 
 	{ // Transform2D
@@ -896,51 +897,51 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 	}
 	{ // Transform
 		binder->get_builtin_binder().register_method(
-			Variant::TRANSFORM3D,
-			"xform",
-			[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-				ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform3D.xform")));
-				JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-				Transform3D *ptr = bind->getTransform3D();
-				if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
-					Vector3 ret = ptr->xform(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				} else if (QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0])) {
-					Plane ret = ptr->xform(Plane(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				} else if (QuickJSBinder::validate_type(ctx, Variant::AABB, argv[0])) {
-					AABB ret = ptr->xform(AABB(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				} else if (QuickJSBinder::validate_type(ctx, Variant::PACKED_VECTOR3_ARRAY, argv[0])) {
-					PackedVector3Array ret = ptr->xform(PackedVector3Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				}
-				ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector3, Plane, AABB or PackedVector3Array expected for argument #0 of Transform3D.xform"));
-			},
-			1);
+				Variant::TRANSFORM3D,
+				"xform",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform3D.xform")));
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Transform3D *ptr = bind->getTransform3D();
+					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
+						Vector3 ret = ptr->xform(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0])) {
+						Plane ret = ptr->xform(Plane(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::AABB, argv[0])) {
+						AABB ret = ptr->xform(AABB(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::PACKED_VECTOR3_ARRAY, argv[0])) {
+						PackedVector3Array ret = ptr->xform(PackedVector3Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector3, Plane, AABB or PackedVector3Array expected for argument #0 of Transform3D.xform"));
+				},
+				1);
 		binder->get_builtin_binder().register_method(
-			Variant::TRANSFORM3D,
-			"xform_inv",
-			[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-				ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform3D.xform_inv")));
-				JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-				Transform3D *ptr = bind->getTransform3D();
-				if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
-					Vector3 ret = ptr->xform_inv(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				} else if (QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0])) {
-					Plane ret = ptr->xform_inv(Plane(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				} else if (QuickJSBinder::validate_type(ctx, Variant::AABB, argv[0])) {
-					AABB ret = ptr->xform_inv(AABB(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				} else if (QuickJSBinder::validate_type(ctx, Variant::PACKED_VECTOR3_ARRAY, argv[0])) {
-					PackedVector3Array ret = ptr->xform_inv(PackedVector3Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
-					return QuickJSBinder::variant_to_var(ctx, ret);
-				}
-				ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector3, Plane, AABB or PackedVector3Array expected for argument #0 of Transform3D.xform_inv"));
-			},
-			1);
+				Variant::TRANSFORM3D,
+				"xform_inv",
+				[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+					ERR_FAIL_COND_V(argc < 1, (JS_ThrowTypeError(ctx, "Argument expected for Transform3D.xform_inv")));
+					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+					Transform3D *ptr = bind->getTransform3D();
+					if (QuickJSBinder::validate_type(ctx, Variant::VECTOR3, argv[0])) {
+						Vector3 ret = ptr->xform_inv(Vector3(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::PLANE, argv[0])) {
+						Plane ret = ptr->xform_inv(Plane(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::AABB, argv[0])) {
+						AABB ret = ptr->xform_inv(AABB(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					} else if (QuickJSBinder::validate_type(ctx, Variant::PACKED_VECTOR3_ARRAY, argv[0])) {
+						PackedVector3Array ret = ptr->xform_inv(PackedVector3Array(QuickJSBinder::var_to_variant(ctx, argv[0])));
+						return QuickJSBinder::variant_to_var(ctx, ret);
+					}
+					ERR_FAIL_V(JS_ThrowTypeError(ctx, "Vector3, Plane, AABB or PackedVector3Array expected for argument #0 of Transform3D.xform_inv"));
+				},
+				1);
 	}
 
 	{ // PackedByteArray
@@ -1131,10 +1132,10 @@ void QuickJSBuiltinBinder::bind_builtin_propties_manually() {
 					JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
 					PackedColorArray *array = memnew(PackedColorArray(*bind->getPackedColorArray()));
 					JSValue ret = JS_NewArrayBuffer(
-						ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(Color), [](JSRuntime *rt, void *opaque, void *ptr) {
-							memdelete(static_cast<PackedColorArray *>(opaque));
-						},
-						array, false);
+							ctx, (uint8_t *)(array->ptr()), array->size() * sizeof(Color), [](JSRuntime *rt, void *opaque, void *ptr) {
+								memdelete(static_cast<PackedColorArray *>(opaque));
+							},
+							array, false);
 					return ret;
 				},
 				0);

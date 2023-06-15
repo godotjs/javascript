@@ -349,7 +349,7 @@ void JavaScriptModule::_bind_methods() {
 }
 
 JavaScriptModule::JavaScriptModule() {
-	set_source_code("module.exports = {};" ENDL);
+	set_source_code("module.exports = {};\n");
 }
 
 Ref<Resource> ResourceFormatLoaderJavaScriptModule::load(const String &p_path, const String &p_original_path, Error *r_error, bool p_use_sub_threads, float *r_progress, ResourceFormatLoader::CacheMode p_cache_mode) {

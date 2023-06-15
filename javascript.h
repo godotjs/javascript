@@ -34,8 +34,9 @@
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/script_language.h"
-#include "javascript_binder.h"
 #include "scene/resources/text_file.h"
+
+#include "javascript_binder.h"
 
 #define EXT_JSCLASS "mjs"
 #define EXT_JSMODULE "js"

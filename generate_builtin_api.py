@@ -314,6 +314,8 @@ def parse_class(cls):
             continue  # ignored methods
         if class_name == "PackedByteArray" and method_name.startswith("encode_") or method_name.startswith("decode_"):
             continue  # ignore decode/encode methods
+        if class_name == "PackedByteArray" and method_name == "get_string_from_wchar":
+            continue
         return_type = m.find("return").attrib["type"] if m.find("return") != None else "void"
         if return_type in TYPE_MAP:
             return_type = TYPE_MAP[return_type]

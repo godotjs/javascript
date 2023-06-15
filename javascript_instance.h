@@ -32,6 +32,7 @@
 #define JAVASCRIPT_INSTANCE_H
 
 #include "core/object/script_language.h"
+
 #include "core/variant/callable.h"
 #include "javascript.h"
 #include "javascript_binder.h"

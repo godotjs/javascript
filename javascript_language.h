@@ -32,8 +32,9 @@
 #define JAVASCRIPT_LANGUAGE_H
 
 #include "core/object/script_language.h"
+
 #include "javascript.h"
-#include "thirdparty/quickjs/quickjs_binder.h"
+#include "javascript_binder.h"
 
 class CallableMiddleman : public Object {
 	GDCLASS(CallableMiddleman, Object);

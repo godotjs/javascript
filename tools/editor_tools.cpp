@@ -29,10 +29,13 @@
 /**************************************************************************/
 
 #include "editor_tools.h"
-#include "../javascript_language.h"
 #include "core/math/expression.h"
 #include "core/os/keyboard.h"
+#include "editor/doc_tools.h"
+#include "editor/editor_help.h"
 #include "editor/filesystem_dock.h"
+
+#include "../javascript_language.h"
 
 #define TS_IGNORE "//@ts-ignore\n"
 static HashMap<String, HashSet<String>> ts_ignore_errors;

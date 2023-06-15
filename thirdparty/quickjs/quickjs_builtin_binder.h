@@ -1,14 +1,16 @@
 #ifndef QUICKJS_BUILTIN_BINDER_H
 #define QUICKJS_BUILTIN_BINDER_H
 
-#include "quickjs/quickjs.h"
 #include "core/variant/variant.h"
+
+#include "quickjs/quickjs.h"
+
 struct JavaScriptGCHandler;
-class QuickJSBinder;
 
 typedef JSValue (*JSConstructorFunc)(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);
 typedef void (*JSFinalizerFunc)(JSRuntime *rt, JSValue val);
 
+class QuickJSBinder;
 class QuickJSBuiltinBinder {
 public:
 	struct BuiltinClass {

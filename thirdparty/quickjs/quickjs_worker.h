@@ -2,6 +2,7 @@
 #define QUICKJS_WORKER_H
 
 #include "core/os/thread.h"
+
 #include "quickjs_binder.h"
 
 class QuickJSWorker : public QuickJSBinder {
