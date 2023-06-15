@@ -122,7 +122,9 @@ def apply_pattern(template, values):
 
 def generate_constructor(cls):
     TemplateConstructorName = "${class}_constructor"
-    TemplateConstructorDeclare = "static JSValue ${class}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);\n"
+    TemplateConstructorDeclare = (
+        "static JSValue ${class}_constructor(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv);\n"
+    )
     TemplateConstructor = """
 static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValueConst *argv) {
 	${class} tmp;
@@ -498,9 +500,7 @@ static JSValue ${func}(JSContext *ctx, JSValueConst new_target, int argc, JSValu
     }
     class_name = cls["name"]
     constructor_name = apply_pattern(TemplateConstructorName, {"class": class_name})
-    constructor_declare = apply_pattern(
-        TemplateConstructorDeclare, {"class": class_name}
-    )
+    constructor_declare = apply_pattern(TemplateConstructorDeclare, {"class": class_name})
 
     initializer = ""
     if class_name in ConstructorInitializers:
@@ -554,7 +554,9 @@ ${bindings}
 #endif
 				ptr->${native} = ${value};
 				break;"""
-        TemplateItemBinding = '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
+        TemplateItemBinding = (
+            '\tbinder->get_builtin_binder().register_property(${type}, "${name}", getter, setter, ${index});\n'
+        )
         getters = ""
         setters = ""
         bindings = ""
@@ -569,11 +571,7 @@ ${bindings}
                     "index": str(i),
                     "value": apply_pattern(
                         GodotToJSTemplates[type],
-                        {
-                            "arg": apply_pattern(
-                                "ptr->${native}", {"native": native_name}
-                            )
-                        },
+                        {"arg": apply_pattern("ptr->${native}", {"native": native_name})},
                     ),
                 },
             )
@@ -586,9 +584,7 @@ ${bindings}
                     "type": VariantTypes[type],
                     "type_name": type,
                     "class": class_name,
-                    "value": apply_pattern(
-                        JSToGodotTemplates[type], {"arg": "argv[0]"}
-                    ),
+                    "value": apply_pattern(JSToGodotTemplates[type], {"arg": "argv[0]"}),
                 },
             )
             bindings += apply_pattern(
@@ -654,15 +650,9 @@ ${bindings}
             CallTemplate = (
                 ""
                 if m["return"] == "void"
-                else (
-                    apply_pattern(
-                        TemplateReturnValue, {"godot_type": GodotTypeNames[m["return"]]}
-                    )
-                )
+                else (apply_pattern(TemplateReturnValue, {"godot_type": GodotTypeNames[m["return"]]}))
             ) + "ptr->${native_method}(${args});"
-            call = apply_pattern(
-                CallTemplate, {"native_method": m["native_method"], "args": args}
-            )
+            call = apply_pattern(CallTemplate, {"native_method": m["native_method"], "args": args})
             bindings += apply_pattern(
                 TemplateMethod,
                 {
@@ -753,9 +743,7 @@ ${target_declare}
                 CallTemplate = (
                     ""
                     if o["return"] == "void"
-                    else apply_pattern(
-                        TemplateReturnValue, {"godot_type": GodotTypeNames[o["return"]]}
-                    )
+                    else apply_pattern(TemplateReturnValue, {"godot_type": GodotTypeNames[o["return"]]})
                 ) + "ptr->${op}(${args});"
                 call = apply_pattern(CallTemplate, {"op": op, "args": args})
                 bindings += apply_pattern(
@@ -769,9 +757,7 @@ ${target_declare}
                         "target_declare": target_declare,
                         "return": "JS_UNDEFINED"
                         if o["return"] == "void"
-                        else apply_pattern(
-                            GodotToJSTemplates[o["return"]], {"arg": "ret"}
-                        ),
+                        else apply_pattern(GodotToJSTemplates[o["return"]], {"arg": "ret"}),
                         "argc": str(argc),
                     },
                 )
@@ -811,9 +797,7 @@ ${methods}
 
 
 def generate_class_bind_action(cls, constructor):
-    Template = (
-        '\tregister_builtin_class(${type}, "${class}", ${constructor}, ${argc});\n'
-    )
+    Template = '\tregister_builtin_class(${type}, "${class}", ${constructor}, ${argc});\n'
     return apply_pattern(
         Template,
         {
@@ -855,9 +839,7 @@ ${definitions}
         definitions += constructor
         bindings += generate_class_bind_action(cls, constructor_name)
 
-        property_declare, property_defines, property_bind = generate_property_bindings(
-            cls
-        )
+        property_declare, property_defines, property_bind = generate_property_bindings(cls)
         declarations += property_declare
         definitions += property_defines
         bindings += property_bind
