@@ -32,6 +32,12 @@
 extern "C" {
 #endif
 
+#ifdef _MSC_VER
+#define INLINE_FUNC __forceinline
+#else
+#define INLINE_FUNC inline
+#endif
+
 #if defined(__GNUC__) || defined(__clang__)
 #define js_likely(x)          __builtin_expect(!!(x), 1)
 #define js_unlikely(x)        __builtin_expect(!!(x), 0)
@@ -40,7 +46,7 @@ extern "C" {
 #else
 #define js_likely(x)     (x)
 #define js_unlikely(x)   (x)
-#define js_force_inline  inline
+#define js_force_inline  INLINE_FUNC
 #define __js_printf_like(a, b)
 #endif
 

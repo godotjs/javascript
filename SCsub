@@ -5,8 +5,7 @@ Import("env")
 Import("env_modules")
 env_module = env_modules.Clone()
 JS_ENGINE = "quickjs"
-TOOLS = "editor" == env_module["target"]  # env.get('TOOLS');
-
+TOOLS = "editor" == env_module["target"]
 
 def open_file(path, mode):
     if platform.python_version() > "3":
@@ -44,12 +43,19 @@ if JS_ENGINE == "quickjs":
         env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
     env_module.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
     env_module.Append(CPPPATH=["thirdparty/quickjs"])
+    
     if TOOLS:
         env_module.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
     env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
     env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
     env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
+    if env.msvc:
+        env.Append(CXXFLAGS=["/std:c++latest"])
+    else:
+        env_module.Append(CXXFLAGS=["-std=c++20"])
+
+ 
 # Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:
     text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../javascript_binder.h"\nString JavaScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'

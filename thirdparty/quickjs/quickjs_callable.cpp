@@ -2,8 +2,8 @@
 #include "javascript_language.h"
 #include "quickjs/quickjs.h"
 
-#include "quickjs_builtin_binder.h"
 #include "quickjs_binder.h"
+#include "quickjs_builtin_binder.h"
 
 bool QuickJSCallable::compare_equal(const CallableCustom *p_a, const CallableCustom *p_b) {
 	const QuickJSCallable *a = static_cast<const QuickJSCallable *>(p_a);
@@ -26,7 +26,9 @@ QuickJSCallable::QuickJSCallable(JSContext *ctx, const JSValue &p_value) {
 }
 
 QuickJSCallable::QuickJSCallable(const JavaScriptGCHandler &p_function) : JavaScriptCallable(p_function) {
-	JSValue js_func = JS_MKPTR(JS_TAG_OBJECT, p_function.javascript_object);
+	JSValue js_func;
+	js_func.u.ptr = p_function.javascript_object;
+	js_func.tag = JS_TAG_OBJECT;
 	JSContext *ctx = static_cast<JSContext *>(p_function.context);
 	ERR_FAIL_COND(JS_IsFunction(ctx, js_func));
 	JS_DupValue(ctx, js_func);
@@ -35,19 +37,26 @@ QuickJSCallable::QuickJSCallable(const JavaScriptGCHandler &p_function) : JavaSc
 QuickJSCallable::~QuickJSCallable() {
 	if (js_function.is_valid_javascript_object()) {
 		JSContext *ctx = static_cast<JSContext *>(js_function.context);
-		JSValue js_func = JS_MKPTR(JS_TAG_OBJECT, js_function.javascript_object);
+		JSValue temp;
+		temp.u.ptr = js_function.javascript_object;
+		temp.tag = JS_TAG_OBJECT;
+		JSValue js_func = temp;
 		JS_FreeValue(ctx, js_func);
 	}
 }
 
 uint32_t QuickJSCallable::hash() const {
-	JSValue js_func = JS_MKPTR(JS_TAG_OBJECT, js_function.javascript_object);
+	JSValue js_func;
+	js_func.u.ptr = js_function.javascript_object;
+	js_func.tag = JS_TAG_OBJECT;
 	return hash_murmur3_one_64((uint64_t)JS_VALUE_GET_PTR(js_func));
 }
 
 String QuickJSCallable::get_as_text() const {
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(static_cast<JSContext *>(js_function.context));
-	JSValue js_func = JS_MKPTR(JS_TAG_OBJECT, js_function.javascript_object);
+	JSValue js_func;
+	js_func.u.ptr = js_function.javascript_object;
+	js_func.tag = JS_TAG_OBJECT;
 	JSContext *ctx = static_cast<JSContext *>(js_function.context);
 	String text = binder->js_to_string(ctx, js_func);
 	return text;
@@ -59,7 +68,9 @@ ObjectID QuickJSCallable::get_object() const {
 
 void QuickJSCallable::call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, Callable::CallError &r_call_error) const {
 	QuickJSBinder *binder = QuickJSBinder::get_context_binder(static_cast<JSContext *>(js_function.context));
-	JSValue js_func = JS_MKPTR(JS_TAG_OBJECT, js_function.javascript_object);
+	JSValue js_func;
+	js_func.tag = JS_TAG_OBJECT;
+	js_func.u.ptr = js_function.javascript_object;
 	JavaScriptGCHandler func;
 	func.javascript_object = JS_VALUE_GET_PTR(js_func);
 	JavaScriptGCHandler caller;

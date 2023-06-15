@@ -427,7 +427,16 @@ static void re_emit_op_u16(REParseState *s, int op, uint32_t val)
     dbuf_put_u16(&s->byte_code, val);
 }
 
-static int __attribute__((format(printf, 2, 3))) re_parse_error(REParseState *s, const char *fmt, ...)
+#include <stdarg.h>
+#include <stdio.h>
+
+#ifdef _MSC_VER
+#define ATTRIBUTE_FORMAT_PRINTF _Printf_format_string_
+#else
+#define ATTRIBUTE_FORMAT_PRINTF __attribute__((format(printf, 2, 3)))
+#endif
+
+static int ATTRIBUTE_FORMAT_PRINTF re_parse_error(REParseState *s, const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);

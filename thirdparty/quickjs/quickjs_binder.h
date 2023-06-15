@@ -281,8 +281,21 @@ public:
 	}
 
 public:
-	QuickJSBinder();
-	virtual ~QuickJSBinder();
+
+	QuickJSBinder() {
+		context_id = QuickJSBinder::global_context_id.increment();
+		internal_godot_method_id = 0;
+		internal_godot_indexed_property_id = 0;
+		godot_allocator.js_malloc = QuickJSBinder::js_binder_malloc;
+		godot_allocator.js_free = QuickJSBinder::js_binder_free;
+		godot_allocator.js_realloc = QuickJSBinder::js_binder_realloc;
+		godot_allocator.js_malloc_usable_size = nullptr;
+		godot_object_class = nullptr;
+		godot_reference_class = nullptr;
+	}
+
+	virtual ~QuickJSBinder() {
+	}
 
 	_FORCE_INLINE_ static QuickJSBinder *get_context_binder(JSContext *ctx) {
 		return static_cast<QuickJSBinder *>(JS_GetContextOpaque(ctx));

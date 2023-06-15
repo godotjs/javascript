@@ -1,4 +1,5 @@
 #include "quickjs_debugger.h"
+#include <stddef.h>
 
 #define QJS_DEBUGGER_DEBUG_LOG 0
 
@@ -26,7 +27,7 @@ size_t QuickJSDebugger::transport_read(void *udata, char *buffer, size_t length)
 #endif
 	ERR_FAIL_COND_V(err != OK, -err);
 	ERR_FAIL_COND_V(ret < 0, -4);
-	ERR_FAIL_COND_V(ret > (ssize_t)length, -6);
+	ERR_FAIL_COND_V(ret > (ptrdiff_t)length, -6);
 	return ret;
 }
 
@@ -41,7 +42,7 @@ size_t QuickJSDebugger::transport_write(void *udata, const char *buffer, size_t 
 	print_line(vformat("[write] %d %s", length, buffer));
 #endif
 	ERR_FAIL_COND_V(err != OK, -err);
-	ERR_FAIL_COND_V(ret <= 0 || ret > (ssize_t)length, -4);
+	ERR_FAIL_COND_V(ret <= 0 || ret > (ptrdiff_t)length, -4);
 	return ret;
 }
 

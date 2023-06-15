@@ -552,70 +552,70 @@ ${bindings}
             Template,
             {"class": class_name, "getters": getters, "setters": setters, "bindings": bindings, "validation": ""},
         )
-
     def generate_methods(cls):
-        TemplateMethod = """
-	binder->get_builtin_binder().register_method(
-		${type},
-		"${name}",
-		[](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
-			JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-			${class} *ptr = bind->get${class}();\
-${arg_declares}
-			${call}
-			return ${return};
-		},
-		${argc});"""
-        TemplateArgDeclare = """
-#ifdef DEBUG_METHODS_ENABLED
-			ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[${index}]), (JS_ThrowTypeError(ctx, "${type_name} expected for argument ${index} of ${class}.${name}")));
-#endif
-			const ${godot_type} &arg${index} = ${arg};
-"""
-        TemplateReturnValue = "${godot_type} ret = "
-        bindings = ""
-        for m in cls["methods"]:
-            args = ""
-            arg_declares = ""
-            for i in range(len(m["arguments"])):
-                arg = m["arguments"][i]
-                arg_type = arg["type"]
-                arg_declares += apply_pattern(
-                    TemplateArgDeclare,
+            TemplateMethod = """
+        binder->get_builtin_binder().register_method(
+            ${type},
+            "${name}",
+            [](JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv) {
+                JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
+                ${class} *ptr = bind->get${class}();\
+        ${arg_declares}
+                ${call}
+                return ${return};
+            },
+            ${argc});"""
+            TemplateArgDeclare = """
+        #ifdef DEBUG_METHODS_ENABLED
+                ERR_FAIL_COND_V(!QuickJSBinder::validate_type(ctx, ${type}, argv[${index}]), JS_ThrowTypeError(ctx, "${type_name} expected for argument ${index} of ${class}.${name}"));
+        #endif
+                const ${godot_type} &arg${index} = ${arg};
+        """
+            TemplateReturnValue = "${godot_type} ret = "
+            bindings = ""
+            for m in cls["methods"]:
+                args = ""
+                arg_declares = ""
+                for i in range(len(m["arguments"])):
+                    arg = m["arguments"][i]
+                    arg_type = arg["type"]
+                    arg_declares += apply_pattern(
+                        TemplateArgDeclare,
+                        {
+                            "index": str(i),
+                            "type": VariantTypes[arg_type],
+                            "type_name": arg_type,
+                            "class": class_name,
+                            "name": m["name"],
+                            "arg": apply_pattern(JSToGodotTemplates[arg_type], {"arg": "argv[" + str(i) + "]"}),
+                            "godot_type": GodotTypeNames[arg_type],
+                        },
+                    )
+                    if i > 0:
+                        args += ", "
+                    args += "arg" + str(i)
+                CallTemplate = (
+                    ""
+                    if m["return"] == "void"
+                    else (apply_pattern(TemplateReturnValue, {"godot_type": GodotTypeNames[m["return"]]}))
+                ) + "ptr->${native_method}(${args});"
+                call = apply_pattern(CallTemplate, {"native_method": m["native_method"], "args": args})
+                bindings += apply_pattern(
+                    TemplateMethod,
                     {
-                        "index": str(i),
-                        "type": VariantTypes[arg_type],
-                        "type_name": arg_type,
                         "class": class_name,
+                        "type": VariantTypes[class_name],
                         "name": m["name"],
-                        "arg": apply_pattern(JSToGodotTemplates[arg_type], {"arg": "argv[" + str(i) + "]"}),
-                        "godot_type": GodotTypeNames[arg_type],
+                        "call": call,
+                        "arg_declares": arg_declares,
+                        "argc": str(len(m["arguments"])),
+                        "return": "JS_UNDEFINED"
+                        if m["return"] == "void"
+                        else apply_pattern(GodotToJSTemplates[m["return"]], {"arg": "ret"}),
                     },
                 )
-                if i > 0:
-                    args += ", "
-                args += "arg" + str(i)
-            CallTemplate = (
-                ""
-                if m["return"] == "void"
-                else (apply_pattern(TemplateReturnValue, {"godot_type": GodotTypeNames[m["return"]]}))
-            ) + "ptr->${native_method}(${args});"
-            call = apply_pattern(CallTemplate, {"native_method": m["native_method"], "args": args})
-            bindings += apply_pattern(
-                TemplateMethod,
-                {
-                    "class": class_name,
-                    "type": VariantTypes[class_name],
-                    "name": m["name"],
-                    "call": call,
-                    "arg_declares": arg_declares,
-                    "argc": str(len(m["arguments"])),
-                    "return": "JS_UNDEFINED"
-                    if m["return"] == "void"
-                    else apply_pattern(GodotToJSTemplates[m["return"]], {"arg": "ret"}),
-                },
-            )
-        return bindings
+            return bindings
+        
 
     def generate_constants(cls):
         ConstTemplate = '\tbinder->get_builtin_binder().register_constant(${type}, "${name}", ${value});\n'

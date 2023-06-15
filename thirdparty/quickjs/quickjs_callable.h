@@ -4,7 +4,6 @@
 #include "quickjs/quickjs.h"
 
 #if !defined(JS_NAN_BOXING)
-///typedef uint64_t JSValue; defined in quickjs.h if defined(JS_NAN_BOXING)
 struct JSValue;
 #endif
 
