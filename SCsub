@@ -7,6 +7,10 @@ env_module = env_modules.Clone()
 JS_ENGINE = "quickjs"
 TOOLS = "editor" == env_module["target"]
 
+if env["platform"] == "windows":
+    if env["CC"] == "gcc" or (env["CC"] == "clang" and env["use_llvm"]):
+        env.Append(LIBS=["pthread"])
+
 
 def open_file(path, mode):
     if platform.python_version() > "3":
