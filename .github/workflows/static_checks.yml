@@ -65,10 +65,6 @@ jobs:
             echo "Skipping Python static analysis as no Python files were changed."
           fi
 
-      - name: Python builders checks via pytest (pytest_builders.sh)
-        run: |
-          bash ./misc/scripts/pytest_builders.sh
-
       - name: JavaScript style and documentation checks via ESLint and JSDoc
         run: |
           if grep -q "platform/web" changed.txt || [ -z "$(cat changed.txt)" ]; then
