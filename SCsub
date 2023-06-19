@@ -8,7 +8,7 @@ JS_ENGINE = "quickjs"
 TOOLS = "editor" == env_module["target"]
 
 if env["platform"] == "windows":
-    if env["CC"] == "gcc" or (env["CC"] == "clang" and env["use_llvm"]):
+    if env["use_mingw"]:
         env.Append(LIBS=["pthread"])
 
 
