@@ -54,6 +54,7 @@ TYPE_MAP = {
     "bool": "boolean",
     "String": "string",
     "NodePath": "string",
+    "StringName": "string",
 }
 
 METHOD_OP_EQUALS = {

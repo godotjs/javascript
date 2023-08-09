@@ -241,6 +241,7 @@ JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 		case Variant::FLOAT:
 			return JS_NewFloat64(ctx, (double)(p_var));
 		case Variant::NODE_PATH:
+		case Variant::STRING_NAME:
 		case Variant::STRING:
 			return to_js_string(ctx, p_var);
 		case Variant::OBJECT: {
