@@ -1,6 +1,9 @@
 #ifndef QUICKJS_CALLABLE_H
 #define QUICKJS_CALLABLE_H
-#include "javascript_callable.h"
+
+#include "core/variant/callable.h"
+#include "../../javascript_callable.h"
+
 #include "quickjs/quickjs.h"
 
 #if !defined(JS_NAN_BOXING)

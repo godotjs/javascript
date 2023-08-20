@@ -11,9 +11,8 @@
 #include "editor/editor_settings.h"
 #endif
 
-#include "javascript.h"
-#include "javascript_instance.h"
-#include "javascript_language.h"
+#include "../../javascript_instance.h"
+#include "../../javascript_language.h"
 #include "quickjs_binder.h"
 #include "quickjs_callable.h"
 #include "quickjs_worker.h"

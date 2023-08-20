@@ -31,7 +31,7 @@
 #ifndef EDITOR_TOOLS_H
 #define EDITOR_TOOLS_H
 
-#include "editor/editor_file_dialog.h"
+#include "editor/gui/editor_file_dialog.h"
 #include "editor/editor_node.h"
 #include "editor/editor_plugin.h"
 

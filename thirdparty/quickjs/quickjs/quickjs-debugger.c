@@ -144,7 +144,7 @@ static void js_debugger_get_variable_type(JSContext *ctx,
 
         JSObject *p = JS_VALUE_GET_OBJ(var_val);
         // todo: xor the the two dwords to get a better hash?
-        uint32_t pl = (uint32_t)p;
+        uintptr_t pl = (uintptr_t)p;
         JSValue found = JS_GetPropertyUint32(ctx, state->variable_pointers, pl);
         if (JS_IsUndefined(found)) {
             reference = state->variable_reference_count++;

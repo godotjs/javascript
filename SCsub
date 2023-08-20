@@ -41,19 +41,20 @@ if JS_ENGINE == "quickjs":
 
     thirdparty.quickjs.builtin_binding_generator.generate_builtin_bindings()
     version = open("thirdparty/quickjs/quickjs/VERSION.txt", "r").read().split("\n")[0]
-    env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"' + version + '"'})
-    env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
-    if "release" not in (env_module["target"] or ""):
-        env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
-        env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
-    env_module.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
-    env_module.Append(CPPPATH=["thirdparty/quickjs"])
-
+    quickjs_env = env_modules.Clone()
+    quickjs_env.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"' + version + '"'})
+    quickjs_env.Append(CPPDEFINES=["CONFIG_BIGNUM"])
+    if "release" not in (quickjs_env["target"] or ""):
+        quickjs_env.Append(CPPDEFINES={"DUMP_LEAKS": 1})
+        quickjs_env.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
+    quickjs_env.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
+    quickjs_env.Append(CPPPATH=["thirdparty/quickjs"])
+    quickjs_env.disable_warnings()
     if TOOLS:
-        env_module.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
-    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
-    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
-    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
+        quickjs_env.add_source_files(env.modules_sources, "tools/editor_tools.cpp")    
+    quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
+    quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
+    quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
 
 # Binding script to run at engine initializing
