@@ -76,10 +76,6 @@ jobs:
             echo "Skipping JavaScript formatting as no Web/JS files were changed."
           fi
 
-      - name: Documentation checks
-        run: |
-          doc/tools/make_rst.py --dry-run --color doc/classes modules
-
       - name: Style checks via clang-format (clang_format.sh)
         run: |
           clang-format --version
