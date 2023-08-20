@@ -1,5 +1,5 @@
 def can_build(env, platform):
-    return (platform == "windows" and env["use_mingw"]) or platform == "linux" or platform == "macos"
+    return True #(platform == "windows" and env["use_mingw"]) or platform == "linux" or platform == "macos"
 
 
 def configure(env):

@@ -1100,7 +1100,7 @@ void QuickJSBinder::add_godot_globals() {
 		const int value = CoreConstants::get_global_constant_value(i);
 
 		JSAtom js_const_name = JS_NewAtom(ctx, const_name);
-		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_MKVAL(JS_TAG_INT, value), QuickJSBinder::PROP_DEF_DEFAULT);
+		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_NewInt64(ctx, value), QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, js_const_name);
 
 		if (HashMap<StringName, int64_t> *consts = global_constants.getptr(enum_name)) {

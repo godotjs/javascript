@@ -43,11 +43,13 @@ extern "C" {
 #define js_unlikely(x)        __builtin_expect(!!(x), 0)
 #define js_force_inline       inline __attribute__((always_inline))
 #define __js_printf_like(f, a)   __attribute__((format(printf, f, a)))
+#define __js_unused __attribute((unused))
 #else
 #define js_likely(x)     (x)
 #define js_unlikely(x)   (x)
 #define js_force_inline  INLINE_FUNC
 #define __js_printf_like(a, b)
+#define __js_unused
 #endif
 
 #define JS_BOOL int
@@ -221,8 +223,26 @@ typedef struct JSValue {
 #define JS_VALUE_GET_FLOAT64(v) ((v).u.float64)
 #define JS_VALUE_GET_PTR(v) ((v).u.ptr)
 
-#define JS_MKVAL(tag, val) (JSValue){ (JSValueUnion){ .int32 = val }, tag }
-#define JS_MKPTR(tag, p) (JSValue){ (JSValueUnion){ .ptr = p }, tag }
+JSValue inline _JS_MKVAL_INT32(int64_t tag, int32_t val) {
+	JSValue v;
+
+	v.u.int32 = val;
+	v.tag = tag;
+
+	return v;
+}
+
+JSValue inline _JS_MKPTR(int64_t tag, void* ptr) {
+	JSValue v;
+
+	v.u.ptr = ptr;
+	v.tag = tag;
+
+	return v;
+}
+
+#define JS_MKVAL(tag, val) _JS_MKVAL_INT32(tag, val)
+#define JS_MKPTR(tag, p) _JS_MKPTR(tag, p)
 
 #define JS_TAG_IS_FLOAT64(tag) ((unsigned)(tag) == JS_TAG_FLOAT64)
 
@@ -668,7 +688,7 @@ static inline JSValue JS_DupValue(JSContext *ctx, JSValueConst v)
         JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(v);
         p->ref_count++;
     }
-    return (JSValue)v;
+    return v;
 }
 
 static inline JSValue JS_DupValueRT(JSRuntime *rt, JSValueConst v)
@@ -677,7 +697,7 @@ static inline JSValue JS_DupValueRT(JSRuntime *rt, JSValueConst v)
         JSRefCountHeader *p = (JSRefCountHeader *)JS_VALUE_GET_PTR(v);
         p->ref_count++;
     }
-    return (JSValue)v;
+    return v;
 }
 
 int JS_ToBool(JSContext *ctx, JSValueConst val); /* return -1 for JS_EXCEPTION */
