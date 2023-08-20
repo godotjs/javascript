@@ -36,9 +36,7 @@ def dump_text_file_to_cpp(file):
 if JS_ENGINE == "quickjs":
     import generate_builtin_api
 
-    generate_builtin_api.generate_api_json(
-        os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd()))
-    )
+    generate_builtin_api.generate_api_json(os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd())))
     import thirdparty.quickjs.builtin_binding_generator
 
     thirdparty.quickjs.builtin_binding_generator.generate_builtin_bindings()
@@ -54,9 +52,7 @@ if JS_ENGINE == "quickjs":
     quickjs_env.disable_warnings()
     if TOOLS:
         quickjs_env.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
-    quickjs_env.add_source_files(
-        env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp"
-    )
+    quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
@@ -75,7 +71,9 @@ sources = [
 ]
 
 if TOOLS:
-    base_text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
+    base_text = (
+        '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
+    )
     tool_fns = {
         "tools/godot.d.ts.gen.cpp": (
             "BUILTIN_DECLARATION_TEXT",
