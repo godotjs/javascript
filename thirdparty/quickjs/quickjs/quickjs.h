@@ -223,7 +223,7 @@ typedef struct JSValue {
 #define JS_VALUE_GET_FLOAT64(v) ((v).u.float64)
 #define JS_VALUE_GET_PTR(v) ((v).u.ptr)
 
-JSValue inline _JS_MKVAL_INT32(int64_t tag, int32_t val) {
+JSValue INLINE_FUNC _JS_MKVAL_INT32(int64_t tag, int32_t val) {
 	JSValue v;
 
 	v.u.int32 = val;
@@ -232,7 +232,7 @@ JSValue inline _JS_MKVAL_INT32(int64_t tag, int32_t val) {
 	return v;
 }
 
-JSValue inline _JS_MKPTR(int64_t tag, void* ptr) {
+JSValue INLINE_FUNC _JS_MKPTR(int64_t tag, void* ptr) {
 	JSValue v;
 
 	v.u.ptr = ptr;

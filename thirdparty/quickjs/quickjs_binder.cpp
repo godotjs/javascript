@@ -1485,7 +1485,9 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const
 	}
 	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, flags);
 	r_ret.context = ctx;
-	r_ret.javascript_object = JS_VALUE_GET_PTR(ret);
+	if (JS_VALUE_GET_TAG(ret) == JS_TAG_OBJECT) {
+		r_ret.javascript_object = JS_VALUE_GET_PTR(ret);
+	}
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
 		JavaScriptError err;
