@@ -37,7 +37,7 @@
 #include "core/io/file_access_encrypted.h"
 #include "editor/editor_node.h"
 #include "editor/export/editor_export.h"
-#include "tools/editor_tools.h"
+#include "editor/editor_tools.h"
 void editor_init_callback();
 
 class EditorExportJavaScript : public EditorExportPlugin {

@@ -51,8 +51,6 @@ if JS_ENGINE == "quickjs":
     quickjs_env.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
     quickjs_env.Append(CPPPATH=["thirdparty/quickjs"])
     quickjs_env.disable_warnings()
-    if TOOLS:
-        quickjs_env.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
 
@@ -83,19 +81,19 @@ if TOOLS:
         '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
     )
     tool_fns = {
-        "tools/godot.d.ts.gen.cpp": (
+        "editor/godot.d.ts.gen.cpp": (
             "BUILTIN_DECLARATION_TEXT",
             dump_text_file_to_cpp("misc/godot.d.ts"),
         ),
-        "tools/tsconfig.json.gen.cpp": (
+        "editor/tsconfig.json.gen.cpp": (
             "TSCONFIG_CONTENT",
             dump_text_file_to_cpp("misc/tsconfig.json"),
         ),
-        "tools/decorators.ts.gen.cpp": (
+        "editor/decorators.ts.gen.cpp": (
             "TS_DECORATORS_CONTENT",
             dump_text_file_to_cpp("misc/decorators.ts"),
         ),
-        "tools/package.json.gen.cpp": (
+        "editor/package.json.gen.cpp": (
             "PACKAGE_JSON_CONTENT",
             dump_text_file_to_cpp("misc/package.json"),
         ),
@@ -108,3 +106,6 @@ if TOOLS:
 
 env_module.Append(CPPPATH=["#modules/javascript"])
 env_module.add_source_files(env.modules_sources, sources)
+
+if env.editor_build:
+    env_module.add_source_files(env.modules_sources, "editor/*.cpp")
