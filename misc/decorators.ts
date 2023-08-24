@@ -1,6 +1,6 @@
 /**
  * Expose as a godot class.
- * An class object is created and attached automaticly when construct an instance from this class
+ * An class object is created and attached automatically when construct an instance from this class
  */
 export function gdclass<T extends godot.Object>(target: new() => T) {
     const id = gdclass['internal_class_id'] = gdclass['internal_class_id'] ? gdclass['internal_class_id'] + 1 : 1;

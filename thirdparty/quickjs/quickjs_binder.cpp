@@ -686,7 +686,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			module.hash = hash_var.hash();
 			module.module = m;
 			module.res = res;
-			module.res->reference(); // Avoid auto release as module don't release automaticly
+			module.res->reference(); // Avoid auto release as module don't release automatically
 			module.res_value = val;
 			module.flags = MODULE_FLAG_RESOURCE;
 			module.module = m;

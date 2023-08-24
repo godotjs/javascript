@@ -680,7 +680,7 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 
 void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	_export_typescript_declare_file("");
-	String file_content = "// Tool generated file DO NOT modify mannually\n"
+	String file_content = "// Tool generated file DO NOT modify manually\n"
 						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
 						  "\n"
 						  "if (!godot.DEBUG_ENABLED) {\n"
