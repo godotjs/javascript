@@ -33,7 +33,7 @@ class QuickJSDebugger : public RefCounted {
 	Error attach_js_debugger(JSContext *p_ctx, Ref<StreamPeerTCP> p_peer);
 
 public:
-	Error connect(JSContext *ctx, const String &address);
+	Error connect_debugger(JSContext *ctx, const String &address);
 	Error listen(JSContext *ctx, const String &address);
 	void poll();
 

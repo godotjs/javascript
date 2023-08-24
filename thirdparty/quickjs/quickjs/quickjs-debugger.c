@@ -43,7 +43,7 @@ static int js_transport_write_message_newline(JSDebuggerInfo *info, const char* 
     // not efficient, but protocol is then human readable.
     char message_length[JS_TRANSPORT_WRITE_MESSAGE_NEWLINE_MESSAGE_LENGTH];
     message_length[9] = '\0';
-    sprintf_s(message_length, JS_TRANSPORT_WRITE_MESSAGE_NEWLINE_MESSAGE_LENGTH, "%08x\n", (int)len + 1);
+    snprintf(message_length, JS_TRANSPORT_WRITE_MESSAGE_NEWLINE_MESSAGE_LENGTH, "%08x\n", (int)len + 1);
     if (!js_transport_write_fully(info, message_length, 9))
         return 0;
     int ret = js_transport_write_fully(info, value, len);

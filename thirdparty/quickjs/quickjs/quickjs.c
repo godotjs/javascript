@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
+#include <float.h>
 #if defined(_WIN32)
 // import struct timeval
 #include <winsock2.h>

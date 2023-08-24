@@ -1280,7 +1280,7 @@ void QuickJSBinder::initialize() {
 		if (List<String>::Element *E = args.find("--js-debugger-connect")) {
 			if (E->next() && E->next()->get().find(":") != -1) {
 				String address = E->next()->get();
-				Error err = debugger->connect(ctx, address);
+				Error err = debugger->connect_debugger(ctx, address);
 				if (err != OK) {
 					ERR_PRINT(vformat("Failed to connect to JavaScript debugger at %s", address));
 				}
