@@ -1100,7 +1100,7 @@ void QuickJSBinder::add_godot_globals() {
 		const int value = CoreConstants::get_global_constant_value(i);
 
 		JSAtom js_const_name = JS_NewAtom(ctx, const_name);
-		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_MKVAL(JS_TAG_INT, value), QuickJSBinder::PROP_DEF_DEFAULT);
+		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_NewInt64(ctx, value), QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, js_const_name);
 
 		if (HashMap<StringName, int64_t> *consts = global_constants.getptr(enum_name)) {
@@ -1485,7 +1485,9 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const
 	}
 	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, flags);
 	r_ret.context = ctx;
-	r_ret.javascript_object = JS_VALUE_GET_PTR(ret);
+	if (JS_VALUE_GET_TAG(ret) == JS_TAG_OBJECT) {
+		r_ret.javascript_object = JS_VALUE_GET_PTR(ret);
+	}
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
 		JavaScriptError err;
