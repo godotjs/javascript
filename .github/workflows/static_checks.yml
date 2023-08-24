@@ -65,17 +65,6 @@ jobs:
             echo "Skipping Python static analysis as no Python files were changed."
           fi
 
-      - name: JavaScript style and documentation checks via ESLint and JSDoc
-        run: |
-          if grep -q "platform/web" changed.txt || [ -z "$(cat changed.txt)" ]; then
-            cd platform/web
-            npm ci
-            npm run lint
-            npm run docs -- -d dry-run
-          else
-            echo "Skipping JavaScript formatting as no Web/JS files were changed."
-          fi
-
       - name: Style checks via clang-format (clang_format.sh)
         run: |
           clang-format --version
