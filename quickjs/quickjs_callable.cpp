@@ -1,7 +1,37 @@
+/**************************************************************************/
+/*  quickjs_callable.cpp                                                  */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             GODOT ENGINE                               */
+/*                        https://godotengine.org                         */
+/**************************************************************************/
+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+
 #include "quickjs_callable.h"
+#include "../../quickjs_binder.h"
 #include "../javascript_language.h"
 #include "quickjs/quickjs.h"
-#include "../../quickjs_binder.h"
 
 bool QuickJSCallable::compare_equal(const CallableCustom *p_a, const CallableCustom *p_b) {
 	const QuickJSCallable *a = static_cast<const QuickJSCallable *>(p_a);
@@ -23,7 +53,8 @@ QuickJSCallable::QuickJSCallable(JSContext *ctx, const JSValue &p_value) {
 	js_function.javascript_object = JS_VALUE_GET_PTR(v);
 }
 
-QuickJSCallable::QuickJSCallable(const JavaScriptGCHandler &p_function) : JavaScriptCallable(p_function) {
+QuickJSCallable::QuickJSCallable(const JavaScriptGCHandler &p_function) :
+		JavaScriptCallable(p_function) {
 	JSValue js_func = JS_MKPTR(JS_TAG_OBJECT, p_function.javascript_object);
 	JSContext *ctx = static_cast<JSContext *>(p_function.context);
 	ERR_FAIL_COND(JS_IsFunction(ctx, js_func));
