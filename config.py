@@ -1,5 +1,5 @@
 def can_build(env, platform):
-    return not platform == "android"
+    return not platform == "android" and not platform == "mono"
 
 
 def configure(env):
