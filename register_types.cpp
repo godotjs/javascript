@@ -36,8 +36,8 @@
 #ifdef TOOLS_ENABLED
 #include "core/io/file_access_encrypted.h"
 #include "editor/editor_node.h"
-#include "editor/export/editor_export.h"
 #include "editor/editor_tools.h"
+#include "editor/export/editor_export.h"
 void editor_init_callback();
 
 class EditorExportJavaScript : public EditorExportPlugin {
