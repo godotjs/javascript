@@ -7,7 +7,7 @@
 #include "core/variant/callable.h"
 
 #include "../../javascript_binder.h"
-#include "./quickjs/quickjs.h"
+#include "quickjs/quickjs.h"
 #include "quickjs_builtin_binder.h"
 
 #ifdef QUICKJS_WITH_DEBUGGER

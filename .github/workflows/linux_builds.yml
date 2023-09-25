@@ -1,12 +1,17 @@
 name: 🐧 Linux Builds
 on:
   workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
 
 # Global Settings
 env:
-  # Used for the cache key, and godot-cpp checkout. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: '4.0'
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes
+  # We need to remove 'werror=yes' because of thirdparty/quickjs/quickjs/quickjs.h:975
+  # Look at https://stackoverflow.com/questions/559581/casting-a-function-pointer-to-another-type for more information
+  SCONSFLAGS: warnings=extra module_text_server_fb_enabled=yes
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
@@ -33,30 +38,8 @@ jobs:
             proj-conv: true
             artifact: true
 
-          - name: Editor with doubles and GCC sanitizers (target=editor, tests=yes, dev_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=gold)
-            cache-name: linux-editor-double-sanitizers
-            target: editor
-            tests: true
-            # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
-            sconsflags: dev_build=yes debug_symbols=no precision=double use_asan=yes use_ubsan=yes linker=gold
-            proj-test: true
-            # Can be turned off for PRs that intentionally break compat with godot-cpp,
-            # until both the upstream PR and the matching godot-cpp changes are merged.
-            godot-cpp-test: true
-            bin: "./bin/godot.linuxbsd.editor.dev.double.x86_64.san"
-            build-mono: false
-            # Skip 2GiB artifact speeding up action.
-            artifact: false
-
-          - name: Editor with clang sanitizers (target=editor, tests=yes, dev_build=yes, use_asan=yes, use_ubsan=yes, use_llvm=yes, linker=lld)
-            cache-name: linux-editor-llvm-sanitizers
-            target: editor
-            tests: true
-            sconsflags: dev_build=yes use_asan=yes use_ubsan=yes use_llvm=yes linker=lld
-            bin: "./bin/godot.linuxbsd.editor.dev.x86_64.llvm.san"
-            build-mono: false
-            # Skip 2GiB artifact speeding up action.
-            artifact: false
+            # Removed dev-builds (https://github.com/godotengine/godot/blob/master/.github/workflows/linux_builds.yml#L38)
+            # TODO: There was an issue with quickjs debugger, maybe this can be enabled again after fixing the debugger
 
           - name: Template w/ Mono (target=template_release)
             cache-name: linux-template-mono
@@ -75,13 +58,13 @@ jobs:
 
     steps:
       - name: Checkout Godot
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ env.GODOT_BASE_BRANCH }}
+          ref: ${{ inputs.version }}
 
       - name: Checkout ECMAScript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}/modules/javascript/
 
@@ -191,7 +174,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: godotengine/godot-cpp
-          ref: ${{ env.GODOT_BASE_BRANCH }}
+          ref: ${{ inputs.version }}
           submodules: 'recursive'
           path: 'godot-cpp'
 

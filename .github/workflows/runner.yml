@@ -6,36 +6,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  get-version:
+    name: 🆚 Get godot version
+    uses: ./.github/workflows/get_version.yml
+
   static-checks:
     name: 📊 Static checks
     uses: ./.github/workflows/static_checks.yml
+    needs: get-version
+    with:
+      version: ${{ needs.get-version.outputs.version }}
 
   android-build:
     name: 🤖 Android
-    needs: static-checks
+    needs: [static-checks, get-version]
     uses: ./.github/workflows/android_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}
 
   ios-build:
     name: 🍏 iOS
-    needs: static-checks
+    needs: [static-checks, get-version]
     uses: ./.github/workflows/ios_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}
 
   linux-build:
     name: 🐧 Linux
-    needs: static-checks
+    needs: [static-checks, get-version]
     uses: ./.github/workflows/linux_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}
 
   macos-build:
     name: 🍎 macOS
-    needs: static-checks
+    needs: [static-checks, get-version]
     uses: ./.github/workflows/macos_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}
 
   windows-build:
     name: 🏁 Windows
-    needs: static-checks
+    needs: [static-checks, get-version]
     uses: ./.github/workflows/windows_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}
 
   web-build:
     name: 🌐 Web
-    needs: static-checks
+    needs: [static-checks, get-version]
     uses: ./.github/workflows/web_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}

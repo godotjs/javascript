@@ -6,7 +6,6 @@
 #include <cstring>
 
 #include "quickjs_binder.h"
-#include "quickjs_builtin_binder.h"
 
 QuickJSBuiltinBinder::QuickJSBuiltinBinder() {
 	ctx = NULL;

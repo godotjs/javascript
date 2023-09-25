@@ -31,7 +31,7 @@
 /* set if CPU is big endian */
 #undef WORDS_BIGENDIAN
 
-#if (defined(_MSC_VER) || !defined(__MINGW32__)) && !defined(LINUX_ENABLED) && !defined(MACOS_ENABLED)
+#ifdef _MSC_VER
 #define likely(x)       (x)
 #define unlikely(x)     (x)
 #define force_inline __forceinline

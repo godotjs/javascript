@@ -11,7 +11,7 @@ This module implements JavaScript/TypeScript language support for the Godot game
 - [Using third-party libraries from npm](https://github.com/GodotExplorer/ECMAScriptDemos/tree/master/npm_module)
 - Multi-thread support with Worker API
 - Full code completion support for all Godot APIs including signals and enumerations
-- Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug)
+- Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug) - currently not available for 4.x
 
 ## Installation
 
@@ -25,7 +25,7 @@ You can try the pre-compiled binaries from the [release page](https://github.com
 
 1. Clone the source code of [godot](https://github.com/godotengine/godot)
 2. Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `javascript`
-3. [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) **(Only MinGW is supported on Windows for now!)**
+3. [Recompile the godot engine](https://docs.godotengine.org/en/4.1/development/compiling/index.html) - Use ``scons`` with those additional options ``warnings=extra werror=yes module_text_server_fb_enabled=yes`` to show all potential errors
 
 ![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
 

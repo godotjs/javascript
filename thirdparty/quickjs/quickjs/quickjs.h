@@ -137,7 +137,7 @@ static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
 
 #elif defined(JS_NAN_BOXING)
 
-// typedef uint64_t JSValue;
+typedef uint64_t JSValue;
 
 #define JSValueConst JSValue
 

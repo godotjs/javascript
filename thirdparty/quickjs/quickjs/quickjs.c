@@ -16140,6 +16140,10 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 #define def(id, size, n_pop, n_push, f) && case_default,
 #endif
 #include "quickjs-opcode.h"
+/* 
+ This will only work  with a GNU extension
+ https://stackoverflow.com/questions/56598905/three-dots-operator-for-initializing-an-array
+*/
         [ OP_COUNT ... 255 ] = &&case_default
     };
 #ifdef QUICKJS_WITH_DEBUGGER
@@ -16151,6 +16155,10 @@ static JSValue JS_CallInternal(JSContext *caller_ctx, JSValueConst func_obj,
 #define def(id, size, n_pop, n_push, f) && case_default,
 #endif
 #include "quickjs-opcode.h"
+/* 
+ This will only work  with a GNU extension
+ https://stackoverflow.com/questions/56598905/three-dots-operator-for-initializing-an-array
+*/
         [ OP_COUNT ... 255 ] = &&case_default
     };
 #define SWITCH(pc)      goto *active_dispatch_table[opcode = *pc++];
