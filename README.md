@@ -15,11 +15,12 @@ This module implements JavaScript/TypeScript language support for the Godot game
 
 ## Installation
 
-No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with JavaScript/TypeScript language support.
+No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with Javascript/Typescript language support.
 
-## Download
+### Download
 
-You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases) or get the binaries with the latest commits from the [GitHub build action result](https://github.com/GodotExplorer/ECMAScript/actions).
+You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)  
+You can also get the binaries with lastest commits from the [github build action result](https://github.com/GodotExplorer/ECMAScript/actions)
 
 ## Compilation
 
