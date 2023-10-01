@@ -7,10 +7,6 @@ env_module = env_modules.Clone()
 JS_ENGINE = "quickjs"
 TOOLS = "editor" == env_module["target"]
 
-if env["platform"] == "windows":
-    if env["use_mingw"]:
-        env.Append(LIBS=["pthread"])
-
 
 def open_file(path, mode):
     if platform.python_version() > "3":
@@ -41,27 +37,20 @@ if JS_ENGINE == "quickjs":
 
     thirdparty.quickjs.builtin_binding_generator.generate_builtin_bindings()
     version = open("thirdparty/quickjs/quickjs/VERSION.txt", "r").read().split("\n")[0]
-    quickjs_env = env_modules.Clone()
-    quickjs_env.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"' + version + '"'})
-    quickjs_env.Append(CPPDEFINES=["CONFIG_BIGNUM"])
-    if "release" not in (quickjs_env["target"] or ""):
-        quickjs_env.Append(CPPDEFINES={"DUMP_LEAKS": 1})
-        if not env.msvc:
-            env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
-    quickjs_env.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
-    quickjs_env.Append(CPPPATH=["thirdparty/quickjs"])
-    quickjs_env.disable_warnings()
-    quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
-    quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
+    env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"' + version + '"'})
+    env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
+    if "release" not in (env_module["target"] or ""):
+        env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
+        env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
+    env_module.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
+    env_module.Append(CPPPATH=["thirdparty/quickjs"])
 
-    env_thirdparty = quickjs_env.Clone()
-    if env.msvc:
-        env_thirdparty.AppendUnique(CCFLAGS=["/TC"])
+    if TOOLS:
+        env_module.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
+    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
+    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
+    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
-        # TODO: find a better way to remove /std:c++17
-        del env_thirdparty["CCFLAGS"][0]
-        env_thirdparty.Prepend(CCFLAGS=["/std:c11"])
-    env_thirdparty.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
 # Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:
@@ -81,19 +70,19 @@ if TOOLS:
         '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
     )
     tool_fns = {
-        "editor/godot.d.ts.gen.cpp": (
+        "tools/godot.d.ts.gen.cpp": (
             "BUILTIN_DECLARATION_TEXT",
             dump_text_file_to_cpp("misc/godot.d.ts"),
         ),
-        "editor/tsconfig.json.gen.cpp": (
+        "tools/tsconfig.json.gen.cpp": (
             "TSCONFIG_CONTENT",
             dump_text_file_to_cpp("misc/tsconfig.json"),
         ),
-        "editor/decorators.ts.gen.cpp": (
+        "tools/decorators.ts.gen.cpp": (
             "TS_DECORATORS_CONTENT",
             dump_text_file_to_cpp("misc/decorators.ts"),
         ),
-        "editor/package.json.gen.cpp": (
+        "tools/package.json.gen.cpp": (
             "PACKAGE_JSON_CONTENT",
             dump_text_file_to_cpp("misc/package.json"),
         ),

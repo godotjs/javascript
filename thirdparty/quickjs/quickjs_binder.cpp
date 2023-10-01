@@ -11,8 +11,9 @@
 #include "editor/editor_settings.h"
 #endif
 
-#include "../../javascript_instance.h"
-#include "../../javascript_language.h"
+#include "javascript.h"
+#include "javascript_instance.h"
+#include "javascript_language.h"
 #include "quickjs_binder.h"
 #include "quickjs_callable.h"
 #include "quickjs_worker.h"
@@ -686,7 +687,7 @@ JSModuleDef *QuickJSBinder::js_module_loader(JSContext *ctx, const char *module_
 			module.hash = hash_var.hash();
 			module.module = m;
 			module.res = res;
-			module.res->reference(); // Avoid auto release as module don't release automatically
+			module.res->reference(); // Avoid auto release as module don't release automaticly
 			module.res_value = val;
 			module.flags = MODULE_FLAG_RESOURCE;
 			module.module = m;
@@ -1100,7 +1101,7 @@ void QuickJSBinder::add_godot_globals() {
 		const int value = CoreConstants::get_global_constant_value(i);
 
 		JSAtom js_const_name = JS_NewAtom(ctx, const_name);
-		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_NewInt64(ctx, value), QuickJSBinder::PROP_DEF_DEFAULT);
+		JS_DefinePropertyValue(ctx, godot_object, js_const_name, JS_MKVAL(JS_TAG_INT, value), QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, js_const_name);
 
 		if (HashMap<StringName, int64_t> *consts = global_constants.getptr(enum_name)) {
@@ -1280,7 +1281,7 @@ void QuickJSBinder::initialize() {
 		if (List<String>::Element *E = args.find("--js-debugger-connect")) {
 			if (E->next() && E->next()->get().find(":") != -1) {
 				String address = E->next()->get();
-				Error err = debugger->connect_debugger(ctx, address);
+				Error err = debugger->connect(ctx, address);
 				if (err != OK) {
 					ERR_PRINT(vformat("Failed to connect to JavaScript debugger at %s", address));
 				}
@@ -1485,9 +1486,7 @@ Error QuickJSBinder::safe_eval_text(const String &p_source, EvalType type, const
 	}
 	JSValue ret = JS_Eval(ctx, code, utf8_str.length(), filename, flags);
 	r_ret.context = ctx;
-	if (JS_VALUE_GET_TAG(ret) == JS_TAG_OBJECT) {
-		r_ret.javascript_object = JS_VALUE_GET_PTR(ret);
-	}
+	r_ret.javascript_object = JS_VALUE_GET_PTR(ret);
 	if (JS_IsException(ret)) {
 		JSValue e = JS_GetException(ctx);
 		JavaScriptError err;

@@ -33,7 +33,7 @@
 #include "core/object/class_db.h"
 
 #include "javascript_binder.h"
-#include "thirdparty/quickjs/quickjs_binder.h"
+#include "quickjs_binder.h"
 
 JavaScriptLanguage *JavaScriptLanguage::singleton = nullptr;
 

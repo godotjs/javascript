@@ -79,7 +79,7 @@ Error QuickJSDebugger::attach_js_debugger(JSContext *ctx, Ref<StreamPeerTCP> p_p
 	return ERR_CANT_CONNECT;
 }
 
-Error QuickJSDebugger::connect_debugger(JSContext *ctx, const String &address) {
+Error QuickJSDebugger::connect(JSContext *ctx, const String &address) {
 	this->ctx = ctx;
 	this->runtime = JS_GetRuntime(ctx);
 
