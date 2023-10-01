@@ -1,3 +1,33 @@
+/**************************************************************************/
+/*  javascript.cpp                                                        */
+/**************************************************************************/
+/*                         This file is part of:                          */
+/*                             GODOT ENGINE                               */
+/*                        https://godotengine.org                         */
+/**************************************************************************/
+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
+/*                                                                        */
+/* Permission is hereby granted, free of charge, to any person obtaining  */
+/* a copy of this software and associated documentation files (the        */
+/* "Software"), to deal in the Software without restriction, including    */
+/* without limitation the rights to use, copy, modify, merge, publish,    */
+/* distribute, sublicense, and/or sell copies of the Software, and to     */
+/* permit persons to whom the Software is furnished to do so, subject to  */
+/* the following conditions:                                              */
+/*                                                                        */
+/* The above copyright notice and this permission notice shall be         */
+/* included in all copies or substantial portions of the Software.        */
+/*                                                                        */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
+/**************************************************************************/
+
 #include "javascript.h"
 #include "core/config/engine.h"
 #include "core/io/file_access_encrypted.h"
@@ -35,7 +65,6 @@ StringName JavaScript::get_instance_base_type() const {
 }
 
 ScriptInstance *JavaScript::instance_create(Object *p_this) {
-
 	JavaScriptBinder *binder = JavaScriptLanguage::get_thread_binder(Thread::get_caller_id());
 	ERR_FAIL_NULL_V_MSG(binder, NULL, "Cannot create instance from this thread");
 	const JavaScriptClassInfo *cls = NULL;
@@ -195,7 +224,6 @@ bool JavaScript::get_property_default_value(const StringName &p_property, Varian
 }
 
 void JavaScript::update_exports() {
-
 #ifdef TOOLS_ENABLED
 	if (!javascript_class)
 		return;
@@ -321,11 +349,11 @@ void JavaScriptModule::_bind_methods() {
 }
 
 JavaScriptModule::JavaScriptModule() {
-	set_source_code("module.exports = {};" ENDL);
+	set_source_code("module.exports = {};\n");
 }
 
-Ref<Resource> ResourceFormatLoaderJavaScriptModule::load(const String &p_path, const String &p_original_path, Error *r_error) {
-	return load_static(p_path, p_original_path, r_error);
+Ref<Resource> ResourceFormatLoaderJavaScriptModule::load(const String &p_path, const String &p_original_path, Error *r_error, bool p_use_sub_threads, float *r_progress, ResourceFormatLoader::CacheMode p_cache_mode) {
+	return ResourceFormatLoaderJavaScriptModule::load_static(p_path, p_original_path, r_error);
 }
 
 void ResourceFormatLoaderJavaScriptModule::get_recognized_extensions(List<String> *p_extensions) const {
@@ -354,7 +382,8 @@ Ref<Resource> ResourceFormatLoaderJavaScriptModule::load_static(const String &p_
 	module->set_script_path(p_path);
 	if (p_path.ends_with("." EXT_JSMODULE) || p_path.ends_with("." EXT_JSCLASS) || p_path.ends_with("." EXT_JSON)) {
 		String code = FileAccess::get_file_as_string(p_path, &err);
-		if (r_error) *r_error = err;
+		if (r_error)
+			*r_error = err;
 		ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load source code from file '" + p_path + "'.");
 		module->set_source_code(code);
 	}
@@ -392,12 +421,13 @@ Ref<Resource> ResourceFormatLoaderJavaScriptModule::load_static(const String &p_
 	}
 #endif
 
-	if (r_error) *r_error = err;
+	if (r_error)
+		*r_error = err;
 	ERR_FAIL_COND_V(err != OK, Ref<Resource>());
 	return module;
 }
 
-Error ResourceFormatSaverJavaScriptModule::save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags) {
+Error ResourceFormatSaverJavaScriptModule::save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags) {
 	Ref<JavaScriptModule> module = p_resource;
 	ERR_FAIL_COND_V(module.is_null(), ERR_INVALID_PARAMETER);
 	String source = module->get_source_code();

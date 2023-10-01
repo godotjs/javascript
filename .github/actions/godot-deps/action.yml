@@ -3,32 +3,25 @@ description: Setup python, install the pip version of scons.
 inputs:
   python-version:
     description: The python version to use.
-    default: 3.x
+    default: "3.x"
   python-arch:
     description: The python architecture.
-    default: x64
-  shell:
-    description: the shell to run this under
-    default: sh
+    default: "x64"
 runs:
-  using: composite
+  using: "composite"
   steps:
-  - name: Set up Python 3.x
-    uses: actions/setup-python@v2
-    with:
-      python-version: ${{ inputs.python-version }}
-      architecture: ${{ inputs.python-arch }}
-  - name: Setup scons
-    shell: sh
-    run: |
-      python -c "import sys; print(sys.version)"
-      python -m pip install scons
-      scons --version
-    if: inputs.shell == 'sh'
-  - name: Setup scons
-    shell: msys2 {0}
-    run: |
-      python -c "import sys; print(sys.version)"
-      python -m pip install scons
-      scons --version
-    if: inputs.shell == 'msys2 {0}'
+    # Use python 3.x release (works cross platform)
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v4
+      with:
+        # Semantic version range syntax or exact version of a Python version
+        python-version: ${{ inputs.python-version }}
+        # Optional - x64 or x86 architecture, defaults to x64
+        architecture: ${{ inputs.python-arch }}
+
+    - name: Setup scons
+      shell: bash
+      run: |
+        python -c "import sys; print(sys.version)"
+        python -m pip install scons==4.4.0
+        scons --version

@@ -1,6 +1,6 @@
 /**
  * Expose as a godot class.
- * An class object is created and attached automaticly when construct an instance from this class
+ * An class object is created and attached automatically when construct an instance from this class
  */
 export function gdclass<T extends godot.Object>(target: new() => T) {
     const id = gdclass['internal_class_id'] = gdclass['internal_class_id'] ? gdclass['internal_class_id'] + 1 : 1;
@@ -68,7 +68,7 @@ export function onready<T extends godot.Node>(path: string | (new()=>godot.Node)
 }
 
 /**
- * Register the member as a node property  
+ * Register the member as a node property
  * **Note: The value is null before current node is ready**
  * @param path The default path name of the node
  */

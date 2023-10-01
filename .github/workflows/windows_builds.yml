@@ -1,82 +1,87 @@
 name: 🏁 Windows Builds
-'on':
-- push
-- pull_request
+on:
+  workflow_call:
+
+# Global Settings
+# SCONS_CACHE for windows must be set in the build environment
 env:
-  GODOT_BASE_BRANCH: "4.0"
-  SCONSFLAGS: '  use_mingw=yes  debug_symbols=no verbose=yes warnings=extra module_text_server_fb_enabled=yes'
+  # Used for the cache key. Add version suffix to force clean build.
+  GODOT_BASE_BRANCH: '4.0'
+  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes
   SCONS_CACHE_MSVC_CONFIG: true
+
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-windows
   cancel-in-progress: true
+
 jobs:
   build-windows:
-    runs-on: windows-latest
+    # Windows 10 with latest image
+    runs-on: "windows-latest"
     name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-        - name: Editor (target=editor, tools=yes)
-          cache-name: windows-editor
-          target: editor
-          tests: false
-          tools: true
-          bin: ./bin/godot.windows.opt.tools.64.exe
-        - name: Template (target=release, tools=no)
-          cache-name: windows-template
-          target: template_release
-          tools: false
-          tests: false
-          sconsflags: debug_symbols=no
+          - name: Editor (target=editor, tests=yes)
+            cache-name: windows-editor
+            target: editor
+            tests: true
+            # Skip debug symbols, they're way too big with MSVC.
+            sconsflags: debug_symbols=no vsproj=yes
+            bin: "./bin/godot.windows.editor.x86_64.exe"
+
+          - name: Template (target=template_release)
+            cache-name: windows-template
+            target: template_release
+            tests: false
+            sconsflags: debug_symbols=no
+
     steps:
-    - name: setup-msys2
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        update: true
-        install: mingw-w64-x86_64-gcc
-    - name: update mingw2
-      run: pacman -Syu --needed --noconfirm mingw-w64-x86_64-python3-pip mingw-w64-x86_64-gcc
-        mingw-w64-i686-python3-pip mingw-w64-i686-gcc make
-    - name: update scons
-      run: pip3 install scons
-    - name: Checkout Godot
-      uses: actions/checkout@v2
-      with:
-        repository: godotengine/godot
-        ref: ${{ env.GODOT_BASE_BRANCH }}
-    - name: Checkout ECMAScript
-      uses: actions/checkout@v2
-      with:
-        path: ${{github.workspace}}/modules/javascript/
-    - name: Setup Godot build cache
-      uses: ./.github/actions/godot-cache
-      with:
-        cache-name: ${{ matrix.cache-name }}
-      continue-on-error: true
-    - name: Setup python and scons
-      uses: ./modules/javascript/.github/actions/godot-deps
-      with:
-        shell: msys2 {0}
+      - name: Checkout Godot
+        uses: actions/checkout@v2
+        with:
+          repository: godotengine/godot
+          ref: ${{ env.GODOT_BASE_BRANCH }}
 
-    - name: Setup MSVC problem matcher
-      uses: ammaraskar/msvc-problem-matcher@master
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v2
+        with:
+          path: ${{github.workspace}}/modules/javascript/
 
-    - name: Compilation
-      uses: ./modules/javascript/.github/actions/godot-build
-      with:
-        sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
-        platform: windows
-        target: ${{ matrix.target }}
-        tests: ${{ matrix.tests }}
-        tools: ${{ matrix.tools }}
-        scons-cache-limit: 3072
-        shell: msys2 {0}
-    - name: Upload artifact
-      uses: ./.github/actions/upload-artifact
-      with:
-        name: ${{ matrix.cache-name }}
-    defaults:
-      run:
-        shell: msys2 {0}
+      - name: Setup Godot build cache
+        uses: ./.github/actions/godot-cache
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Setup python and scons
+        uses: ./.github/actions/godot-deps
+
+      - name: Setup MSVC problem matcher
+        uses: ammaraskar/msvc-problem-matcher@master
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          sconsflags: ${{ env.SCONSFLAGS }} ${{ matrix.sconsflags }}
+          platform: windows
+          target: ${{ matrix.target }}
+          tests: ${{ matrix.tests }}
+
+      # Execute unit tests for the editor
+      - name: Unit tests
+        if: ${{ matrix.tests }}
+        run: |
+          ${{ matrix.bin }} --version
+          ${{ matrix.bin }} --help
+          ${{ matrix.bin }} --test
+
+      - name: Prepare artifact
+        run: |
+          Remove-Item bin/* -Include *.exp,*.lib,*.pdb -Force
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}
