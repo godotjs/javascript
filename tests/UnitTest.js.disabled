@@ -29,7 +29,7 @@ test('Object.prototype.connect', () => {
 
 	let obj = new godot.Object();
 	obj.connect('script_changed', (...args)=> {
-		console.log(`signal 'script_changed' emitted with:`, ...args);
+		console.log(`signal 'script_changed' emited with:`, ...args);
 		ok = true;
 	});
 	obj.emit_signal('script_changed', 123, 'hello');
@@ -39,19 +39,19 @@ test('Object.prototype.connect', () => {
 
 
 // --------------------------- Unit Test Implementation ------------------------
-function test(description, block, group = 'default') {
+function test(description, blcok, group = 'default') {
 	const entries = TEST_ENTRIES.get(group) || [];
-	entries.push({ description, block });
+	entries.push({ description, blcok });
 	TEST_ENTRIES.set(group, entries);
 }
 function runEntry(entry) {
 	return new Promise((resolve, reject) => {
-		switch (typeof (entry.block)) {
+		switch (typeof (entry.blcok)) {
 			case 'boolean':
-				return resolve(entry.block);
+				return resolve(entry.blcok);
 			case 'function': {
 				try {
-					resolve(entry.block());
+					resolve(entry.blcok());
 				} catch (error) {
 					console.error(error);
 					resolve(false);
@@ -59,8 +59,8 @@ function runEntry(entry) {
 			}
 			break;
 			case 'object':
-				if (entry.block instanceof Promise) {
-					entry.block.then(() => {
+				if (entry.blcok instanceof Promise) {
+					entry.blcok.then(() => {
 						resolve(true);
 					}).catch(err => {
 						resolve(false);
