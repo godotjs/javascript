@@ -1,100 +1,77 @@
 #!/usr/bin/env python
 import platform, os, sys
 
-Import("env")
-Import("env_modules")
+Import('env')
+Import('env_modules')
 env_module = env_modules.Clone()
-JS_ENGINE = "quickjs"
-TOOLS = "editor" == env_module["target"]
-
+JS_ENGINE = 'quickjs'
 
 def open_file(path, mode):
-    if platform.python_version() > "3":
-        return open(path, mode, encoding="utf8")
-    else:
-        return open(path, mode)
-
+	if platform.python_version() > '3':
+		return open(path, mode, encoding='utf8')
+	else:
+		return open(path, mode)
 
 def dump_text_file_to_cpp(file):
-    source = open_file(file, "r").read()
-    lines = source.split("\n")
-    source = ""
-    length = len(lines)
-    for i in range(length):
-        line = lines[i].replace('"', '\\"')
-        line = '\t"' + line + '\\n"'
-        if i < length - 1:
-            line += "\n"
-        source += line
-    return source
+	source = open_file(file, 'r').read()
+	lines = source.split('\n')
+	source = ""
+	length = len(lines)
+	for i in range(length):
+		line = lines[i].replace('"', '\\"')
+		line = '\t"' + line + '\\n"'
+		if i < length -1:
+			line += "\n"
+		source += line
+	return source
 
-
-if JS_ENGINE == "quickjs":
-    import generate_builtin_api
-
-    generate_builtin_api.generate_api_json(os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd())))
-    import thirdparty.quickjs.builtin_binding_generator
-
-    thirdparty.quickjs.builtin_binding_generator.generate_builtin_bindings()
-    version = open("thirdparty/quickjs/quickjs/VERSION.txt", "r").read().split("\n")[0]
-    env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"' + version + '"'})
-    env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
-    if "release" not in (env_module["target"] or ""):
-        env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
-        env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
-    env_module.Append(CPPPATH=["thirdparty/quickjs/quickjs"])
-    env_module.Append(CPPPATH=["thirdparty/quickjs"])
-
-    if TOOLS:
-        env_module.add_source_files(env.modules_sources, "tools/editor_tools.cpp")
-    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs_builtin_binder.gen.cpp")
-    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
-    env_module.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
-
+if JS_ENGINE == 'quickjs':
+	# generate builtin binding code
+	import generate_builtin_api
+	generate_builtin_api.generate_api_json(os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd())))
+	import quickjs.builtin_binding_generator
+	quickjs.builtin_binding_generator.generate_builtin_bindings()
+	# build quickjs source
+	version = open('quickjs/quickjs/VERSION.txt', 'r').read().split('\n')[0]
+	env_module.Append(CPPDEFINES={"QUICKJS_CONFIG_VERSION": '"'+ version +'"'})
+	env_module.Append(CPPDEFINES=["CONFIG_BIGNUM"])
+	if env_module['target'] != 'release':
+		env_module.Append(CPPDEFINES={"DUMP_LEAKS": 1})
+		env_module.Append(CPPDEFINES={"QUICKJS_WITH_DEBUGGER": 1})
+	env_module.Append(CPPPATH=["quickjs/quickjs"])
+	# env_module.Append(CXXFLAGS=["-std=c++20"])
+	# env_module.Append(CCFLAGS=["-std=c++20"])
+	if env['tools']:
+		env_module.add_source_files(env.modules_sources, 'tools/editor_tools.cpp')
+	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs_builtin_binder.gen.cpp')
+	env_module.add_source_files(env.modules_sources, 'quickjs/*.cpp')
+	env_module.add_source_files(env.modules_sources, 'quickjs/quickjs/*.c')
 
 # Binding script to run at engine initializing
 with open("misc/godot.binding_script.gen.cpp", "w") as f:
-    text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../javascript_binder.h"\nString JavaScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
-    f.write(text.replace("${source}", dump_text_file_to_cpp("misc/binding_script.js")))
+	text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../ecmascript_binder.h"\nString ECMAScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
+	f.write(text.replace('${source}', dump_text_file_to_cpp("misc/binding_script.js")))
 
 sources = [
-    "register_types.cpp",
-    "javascript_language.cpp",
-    "javascript_instance.cpp",
-    "javascript.cpp",
-    "misc/godot.binding_script.gen.cpp",
+	'register_types.cpp',
+	'ecmascript_language.cpp',
+	'ecmascript_instance.cpp',
+	'ecmascript.cpp',
+	'misc/godot.binding_script.gen.cpp',
 ]
 
-if TOOLS:
-    base_text = (
-        '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
-    )
-    tool_fns = {
-        "tools/godot.d.ts.gen.cpp": (
-            "BUILTIN_DECLARATION_TEXT",
-            dump_text_file_to_cpp("misc/godot.d.ts"),
-        ),
-        "tools/tsconfig.json.gen.cpp": (
-            "TSCONFIG_CONTENT",
-            dump_text_file_to_cpp("misc/tsconfig.json"),
-        ),
-        "tools/decorators.ts.gen.cpp": (
-            "TS_DECORATORS_CONTENT",
-            dump_text_file_to_cpp("misc/decorators.ts"),
-        ),
-        "tools/package.json.gen.cpp": (
-            "PACKAGE_JSON_CONTENT",
-            dump_text_file_to_cpp("misc/package.json"),
-        ),
-    }
-    for fn, subs in tool_fns.items():
-        with open_file(fn, "w") as fh:
-            fh.write(base_text.format(*subs))
-        env_module.add_source_files(env.modules_sources, fn)
+if env['tools']:
+	base_text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString ECMAScriptPlugin::{} = \n{};'
+	tool_fns = {"tools/godot.d.ts.gen.cpp": ("BUILTIN_DECLARATION_TEXT", dump_text_file_to_cpp("misc/godot.d.ts")),
+		"tools/tsconfig.json.gen.cpp": ("TSCONFIG_CONTENT", dump_text_file_to_cpp("misc/tsconfig.json")),
+		"tools/decorators.ts.gen.cpp": ("TS_DECORATORS_CONTENT", dump_text_file_to_cpp("misc/decorators.ts")),
+		"tools/package.json.gen.cpp": ("PACKAGE_JSON_CONTENT", dump_text_file_to_cpp("misc/package.json")),
+	}
+	for fn, subs in tool_fns.items():
+		with open_file(fn, "w") as fh:
+			fh.write(base_text.format(*subs))
+		env_module.add_source_files(env.modules_sources, fn)
 
 
-env_module.Append(CPPPATH=["#modules/javascript"])
+env_module.Append(CPPPATH=["#modules/ECMAScript"])
 env_module.add_source_files(env.modules_sources, sources)
-
-if env.editor_build:
-    env_module.add_source_files(env.modules_sources, "editor/*.cpp")

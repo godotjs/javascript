@@ -1,138 +1,136 @@
-# JavaScript language binding for Godot game engine
+## JavaScript language binding for godot game engine
 
-This module implements JavaScript/TypeScript language support for the Godot game engine using [QuickJS](https://bellard.org/quickjs/) as the JavaScript engine.
+This module implements JavaScript/TypeScript language support for the godot game engine. [QuickJS](https://bellard.org/quickjs/) is used as the ECMAScript engine.
 
-## Features
+-----
 
+### Features
 - Almost complete ES2020 support
-- All Godot API available
-- Operator overriding for built-in types (Vector3, Color, etc)
-- TypeScript support
-- [Using third-party libraries from npm](https://github.com/GodotExplorer/ECMAScriptDemos/tree/master/npm_module)
+- All godot api avaliable
+- Operator overriding for builtin types (Vector3, Color, etc)
+- TypeScript support 
+- [Using thirdpart libraries from npm](https://github.com/GodotExplorer/ECMAScriptDemos/tree/master/npm_module)
 - Multi-thread support with Worker API
-- Full code completion support for all Godot APIs including signals and enumerations
+- Full code completion support for all godot APIs including signals and enumerations
 - Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug)
 
-## Installation
-
+### Installation
 No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with Javascript/Typescript language support.
 
 ### Download
-
 You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)  
 You can also get the binaries with lastest commits from the [github build action result](https://github.com/GodotExplorer/ECMAScript/actions)
 
-## Compilation
-
-1. Clone the source code of [godot](https://github.com/godotengine/godot)
-2. Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `javascript`
-3. [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) **(Only MinGW is supported on Windows for now!)**
+### Compilation
+* Clone the source code of [godot](https://github.com/godotengine/godot)
+* Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `ECMAScript`
+* [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) <b>(Only MinGW is supported on Windows for now!)</b>
 
 ![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
 
-## Usage
+### Usage
 
-### How to export script class to Godot
-
-1. Define your JavaScript class and inherit from a Godot class, then export it as the **default** entry:
-
+##### How to export script class to godot
+1. Define your ECMAScript class and inherit from a godot class then export it as the **default** entry
 ```js
-// The default export entry is treated as an exported class to Godot
+// The default export entry is treated as an exported class to godot
 export default class MySprite extends godot.Sprite {
+	
 	// this is _init() in GDScript
 	constructor() {
 		super();
 	}
-
-	_ready() {}
-
-	_process(delta) {}
+	
+	_ready() {
+		
+	}
+	
+	_process(delta) {
+		
+	}
 }
 ```
-
-2. Save the script with extension `.mjs`
+2. Save the script with extension `.jsx`
 3. Attach the script file to the node or resource object like you do with GDScript
 
-### How to export signals
+##### How to export signals
 
 ```js
-export default class MySprite extends godot.Sprite {}
+export default class MySprite extends godot.Sprite {};
 // register game_over signal to MySprite class
-godot.register_signal(MySprite, "game_over");
+godot.register_signal(MySprite, 'game_over');
 ```
 
-### How to export properties
-
+##### How to export properties
 ```js
 export default class MySprite extends godot.Sprite {
 	_process(delta) {
 		// Yes! We can use operators in JavaScript like GDScript
 		this.position += this.direction * delta;
 	}
-}
-// export 'direction' properties to MySprite Godot inspector
-godot.register_property(MySprite, "direction", new godot.Vector2(1, 0));
+};
+// export 'direction' properties to MySprite godot inspector
+godot.register_property(MySprite, 'direction', new godot.Vector2(1, 0));
 ```
 
-There are 2 ways of using the `godot.register_property`. The third parameter can either be a default value for the property you're trying to export or an object giving a more detailed description of how the editor should show it.
+There are 2 ways of using the `godot.register_property`, the thrid param can either be
+a default value for the property you're trying to export or an object giving a more detailed
+description on how the editor should show it.
 
 ```js
 function register_property(target: GodotClass | godot.Object, name: string, value: any);
 function register_property(target: GodotClass | godot.Object, name: string, info: PropertyInfo);
 ```
 
-So calling the `register_property` like this:
-
+So calling the register_property like this:
 ```js
-godot.register_property(MyClass, "number_value", 3.14);
+godot.register_property(MyClass, 'number_value', 3.14);
 ```
 
 Is the simplified version of:
-
 ```js
-godot.register_property(MyClass, "number_value", {
+godot.register_property(MyClass, 'number_value',  {
 	type: godot.TYPE_REAL,
 	hint: godot.PropertyHint.PROPERTY_HINT_NONE,
 	hint_string: "",
-	default: 3.14,
+	default: 3.14
 });
 ```
 
-For more detail on how to use it, [click here](https://github.com/Geequlim/ECMAScript/issues/24#issuecomment-655584829).
+For more detail on how to use it, [click here](https://github.com/GodotExplorer/ECMAScript/issues/24#issuecomment-655584829).
 
-### About the API
+#### About the API
 
-All of Godot's APIs are defined within the `godot` namespace.
+All of godots api's are defined within the `godot` namespace.
 
-No API names have been renamed or changed, so you shouldn't need to change your habits.
+No API names have been renamed or changed so you shouldn't need to change your habits.
 
-| GDScript               | JavaScript                   |
-| ---------------------- | ---------------------------- |
-| null                   | null                         |
-| int                    | number                       |
-| float                  | number                       |
-| String                 | string                       |
-| Array                  | Array                        |
-| Dictionary             | Object                       |
-| NodePath               | string                       |
-| Object                 | godot.Object                 |
-| Resource               | godot.Resource               |
-| Vector2                | godot.Vector2                |
-| Color                  | godot.Color                  |
-| sin(v)                 | godot.sin(v)                 |
-| print(v)               | godot.print(v)               |
-| PI                     | godot.PI                     |
-| Color.black            | godot.Color.black            |
-| Control.CursorShape    | godot.Control.CursorShape    |
-| Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT |
+GDScript | ECMAScript
+---- | ---
+null | null
+int | number
+float | number
+String | string
+Array | Array
+Dictionary | Object
+NodePath | string
+Object | godot.Object
+Resource | godot.Resource
+Vector2 | godot.Vector2
+Color | godot.Color
+sin(v)| godot.sin(v)
+print(v)| godot.print(v)
+PI|godot.PI
+Color.black | godot.Color.black
+Control.CursorShape | godot.Control.CursorShape
+Label.Align.ALIGN_LEFT | godot.Label.Align.ALIGN_LEFT
 
-#### API specification:
-
+##### API specification:
 - Keys of Dictionary are converted to String in JavaScript
-- Signals are defined as constants to their classes
-  ```
-  godot.Control.resized === 'resized' // true
-  ```
+- Signals are defined as constants to its classes
+	```
+	godot.Control.resized === 'resized' // true
+	```
 - Additional functions
   - `godot.register_signal(cls, signal_name)` to register signals
   - `godot.register_property(cls, name, default_value)` to define and export properties
@@ -146,62 +144,55 @@ No API names have been renamed or changed, so you shouldn't need to change your 
   - `require(module_id)` to load a CommonJS module or load a resource file
   - `$` is the alias of `Node.get_node`
 - Using signals in the ECMAScript way
-  - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect`, and `godot.Object.is_connected`
-  ```js
-  this.panel.connect(godot.Control.resized, (size) => {
-  	console.log("The size of the panel changed to:", size);
-  });
-  ```
-  - Using `await` to wait for signals
-  ```js
-  await godot.yield(
-  	this.get_tree().create_timer(1),
-  	godot.SceneTreeTimer.timeout
-  );
-  console.log("After one second to show");
-  ```
+  - Allow passing functions for `godot.Object.connect`, `godot.Object.disconnect` and `godot.Object.is_connected`
+	```js
+		this.panel.connect(godot.Control.resized, (size) => {
+			console.log('The size of the panel changed to:', size);
+		});
+	```
+  - Using `await` to wait signals
+	```js
+	await godot.yield(this.get_tree().create_timer(1), godot.SceneTreeTimer.timeout);
+	console.log('After one second to show');
+	```
 - Preload resources with ECMAScript import statement
-  ```js
-  import ICON from "res://icon.png";
-  ```
+	```js
+	import ICON from 'res://icon.png';
+	```
 - Multi-threading with minimal [Worker API](https://developer.mozilla.org/en-US/docs/Web/API/Worker) (**This is an experimental feature**)
-
-  - Start a new thread with Worker
-    ```js
-    const worker = new Worker("worker.js"); // Run worker.js in a new thread context
-    worker.postMessage({ type: "load_dlc", value: "dlc01.pck" });
-    worker.onmessage = function (msg) {
-    	console.log("[MainThread] received message from worker thread:", msg);
-    };
-    ```
-  - Transfer value in different thread context with `godot.abandon_value` and `godot.adopt_value`
-
-    ```js
-    // In worker thread
-    let id = godot.abandon_value(object);
-    postMessage({ type: "return_value", id: id });
-
-    // In the host thread
-    worker.onmessage = function (msg) {
-    	if (typeof msg === "object" && msg.type === "return_value") {
-    		let value_from_worker = godot.adopt_value(msg.id);
-    	}
-    };
-    ```
-
-### TypeScript support
-
-- Run the menu command `Project > Tools > JavaScript > Generate TypeScript Project` from the Godot editor to generate a TypeScript project
+	- Start a new thread with Worker
+		```js
+		const worker = new Worker('worker.js'); // Run worker.js in a new thread context
+		worker.postMessage({type: 'load_dlc', value: 'dlc01.pck'});
+		worker.onmessage = function(msg) {
+			console.log("[MainThread] received message from worker thread:", msg);
+		}
+		```
+	- Transfer value in different thread context with `godot.abandon_value` and `godot.adopt_value`
+		```js
+		// In worker thread
+		let id = godot.abandon_value(object);
+		postMessage({ type: 'return_value', id: id });
+		
+		// In the host thread
+		worker.onmessage = function(msg) {
+			if (typeof msg === 'object' && msg.type === 'return_value') {
+				let value_from_worker = godot.adopt_value(msg.id);
+			}
+		}
+		```
+	
+### TypeScript support and JSX code completion
+- Run the menu command `Project > Tools > ECMAScript > Generate TypeScript Project` from the godot editor to generate a TypeScript project
 - Run `tsc -w -p .` under your project folder in the terminal to compile scripts
 
 #### Code completion
-
-- Code completion in TS will automatically work once the TypeScript project is generated by the above steps.
-- Code completion in VSCode is achieved by the property `"types": "./godot.d.ts"` in the generated package.json file of the TypeScript project. The `godot.d.ts` file can be generated alone via the `Project > Tools > ECMAScript > Generate TypeScript Declaration File` editor menu option and added to a `package.json` file manually to achieve this without a full TypeScript project.
+- Code completion in TSX will automatically work once the TypeScript project is generated by the above steps.
+- Code completion in JSX in VS Code is achieved by the property `"types": "./godot.d.ts"` in the generated package.json file of the TypeScript project. The `godot.d.ts` file can be generated alone via the `Project > Tools > ECMAScript > Generate TypeScript Declaration File` editor menu option and added to a `package.json` file manually to achieve this without a full TypeScript project.
 
 #### Example TypeScript Usage
 
-Compile your `ts` script to a `.mjs` file then we can attach it to a node in godot editor.
+Make sure the file with extension '.tsx' so it can be compiled to a `.jsx` file then we can attach it to a node in godot editor.
 
 Most of the `register` functions are available as various decorators as seen below.
 
@@ -210,6 +201,7 @@ import { signal, property, tool, onready, node } from "./decorators";
 
 @tool // make the script runnable in godot editor
 export default class InputLine extends godot.HBoxContainer {
+
 	// define a signal
 	@signal
 	static readonly OnTextChanged: string;
@@ -221,12 +213,10 @@ export default class InputLine extends godot.HBoxContainer {
 	// register offset property with the godot inspector with default value of Vector2(0, 0)
 	@property({ default: godot.Vector2.ZERO })
 	offset: godot.Vector2;
-
+	
 	// register properties for godot editor inspector
 	@property({ type: godot.VariantType.TYPE_STRING })
-	get title() {
-		return this._title;
-	}
+	get title() { return this._title; }
 	set title(v: string) {
 		this._title = v;
 		if (this._label) {
@@ -236,9 +226,7 @@ export default class InputLine extends godot.HBoxContainer {
 	private _title: string;
 
 	@property({ default: "Input text here" })
-	get hint() {
-		return this._hint;
-	}
+	get hint() { return this._hint; }
 	set hint(v: string) {
 		this._hint = v;
 		if (this.edit) {
@@ -248,13 +236,11 @@ export default class InputLine extends godot.HBoxContainer {
 	}
 	private _hint: string;
 
-	get label(): godot.Label {
-		return this._label;
-	}
+	get label(): godot.Label { return this._label; }
 	protected _label: godot.Label;
 
 	// call get_node('LineEdit') and assign the returned value to 'this.edit' automatically when the node is ready
-	@onready("LineEdit")
+	@onready('LineEdit')
 	edit: godot.LineEdit;
 
 	get text(): string {
@@ -264,12 +250,12 @@ export default class InputLine extends godot.HBoxContainer {
 	_ready() {
 		// get first child with the type of godot.Label
 		this._label = this.get_node(godot.Label);
-
+		
 		// Apply the inspector filled values with property setters
 		this.title = this.title;
 		this.hint = this.hint;
 
-		this.edit.connect(godot.LineEdit.text_changed, (text: string) => {
+		this.edit.connect(godot.LineEdit.text_changed, (text: string)=>{
 			this.emit_signal(InputLine.OnTextChanged, text);
 		});
 	}
@@ -277,16 +263,15 @@ export default class InputLine extends godot.HBoxContainer {
 ```
 
 ## Demo
-
 You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos)
 
 ## Developer notes
+* This package is not compatible with MSVC, you will get build errors in quickjs.
+* To update the github actions scripts we have the file `build_github_actions.py`.  This script will copy the actions from the godot repo (usually at `../../`) and modify them to fix the requirements of quickjs and this repo.
+** If you are updating this repo's compatibility, you should run that script (a brief description is at the top of the script) and it will re-create the actions `.yml` files for you.
+* The script also build the `on_tag.yml` script which automates the github release publishing.
+** The `on_tag.yml` functionality tries to sleep until all jobs with the same `sha` are completed.  It should be fine to run whenever, but depending on how github actions culls long running jobs you might want to make sure that all/(most of) the builds look good before tagging.
+* Linux ubsan asan build woes:
+** The godot repo has ubsan and asan builds that we can't build from.  Currently we skip them (get removed via the `build_github_actions.py` script).
+** They should definitely be fixed & enabled at some point, **so please submit a PR if you have any ideas of how to do that!**
 
-- This package is not compatible with MSVC, you will get build errors in quickjs.
-- To update the github actions scripts we have the file `build_github_actions.py`. This script will copy the actions from the godot repo (usually at `../../`) and modify them to fix the requirements of quickjs and this repo.
-  \*\* If you are updating this repo's compatibility, you should run that script (a brief description is at the top of the script) and it will re-create the actions `.yml` files for you.
-- The script also build the `on_tag.yml` script which automates the github release publishing.
-  \*\* The `on_tag.yml` functionality tries to sleep until all jobs with the same `sha` are completed. It should be fine to run whenever, but depending on how github actions culls long running jobs you might want to make sure that all/(most of) the builds look good before tagging.
-- Linux ubsan asan build woes:
-- The godot repo has ubsan and asan builds that we can't build from. Currently we skip them (get removed via the `build_github_actions.py` script).
-- They should definitely be fixed & enabled at some point, **so please submit a PR if you have any ideas of how to do that!**
