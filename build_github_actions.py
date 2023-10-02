@@ -43,7 +43,7 @@ class BuildOpts:
         self.SCONSFLAGS = f"{self.SCONSFLAGS} {toadd}"
 
     def get_fixed_flags(self) -> str:
-        todel = ["warnings=all", "werror=yes"]
+        todel = ["warnings=all", "werror=no"]
         for x in todel:
             self.SCONSFLAGS = self.SCONSFLAGS.replace(x, "")
         return self.SCONSFLAGS
