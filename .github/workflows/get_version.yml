@@ -1,0 +1,30 @@
+---
+name: 🆚 Get godot version
+
+on:
+  workflow_call:
+    # Map the workflow outputs to job outputs
+    outputs:
+      version:
+        description: "Which version we should use based on target branch"
+        value: ${{ jobs.version.outputs.version }}
+
+jobs:
+  version:
+    name: Get godot version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 🏷 Get and set godot version
+        id: version
+        # TODO: GH-Action should extract target branch; branches should be named according to godot engine branches
+        run: |
+          VERSION="4.1"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: 🌳 Log Valid Version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: echo "$VERSION"
+

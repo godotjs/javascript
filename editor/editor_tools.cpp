@@ -29,6 +29,9 @@
 /**************************************************************************/
 
 #include "editor_tools.h"
+
+#ifdef TOOLS_ENABLED
+
 #include "core/math/expression.h"
 #include "core/os/keyboard.h"
 #include "editor/doc_tools.h"
@@ -115,8 +118,8 @@ JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
 	enumberation_file_dialog->set_title(TTR("Generate Enumeration Binding Script"));
 	enumberation_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	enumberation_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
-	enumberation_file_dialog->add_filter(TTR("*.jsx;JavaScript file"));
-	enumberation_file_dialog->set_current_file("enumerations.jsx");
+	enumberation_file_dialog->add_filter(TTR("*.mjs;JavaScript file"));
+	enumberation_file_dialog->set_current_file("enumerations.mjs");
 	enumberation_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_enumeration_binding_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(enumberation_file_dialog);
 
@@ -743,3 +746,5 @@ void JavaScriptPlugin::_generate_typescript_project() {
 	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
 	dump_to_file("res://package.json", PACKAGE_JSON_CONTENT);
 }
+
+#endif // TOOLS_ENABLED

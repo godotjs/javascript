@@ -1,12 +1,15 @@
 name: 🌐 Web Builds
 on:
   workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
 
 # Global Settings
 env:
-  # Used for the cache key. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: '4.0'
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no
+  SCONSFLAGS: warnings=extra werror=yes debug_symbols=no
   EM_VERSION: 3.1.18
   EM_CACHE_FOLDER: "emsdk-cache"
 
@@ -21,13 +24,13 @@ jobs:
 
     steps:
       - name: Checkout Godot
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ env.GODOT_BASE_BRANCH }}
+          ref: ${{ inputs.version }}
 
       - name: Checkout ECMAScript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}/modules/javascript/
 

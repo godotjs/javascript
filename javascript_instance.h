@@ -32,7 +32,6 @@
 #define JAVASCRIPT_INSTANCE_H
 
 #include "core/object/script_language.h"
-
 #include "core/variant/callable.h"
 #include "javascript.h"
 #include "javascript_binder.h"
@@ -64,7 +63,7 @@ public:
 	virtual Ref<Script> get_script() const override;
 	virtual ScriptLanguage *get_language() override;
 
-	virtual void notification(int p_notification) override{};
+	/* TODO */ virtual void notification(int p_notification) override{};
 
 	JavaScriptInstance();
 	~JavaScriptInstance();

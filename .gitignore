@@ -8,3 +8,4 @@
 *.gen.cpp
 *.gen.json
 .vscode
+.idea

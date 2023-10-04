@@ -269,19 +269,19 @@ Ref<Resource> ResourceFormatLoaderJavaScript::load(const String &p_path, const S
 	if (r_error)
 		*r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load script file '" + p_path + "'.");
-	Ref<JavaScript> script;
-	script.instantiate();
-	script->set_script_path(p_path);
-	script->bytecode = module->get_bytecode();
-	script->set_source_code(module->get_source_code());
-	err = script->reload();
+	Ref<JavaScript> javaScript;
+	javaScript.instantiate();
+	javaScript->set_script_path(p_path);
+	javaScript->bytecode = module->get_bytecode();
+	javaScript->set_source_code(module->get_source_code());
+	err = javaScript->reload();
 	if (r_error)
 		*r_error = err;
 	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Parse source code from file '" + p_path + "' failed.");
 #ifdef TOOLS_ENABLED
-	JavaScriptLanguage::get_singleton()->get_scripts().insert(script);
+	JavaScriptLanguage::get_singleton()->get_scripts().insert(javaScript);
 #endif
-	return script;
+	return javaScript;
 }
 
 void ResourceFormatLoaderJavaScript::get_recognized_extensions(List<String> *p_extensions) const {
@@ -308,10 +308,10 @@ bool ResourceFormatLoaderJavaScript::recognize_path(const String &p_path, const 
 }
 
 Error ResourceFormatSaverJavaScript::save(const Ref<Resource> &p_resource, const String &p_path, uint32_t p_flags) {
-	Ref<JavaScript> script = p_resource;
-	ERR_FAIL_COND_V(script.is_null(), ERR_INVALID_PARAMETER);
+	Ref<JavaScript> javaScript = p_resource;
+	ERR_FAIL_COND_V(javaScript.is_null(), ERR_INVALID_PARAMETER);
 
-	String source = script->get_source_code();
+	String source = javaScript->get_source_code();
 
 	Error err;
 	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
@@ -322,7 +322,7 @@ Error ResourceFormatSaverJavaScript::save(const Ref<Resource> &p_resource, const
 	}
 
 	if (ScriptServer::is_reload_scripts_on_save_enabled()) {
-		script->reload();
+		javaScript->reload();
 	}
 
 	return OK;

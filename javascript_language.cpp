@@ -33,7 +33,7 @@
 #include "core/object/class_db.h"
 
 #include "javascript_binder.h"
-#include "quickjs_binder.h"
+#include "thirdparty/quickjs/quickjs_binder.h"
 
 JavaScriptLanguage *JavaScriptLanguage::singleton = nullptr;
 
@@ -256,17 +256,17 @@ void JavaScriptLanguage::get_string_delimiters(List<String> *p_delimiters) const
 }
 
 Ref<Script> JavaScriptLanguage::make_template(const String &p_template, const String &p_class_name, const String &p_base_class_name) const {
-	Ref<JavaScript> script;
-	script.instantiate();
+	Ref<JavaScript> javaScript;
+	javaScript.instantiate();
 	String src = p_template.replace("%BASE%", p_base_class_name).replace("%CLASS%", p_class_name);
-	script->set_source_code(src);
-	return script;
+	javaScript->set_source_code(src);
+	return javaScript;
 }
 
 Vector<ScriptLanguage::ScriptTemplate> JavaScriptLanguage::get_built_in_templates(StringName p_object) {
 	Vector<ScriptLanguage::ScriptTemplate> templates;
 #ifdef TOOLS_ENABLED
-	constexpr size_t len = 2;
+	constexpr int len = 2;
 	static const struct ScriptLanguage::ScriptTemplate TEMPLATES[len] = {
 		{ "Node",
 				"Default",

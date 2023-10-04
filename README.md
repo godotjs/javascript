@@ -11,22 +11,21 @@ This module implements JavaScript/TypeScript language support for the Godot game
 - [Using third-party libraries from npm](https://github.com/GodotExplorer/ECMAScriptDemos/tree/master/npm_module)
 - Multi-thread support with Worker API
 - Full code completion support for all Godot APIs including signals and enumerations
-- Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug)
+- Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug) - currently not available for 4.x
 
 ## Installation
 
-No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with Javascript/Typescript language support.
+No installation or setup necessary. The binaries for download are the complete, usable Godot editor and engine with JavaScript/TypeScript language support.
 
-### Download
+## Download
 
-You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases)  
-You can also get the binaries with lastest commits from the [github build action result](https://github.com/GodotExplorer/ECMAScript/actions)
+You can try the pre-compiled binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases) or get the binaries with the latest commits from the [GitHub build action result](https://github.com/GodotExplorer/ECMAScript/actions).
 
 ## Compilation
 
 1. Clone the source code of [godot](https://github.com/godotengine/godot)
 2. Clone this module and put it into `godot/modules/` and make sure the folder name of this module is `javascript`
-3. [Recompile the godot engine](https://docs.godotengine.org/en/3.3/development/compiling/index.html) **(Only MinGW is supported on Windows for now!)**
+3. [Recompile the godot engine](https://docs.godotengine.org/en/4.1/development/compiling/index.html) - Use ``scons`` with those additional options ``warnings=extra werror=yes module_text_server_fb_enabled=yes`` to show all potential errors
 
 ![Build Godot with ECMAScript](https://github.com/GodotExplorer/ECMAScript/workflows/Build%20Godot%20with%20ECMAScript/badge.svg)
 
@@ -283,10 +282,6 @@ You can try demos in the [ECMAScriptDemos](https://github.com/Geequlim/ECMAScrip
 ## Developer notes
 
 - This package is not compatible with MSVC, you will get build errors in quickjs.
-- To update the github actions scripts we have the file `build_github_actions.py`. This script will copy the actions from the godot repo (usually at `../../`) and modify them to fix the requirements of quickjs and this repo.
-  \*\* If you are updating this repo's compatibility, you should run that script (a brief description is at the top of the script) and it will re-create the actions `.yml` files for you.
 - The script also build the `on_tag.yml` script which automates the github release publishing.
   \*\* The `on_tag.yml` functionality tries to sleep until all jobs with the same `sha` are completed. It should be fine to run whenever, but depending on how github actions culls long running jobs you might want to make sure that all/(most of) the builds look good before tagging.
-- Linux ubsan asan build woes:
-- The godot repo has ubsan and asan builds that we can't build from. Currently we skip them (get removed via the `build_github_actions.py` script).
 - They should definitely be fixed & enabled at some point, **so please submit a PR if you have any ideas of how to do that!**

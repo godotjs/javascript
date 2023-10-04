@@ -56,7 +56,7 @@ declare module globalThis {
 	 *
 	 * Workers run in another global context that is different from the current context.
 	 *
-	 * You can run whatever code you like inside the worker thread. All of the godot API are avaliable inside workers.
+	 * You can run whatever code you like inside the worker thread. All of the godot API are available inside workers.
 	 *
 	 * Data is sent between workers and the main thread via a system of messages — both sides send their messages using the `postMessage()` method, and respond to messages via the `onmessage` event handler (the message is contained within the Message event's data attribute.) The data is copied rather than shared.
 	 *

@@ -7,7 +7,7 @@
 #include "core/variant/callable.h"
 
 #include "../../javascript_binder.h"
-#include "./quickjs/quickjs.h"
+#include "quickjs/quickjs.h"
 #include "quickjs_builtin_binder.h"
 
 #ifdef QUICKJS_WITH_DEBUGGER
@@ -80,7 +80,7 @@ public:
 
 	enum {
 		__JS_ATOM_NULL = JS_ATOM_NULL,
-#if !defined(EMSCRIPTEN)
+#if !(defined(EMSCRIPTEN) || defined(_MSC_VER))
 #define CONFIG_ATOMICS
 #endif
 #define DEF(name, str) JS_ATOM_##name,
