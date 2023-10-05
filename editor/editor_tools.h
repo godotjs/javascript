@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  quickjs_callable.h                                                    */
+/*  editor_tools.h                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,34 +28,45 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef QUICKJS_CALLABLE_H
-#define QUICKJS_CALLABLE_H
+#ifndef EDITOR_TOOLS_H
+#define EDITOR_TOOLS_H
 
-#include "../javascript_callable.h"
-#include "quickjs/quickjs.h"
+#include "editor/editor_node.h"
+#include "editor/editor_plugin.h"
+#include "editor/gui/editor_file_dialog.h"
 
-#if !defined(JS_NAN_BOXING)
-///typedef uint64_t JSValue; defined in quickjs.h if defined(JS_NAN_BOXING)
-struct JSValue;
-#endif
+class DocTools;
+class EditorFileDialog;
+class JavaScriptPlugin : public EditorPlugin {
+	GDCLASS(JavaScriptPlugin, EditorPlugin);
 
-class QuickJSCallable : public JavaScriptCallable {
-	static bool compare_equal(const CallableCustom *p_a, const CallableCustom *p_b);
-	static bool compare_less(const CallableCustom *p_a, const CallableCustom *p_b);
+	enum MenuItem {
+		ITEM_GEN_DECLARE_FILE,
+		ITEM_GEN_TYPESCRIPT_PROJECT,
+		ITEM_GEN_ENUM_BINDING_SCRIPT,
+	};
+
+	EditorFileDialog *declaration_file_dialog;
+	EditorFileDialog *enumberation_file_dialog;
+	const Dictionary *modified_api;
+
+protected:
+	static String BUILTIN_DECLARATION_TEXT;
+	static String TSCONFIG_CONTENT;
+	static String TS_DECORATORS_CONTENT;
+	static String PACKAGE_JSON_CONTENT;
+
+	static void _bind_methods();
+
+	void _notification(int p_what);
+	void _on_menu_item_pressed(int item);
+	void _export_typescript_declare_file(const String &p_path);
+	void _export_enumeration_binding_file(const String &p_path);
+	void _generate_typescript_project();
 
 public:
-	QuickJSCallable(JSContext *ctx, const JSValue &p_value);
-	QuickJSCallable(const JavaScriptGCHandler &p_function);
-	virtual ~QuickJSCallable();
-
-	virtual uint32_t hash() const override;
-	virtual String get_as_text() const override;
-
-	virtual CompareEqualFunc get_compare_equal_func() const override { return QuickJSCallable::compare_equal; }
-	virtual CompareLessFunc get_compare_less_func() const override { return QuickJSCallable::compare_less; }
-
-	virtual ObjectID get_object() const override;
-	virtual void call(const Variant **p_arguments, int p_argcount, Variant &r_return_value, Callable::CallError &r_call_error) const override;
+	virtual String get_name() const override { return "JavaScriptPlugin"; }
+	JavaScriptPlugin(EditorNode *p_node);
 };
 
-#endif // QUICKJS_CALLABLE_H
+#endif // EDITOR_TOOLS_H

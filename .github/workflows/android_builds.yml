@@ -1,12 +1,14 @@
 name: 🤖 Android Builds
 on:
   workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
 
 # Global Settings
 env:
-  # Used for the cache key. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: '4.0'
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
+  SCONSFLAGS: warnings=extra werror=yes debug_symbols=no module_text_server_fb_enabled=yes
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-android
@@ -19,13 +21,13 @@ jobs:
 
     steps:
       - name: Checkout Godot
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ env.GODOT_BASE_BRANCH }}
+          ref: ${{ inputs.version }}
 
       - name: Checkout ECMAScript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}/modules/javascript/
 

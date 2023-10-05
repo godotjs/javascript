@@ -1,6 +1,11 @@
 name: 📊 Static Checks
 on:
   workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-static
@@ -12,9 +17,20 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Checkout Godot
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+          sparse-checkout: |
+            misc/scripts
+          sparse-checkout-cone-mode: false
+          path: tmp
+
+      - name: Checkout workaround
+        run: mv tmp/misc/scripts misc/scripts
 
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest

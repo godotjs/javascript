@@ -36,12 +36,14 @@ static int js_transport_write_fully(JSDebuggerInfo *info, const char *buffer, si
     return 1;
 }
 
+#define JS_TRANSPORT_WRITE_MESSAGE_NEWLINE_MESSAGE_LENGTH 10
+
 static int js_transport_write_message_newline(JSDebuggerInfo *info, const char* value, size_t len) {
     // length prefix is 8 hex followed by newline = 012345678\n
     // not efficient, but protocol is then human readable.
-    char message_length[10];
+    char message_length[JS_TRANSPORT_WRITE_MESSAGE_NEWLINE_MESSAGE_LENGTH];
     message_length[9] = '\0';
-    sprintf(message_length, "%08x\n", (int)len + 1);
+    snprintf(message_length, JS_TRANSPORT_WRITE_MESSAGE_NEWLINE_MESSAGE_LENGTH, "%08x\n", (int)len + 1);
     if (!js_transport_write_fully(info, message_length, 9))
         return 0;
     int ret = js_transport_write_fully(info, value, len);
@@ -144,7 +146,7 @@ static void js_debugger_get_variable_type(JSContext *ctx,
 
         JSObject *p = JS_VALUE_GET_OBJ(var_val);
         // todo: xor the the two dwords to get a better hash?
-        uint32_t pl = (uint32_t)p;
+        uintptr_t pl = (uintptr_t)p;
         JSValue found = JS_GetPropertyUint32(ctx, state->variable_pointers, pl);
         if (JS_IsUndefined(found)) {
             reference = state->variable_reference_count++;

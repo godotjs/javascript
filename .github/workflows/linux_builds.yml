@@ -1,12 +1,17 @@
 name: 🐧 Linux Builds
 on:
   workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
 
 # Global Settings
 env:
-  # Used for the cache key, and godot-cpp checkout. Add version suffix to force clean build.
-  GODOT_BASE_BRANCH: '4.0'
-  SCONSFLAGS: verbose=yes warnings=extra werror=yes module_text_server_fb_enabled=yes
+  # We need to remove 'werror=yes' because of thirdparty/quickjs/quickjs/quickjs.h:975
+  # Look at https://stackoverflow.com/questions/559581/casting-a-function-pointer-to-another-type for more information
+  SCONSFLAGS: warnings=extra module_text_server_fb_enabled=yes
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
@@ -33,20 +38,33 @@ jobs:
             proj-conv: true
             artifact: true
 
-        - name: Minimal template (target=template_release, everything disabled)
-          cache-name: linux-template-minimal
-          target: template_release
-          tests: false
-          sconsflags: modules_enabled_by_default=no disable_3d=yes disable_advanced_gui=yes deprecated=no
+            # Removed dev-builds (https://github.com/godotengine/godot/blob/master/.github/workflows/linux_builds.yml#L38)
+            # TODO: There was an issue with quickjs debugger, maybe this can be enabled again after fixing the debugger
+
+          - name: Template w/ Mono (target=template_release)
+            cache-name: linux-template-mono
+            target: template_release
+            tests: false
+            sconsflags: module_mono_enabled=yes
+            build-mono: false
+            artifact: true
+
+          - name: Minimal template (target=template_release, everything disabled)
+            cache-name: linux-template-minimal
+            target: template_release
+            tests: false
+            sconsflags: modules_enabled_by_default=no disable_3d=yes disable_advanced_gui=yes deprecated=no minizip=no
+            artifact: true
+
     steps:
       - name: Checkout Godot
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: godotengine/godot
-          ref: ${{ env.GODOT_BASE_BRANCH }}
+          ref: ${{ inputs.version }}
 
       - name: Checkout ECMAScript
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: ${{github.workspace}}/modules/javascript/
 
@@ -150,8 +168,40 @@ jobs:
           xvfb-run ${{ matrix.bin }} 40 --audio-driver Dummy --path test_project 2>&1 | tee sanitizers_log.txt || true
           misc/scripts/check_ci_log.py sanitizers_log.txt
 
-    - name: Upload artifact
-      uses: ./.github/actions/upload-artifact
-      if: ${{ matrix.artifact }}
-      with:
-        name: ${{ matrix.cache-name }}
+      # Checkout godot-cpp
+      - name: Checkout godot-cpp
+        if: ${{ matrix.godot-cpp-test }}
+        uses: actions/checkout@v3
+        with:
+          repository: godotengine/godot-cpp
+          ref: ${{ inputs.version }}
+          submodules: 'recursive'
+          path: 'godot-cpp'
+
+      # Dump GDExtension interface and API
+      - name: Dump GDExtension interface and API for godot-cpp build
+        if: ${{ matrix.godot-cpp-test }}
+        run: |
+          ${{ matrix.bin }} --headless --dump-gdextension-interface --dump-extension-api
+          cp -f gdextension_interface.h godot-cpp/gdextension/
+          cp -f extension_api.json godot-cpp/gdextension/
+
+      # Build godot-cpp test extension
+      - name: Build godot-cpp test extension
+        if: ${{ matrix.godot-cpp-test }}
+        run: |
+          cd godot-cpp/test
+          scons target=template_debug dev_build=yes
+          cd ../..
+
+      - name: Prepare artifact
+        if: ${{ matrix.artifact }}
+        run: |
+          strip bin/godot.*
+          chmod +x bin/godot.*
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        if: ${{ matrix.artifact }}
+        with:
+          name: ${{ matrix.cache-name }}

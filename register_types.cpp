@@ -45,14 +45,12 @@ class EditorExportJavaScript : public EditorExportPlugin {
 
 public:
 	virtual void _export_file(const String &p_path, const String &p_type, const HashSet<String> &p_features) override {
-		String script_key;
-		const Ref<EditorExportPreset> &preset = get_export_preset();
 		String extension = p_path.get_extension();
 		if (extension != EXT_JSCLASS && extension != EXT_JSMODULE) {
 			return;
 		}
 	}
-	virtual String get_name() const override { return "JavaScript"; }
+	virtual String _get_name() const override { return "JavaScript"; }
 };
 
 #endif
