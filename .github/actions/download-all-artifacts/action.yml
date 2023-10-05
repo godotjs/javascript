@@ -1,0 +1,64 @@
+name: Download all Godot artifacts
+description: Download all Godot artifacts.
+runs:
+  using: "composite"
+  steps:
+    - name: Download android-template
+      uses: actions/download-artifact@v3
+      with:
+        name: android-template
+        path: android-template.zip
+
+    - name: Download ios-template
+      uses: actions/download-artifact@v3
+      with:
+        name: ios-template
+        path: ios-template.zip
+
+    - name: Download linux-editor-mono
+      uses: actions/download-artifact@v3
+      with:
+        name: linux-editor-mono
+        path: linux-editor-mono.zip
+
+    - name: Download linux-template-minimal
+      uses: actions/download-artifact@v3
+      with:
+        name: linux-template-minimal
+        path: linux-template-minimal.zip
+
+    - name: Download linux-template-mono
+      uses: actions/download-artifact@v3
+      with:
+        name: linux-template-mono
+        path: linux-template-mono.zip
+
+    - name: Download macos-editor
+      uses: actions/download-artifact@v3
+      with:
+        name: macos-editor
+        path: macos-editor.zip
+
+    - name: Download macos-template
+      uses: actions/download-artifact@v3
+      with:
+        name: macos-template
+        path: macos-template.zip
+
+    - name: Download web-template
+      uses: actions/download-artifact@v3
+      with:
+        name: web-template
+        path: web-template.zip
+
+    - name: Download windows-editor
+      uses: actions/download-artifact@v3
+      with:
+        name: windows-editor
+        path: windows-editor.zip
+
+    - name: Download windows-template
+      uses: actions/download-artifact@v3
+      with:
+        name: windows-template
+        path: windows-template.zip

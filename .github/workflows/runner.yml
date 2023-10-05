@@ -1,5 +1,15 @@
 name: 🔗 GHA
-on: [push, pull_request]
+
+# Only run pipeline on open pull_requests and master + versions + releases, we don't need it on every push
+on:
+  pull_request:
+  push:
+    branches:
+      - "master"
+      - "3.4"
+      - "4.1"
+  release:
+    types: [published]
 
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-runner
@@ -56,5 +66,43 @@ jobs:
     name: 🌐 Web
     needs: [static-checks, get-version]
     uses: ./.github/workflows/web_builds.yml
+    with:
+      version: ${{ needs.get-version.outputs.version }}
+
+  checks-done:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🎉 Checks done
+        run: |
+          resultWebBuild="${{ needs.web-build.result }}"
+          resultWindowsBuild="${{ needs.windows-build.result }}"          
+          resultMacosBuild="${{ needs.macos-build.result }}"
+          resultLinuxBuild="${{ needs.linux-build.result }}"
+          resultIosBuild="${{ needs.ios-build.result }}"
+          resultAndroidBuild="${{ needs.android-build.result }}"
+          if [[ $resultWebBuild== "success" && $resultWindowsBuild == "success" && $resultMacosBuild == "success" && $resultLinuxBuild == "success" && $resultIosBuild == "success" && $resultAndroidBuild == "success" ]]; then
+             echo "🎉 All builds were successful."
+            exit 0
+          else
+             echo "Some builds were failing."
+            exit 1
+          fi
+    needs:
+      [
+        web-build,
+        windows-build,
+        macos-build,
+        linux-build,
+        ios-build,
+        android-build
+      ]
+
+  release:
+    name: 🦅 Release
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [checks-done]
+    uses: ./.github/workflows/release_builds.yml
+    secrets: inherit
     with:
       version: ${{ needs.get-version.outputs.version }}

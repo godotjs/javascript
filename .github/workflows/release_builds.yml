@@ -1,0 +1,46 @@
+name: 🦅 Release Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-android
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Template (target=template_release)
+
+    steps:
+      - name: Checkout Godot
+        uses: actions/checkout@v4
+        with:
+          repository: godotengine/godot
+          ref: ${{ inputs.version }}
+
+      - name: Checkout ECMAScript
+        uses: actions/checkout@v4
+        with:
+          path: ${{github.workspace}}/modules/javascript/
+
+      - name: Download all artifacts
+        uses: ./.github/actions/download-all-artifacts
+
+      - name: Preview directory with artifacts
+        run: ls
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: '*.zip'
+          tag: ${{ github.ref }}
+          overwrite: 'true'
+          file_glob: 'true'
