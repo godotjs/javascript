@@ -71,6 +71,7 @@ jobs:
 
   checks-done:
     if: ${{ always() }}
+    name: ✅ Check builds
     runs-on: ubuntu-latest
     steps:
       - name: 🎉 Checks done
@@ -81,11 +82,19 @@ jobs:
           resultLinuxBuild="${{ needs.linux-build.result }}"
           resultIosBuild="${{ needs.ios-build.result }}"
           resultAndroidBuild="${{ needs.android-build.result }}"
-          if [[ $resultWebBuild== "success" && $resultWindowsBuild == "success" && $resultMacosBuild == "success" && $resultLinuxBuild == "success" && $resultIosBuild == "success" && $resultAndroidBuild == "success" ]]; then
-             echo "🎉 All builds were successful."
+          if [[ 
+            $resultWebBuild == "success" && 
+            $resultWindowsBuild == "success" && 
+            $resultMacosBuild == "success" && 
+            $resultLinuxBuild == "success" && 
+            $resultIosBuild == "success" && 
+            $resultAndroidBuild == "success" 
+          ]]; 
+          then
+            echo "🎉 All builds were successful."
             exit 0
           else
-             echo "Some builds were failing."
+            echo "😥 Some builds were failing."
             exit 1
           fi
     needs:

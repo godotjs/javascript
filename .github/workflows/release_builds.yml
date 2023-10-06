@@ -16,8 +16,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    name: Template (target=template_release)
-
     steps:
       - name: Checkout Godot
         uses: actions/checkout@v4
