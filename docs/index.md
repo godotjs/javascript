@@ -25,20 +25,20 @@ No installation or setup necessary. The binaries for download are the complete, 
 Download the binaries from the [release page](https://github.com/GodotExplorer/ECMAScript/releases).
 
 ### Compiling from source
-- Clone the source code of [godot](https://github.com/godotengine/godot): 
-  - ``git clone git@github.com:godotengine/godot.git``  or
-  - ``git clone https://github.com/godotengine/godot.git``
-- Clone this module and put it into `godot/modules/javascript`: 
+- Clone the source code of [godot](https://github.com/godotengine/godot):
+	- ``git clone git@github.com:godotengine/godot.git``  or
+	- ``git clone https://github.com/godotengine/godot.git``
+- Clone this module and put it into `godot/modules/javascript`:
 	- ``git clone git@github.com:Geequlim/ECMAScript.git godot/modules/javascript``  or
 	- ``git clone https://github.com/Geequlim/ECMAScript.git godot/modules/javascript``
-- [Recompile the godot engine](https://docs.godotengine.org/en/4.1/development/compiling/index.html) 
-  - Use ``scons`` with those additional options ``warnings=extra werror=yes module_text_server_fb_enabled=yes`` to show all potential errors
+- [Recompile the godot engine](https://docs.godotengine.org/en/4.1/development/compiling/index.html)
+	- Use ``scons`` with those additional options ``warnings=extra werror=yes module_text_server_fb_enabled=yes`` to show all potential errors
 
 ## Documentation, Tutorials & Demos
 
-Read this [documentation](https://geequlim.github.io/ecmascript/getting-started) or look at the tutorials or demos:
+Read this [documentation](https://geequlim.github.io/ecmascript/) or look at the tutorials or demos:
 
 
-- [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos) - Demos
-- [godot-ECMAScript-cookbook](https://github.com/why-try313/godot-ECMAScript-cookbook/wiki) - Tutorial
-- [godot-typescript-starter](https://github.com/citizenll/godot-typescript-starter) - Template
+- [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos)
+- [godot-ECMAScript-cookbook](https://github.com/why-try313/godot-ECMAScript-cookbook/wiki)
+- [godot-typescript-starter](https://github.com/citizenll/godot-typescript-starter)
