@@ -18,9 +18,8 @@ jobs:
     steps:
       - name: 🏷 Get and set godot version
         id: version
-        # TODO: GH-Action should extract target branch; branches should be named according to godot engine branches
         run: |
-          VERSION="4.1"
+          VERSION="${{ github.event.pull_request.base.ref || github.base_ref || github.event.release.target_commitish }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 🌳 Log Valid Version

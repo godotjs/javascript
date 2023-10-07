@@ -1,6 +1,7 @@
 name: 🔗 GHA
 
-# Only run pipeline on open pull_requests and master + versions + releases, we don't need it on every push
+# Only run pipeline on open pull_requests and master + versions + releases
+# we don't need it on every push and some parameters are not available for push only
 on:
   pull_request:
   push:
