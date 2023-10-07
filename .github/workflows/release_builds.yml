@@ -34,7 +34,7 @@ jobs:
               owner,
               repo,
               release_id: context.payload.release.id,
-              name: 'test-' + context.payload.release.name + '-' + year + month + day,
+              name: '${{ inputs.version }}-' + context.payload.release.name + '-' + year + month + day,
             });
 
   release:
