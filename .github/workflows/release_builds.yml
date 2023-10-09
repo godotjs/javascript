@@ -1,0 +1,85 @@
+name: 🦅 Release Builds
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+concurrency:
+  group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-android
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 📛 Add version to release name
+        uses: actions/github-script@v6
+        with:
+          result-encoding: json
+          script: |
+            const { repo, owner } = context.repo;
+            const date = new Date();
+            const year = date.getFullYear().toString();
+            const month = (date.getMonth() + 1).toString().padStart(2,"0");
+            const day = (date.getDay() + 1).toString().padStart(2,"0");
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: context.payload.release.id,
+              name: '${{ inputs.version }}-' + context.payload.release.name + '-' + year + month + day,
+            });
+
+  release:
+    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        name:
+          - android-template
+          - ios-template
+          - linux-editor-mono
+          - linux-template-minimal
+          - linux-template-mono
+          - macos-editor
+          - macos-template
+          - web-template
+          - windows-editor
+          - windows-template
+    steps:
+      - name: ⏬ Checkout repo
+        uses: actions/checkout@v4
+
+      - name: ⏬ Download build
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+
+      - name: 📦 Pack build as zip
+        run: zip -r ${{ matrix.name }}.zip ${{ matrix.name }}
+        shell: bash
+
+      - name: ⏫ Upload Release Asset
+        id: upload-release-asset
+        uses: actions/github-script@v6
+        with:
+          result-encoding: json
+          script: |
+            const FS = require('node:fs')
+            const { repo, owner } = context.repo;
+            return await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: context.payload.release.id,
+              name: '${{ matrix.name }}.zip',
+              data: FS.readFileSync('${{ github.workspace }}/${{ matrix.name }}.zip')
+            });

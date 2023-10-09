@@ -3,11 +3,15 @@ name: 🆚 Get godot version
 
 on:
   workflow_call:
-    # Map the workflow outputs to job outputs
     outputs:
       version:
         description: "Which version we should use based on target branch"
         value: ${{ jobs.version.outputs.version }}
+
+# We use a godot tag(rc version) as default version for master
+# because the api is changing often and this would lead to a lot of struggle
+env:
+  MASTER_VERSION: 4.1
 
 jobs:
   version:
@@ -18,13 +22,15 @@ jobs:
     steps:
       - name: 🏷 Get and set godot version
         id: version
-        # TODO: GH-Action should extract target branch; branches should be named according to godot engine branches
         run: |
-          VERSION="4.1"
+          VERSION="${{ github.event.pull_request.base.ref || github.base_ref || github.event.release.target_commitish }}"
+          if [[ $VERSION == "master" ]]; then
+            VERSION="$MASTER_VERSION"
+            echo "We are overwrite master to latest rc version: $VERSION"
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 🌳 Log Valid Version
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: echo "$VERSION"
-
