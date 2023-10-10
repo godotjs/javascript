@@ -111,7 +111,7 @@ jobs:
   release:
     name: 🦅 Release
     if: github.event_name == 'release' && github.event.action == 'published'
-    needs: [checks-done]
+    needs: [checks-done, get-version]
     uses: ./.github/workflows/release_builds.yml
     secrets: inherit
     with:
