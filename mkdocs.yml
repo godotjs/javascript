@@ -1,0 +1,20 @@
+site_name: GodotJS
+site_url: https://geequlim.github.io/ecmascript/
+repo_url: https://github.com/Geequlim/ECMAScript
+site_description: JavaScript language binding for Godot game engine
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - API: api.md
+  - TypeScript: typescript.md
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.path
+    - navigation.top
+    - search.suggest
+    - search.highlight
