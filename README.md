@@ -15,7 +15,7 @@ This module implements JavaScript/TypeScript language support for the Godot game
 
 ### Getting started
 
-Read the [getting-started](https://geequlim.github.io/ecmascript/getting-started).
+Read the [getting-started](https://geequlim.github.io/ECMAScript/getting-started).
 
 ## Getting the engine
 
@@ -36,7 +36,7 @@ Download the binaries from the [release page](https://github.com/GodotExplorer/E
 
 ## Documentation, Tutorials & Demos
 
-Read this [documentation](https://geequlim.github.io/ecmascript/getting-started) or look at the tutorials or demos:
+Read this [documentation](https://geequlim.github.io/ECMAScript/getting-started) or look at the tutorials or demos:
 
 
 - [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos) - Demos
