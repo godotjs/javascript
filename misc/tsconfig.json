@@ -9,6 +9,9 @@
 		"experimentalDecorators": true,
 		"jsx": "preserve",
 		"sourceMap": true,
-		"sourceRoot": "."
+		"sourceRoot": ".",
+		"paths": {
+			"decorators": ["./decorators"],
+		},
 	}
 }
