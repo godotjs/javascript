@@ -12,6 +12,6 @@
 		"sourceRoot": ".",
 		"paths": {
 			"decorators": ["./decorators"],
-		},
+		}
 	}
 }
