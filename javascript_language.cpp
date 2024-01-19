@@ -28,6 +28,8 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+/* This is the language server implementation. It handles how/when to use JS Scripts. */
+
 #include "javascript_language.h"
 #include "core/io/file_access.h"
 #include "core/object/class_db.h"
@@ -343,10 +345,20 @@ void JavaScriptLanguage::reload_script(const Ref<Script> &p_script, bool p_soft_
 	if (s.is_valid()) {
 		Error err = OK;
 		Ref<JavaScriptModule> module = ResourceFormatLoaderJavaScriptModule::load_static(s->get_script_path(), "", &err);
-		ERR_FAIL_COND_MSG(err != OK, ("Cannot load script file '" + s->get_script_path() + "'."));
-		s->set_source_code(module->get_source_code());
-		err = s->reload(p_soft_reload);
-		ERR_FAIL_COND_MSG(err != OK, "Parse source code from file '" + s->get_script_path() + "' failed.");
+
+		if (err != ERR_FILE_NOT_FOUND) {
+			// We don't need to reload a script if it isn't existing
+
+			ERR_FAIL_COND_MSG(err != OK, ("Cannot reload script file '" + s->get_script_path() + "'."));
+			s->set_source_code(module->get_source_code());
+			err = s->reload(p_soft_reload);
+			ERR_FAIL_COND_MSG(err != OK, "Parse source code from file '" + s->get_script_path() + "' failed.");
+		} else {
+			// If we are in the editor we need to erase the script from the language server to avoid reload on focus (editor_tools.cpp[_notification()])
+#ifdef TOOLS_ENABLED
+			singleton->get_scripts().erase(s);
+#endif
+		}
 	}
 }
 
