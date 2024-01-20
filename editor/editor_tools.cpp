@@ -150,6 +150,82 @@ static String apply_pattern(const String &p_pattern, const Dictionary &p_values)
 	return ret;
 }
 
+static String format_enum_name(const String &enum_name) {
+	if (enum_name.begins_with("Variant.")) {
+		return enum_name.replace(".", "");
+	}
+	return enum_name;
+}
+
+void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
+	_export_typescript_declare_file("");
+	String file_content = "// Tool generated file DO NOT modify manually\n"
+						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
+						  "\n"
+						  "if (!godot.DEBUG_ENABLED) {\n"
+						  "\tfunction bind(cls, enumerations) {\n"
+						  "\t\tif (cls) Object.defineProperties(cls, enumerations);\n"
+						  "\t};\n"
+						  "\n"
+						  "${enumerations}"
+						  "}\n"
+						  "export default class extends godot.Node {};\n";
+
+	String enumerations = "";
+	for (const auto &cls : class_enumerations) {
+		const ClassEnumerations &enumeration = cls.value;
+		const String &name = cls.key;
+		String class_name = name;
+		if (class_name != "godot") {
+			class_name = "godot." + class_name;
+		}
+		String class_enums = "";
+		uint32_t idx = 0;
+		for (const auto &E : enumeration) {
+			String enum_items_text = "{";
+			const Vector<const DocData::ConstantDoc *> &consts = E.value;
+			for (int i = 0; i < consts.size(); ++i) {
+				const DocData::ConstantDoc *c = consts[i];
+				enum_items_text += c->name + ": " + c->value;
+				if (i < consts.size() - 1) {
+					enum_items_text += ", ";
+				}
+			}
+			enum_items_text += " }";
+			Dictionary new_dict;
+			new_dict["name"] = format_enum_name(E.key);
+			new_dict["values"] = enum_items_text;
+			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", new_dict);
+			if (idx < enumeration.size() - 1) {
+				class_enums += ", ";
+			} else {
+				class_enums += "\n\t";
+			}
+			idx++;
+		}
+		static String class_template = "\tbind(${class}, {${enumerations}});\n";
+		Dictionary class_dict;
+		class_dict["class"] = class_name;
+		class_dict["enumerations"] = class_enums;
+		enumerations += apply_pattern(class_template, class_dict);
+	}
+	Dictionary enum_dict;
+	enum_dict["enumerations"] = enumerations;
+	file_content = apply_pattern(file_content, enum_dict);
+
+	dump_to_file(p_path, file_content);
+}
+
+void JavaScriptPlugin::_generate_typescript_project() {
+	_export_typescript_declare_file("res://godot.d.ts");
+	dump_to_file("res://tsconfig.json", TSCONFIG_CONTENT);
+	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
+	dump_to_file("res://package.json", PACKAGE_JSON_CONTENT);
+}
+
+// The following functions are used to generate a godot.d.ts file out of the docs folder from godot
+#pragma region TS declare file
+
 static String format_doc_text(const String &p_bbcode, const String &p_indent = "\t") {
 	String markdown = p_bbcode.strip_edges();
 
@@ -222,15 +298,8 @@ static String format_property_name(const String &p_ident) {
 	return p_ident;
 }
 
-static String format_enum_name(const String &enum_name) {
-	if (enum_name.begins_with("Variant.")) {
-		return enum_name.replace(".", "");
-	}
-	return enum_name;
-}
-
 static String get_type_name(const String &p_type) {
-	if (p_type.is_empty())
+	if (p_type.is_empty() || p_type == "void")
 		return "void";
 	if (p_type == "int" || p_type == "float")
 		return "number";
@@ -242,7 +311,7 @@ static String get_type_name(const String &p_type) {
 		return "any[]";
 	if (p_type == "Dictionary")
 		return "object";
-	if (p_type == "Variant")
+	if (p_type == "Variant" || p_type.contains("*"))
 		return "any";
 	return p_type;
 }
@@ -276,6 +345,11 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 				}
 			} else {
 				default_value += arg.default_value;
+				// we don't want to have pointers or adresses in TS
+				default_value = default_value
+										.replace("&", "")
+										.replace("*", "")
+										.replace("**", "");
 			}
 		}
 
@@ -681,70 +755,6 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	}
 }
 
-void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
-	_export_typescript_declare_file("");
-	String file_content = "// Tool generated file DO NOT modify manually\n"
-						  "// Add this script as first autoload to your project to bind enumerations for release build of godot engine\n"
-						  "\n"
-						  "if (!godot.DEBUG_ENABLED) {\n"
-						  "\tfunction bind(cls, enumerations) {\n"
-						  "\t\tif (cls) Object.defineProperties(cls, enumerations);\n"
-						  "\t};\n"
-						  "\n"
-						  "${enumerations}"
-						  "}\n"
-						  "export default class extends godot.Node {};\n";
-
-	String enumerations = "";
-	for (const auto &cls : class_enumerations) {
-		const ClassEnumerations &enumeration = cls.value;
-		const String &name = cls.key;
-		String class_name = name;
-		if (class_name != "godot") {
-			class_name = "godot." + class_name;
-		}
-		String class_enums = "";
-		uint32_t idx = 0;
-		for (const auto &E : enumeration) {
-			String enum_items_text = "{";
-			const Vector<const DocData::ConstantDoc *> &consts = E.value;
-			for (int i = 0; i < consts.size(); ++i) {
-				const DocData::ConstantDoc *c = consts[i];
-				enum_items_text += c->name + ": " + c->value;
-				if (i < consts.size() - 1) {
-					enum_items_text += ", ";
-				}
-			}
-			enum_items_text += " }";
-			Dictionary new_dict;
-			new_dict["name"] = format_enum_name(E.key);
-			new_dict["values"] = enum_items_text;
-			class_enums += apply_pattern("\n\t\t${name}: { value: ${values} }", new_dict);
-			if (idx < enumeration.size() - 1) {
-				class_enums += ", ";
-			} else {
-				class_enums += "\n\t";
-			}
-			idx++;
-		}
-		static String class_template = "\tbind(${class}, {${enumerations}});\n";
-		Dictionary class_dict;
-		class_dict["class"] = class_name;
-		class_dict["enumerations"] = class_enums;
-		enumerations += apply_pattern(class_template, class_dict);
-	}
-	Dictionary enum_dict;
-	enum_dict["enumerations"] = enumerations;
-	file_content = apply_pattern(file_content, enum_dict);
-
-	dump_to_file(p_path, file_content);
-}
-
-void JavaScriptPlugin::_generate_typescript_project() {
-	_export_typescript_declare_file("res://godot.d.ts");
-	dump_to_file("res://tsconfig.json", TSCONFIG_CONTENT);
-	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
-	dump_to_file("res://package.json", PACKAGE_JSON_CONTENT);
-}
+#pragma endregion TS declare file
 
 #endif // TOOLS_ENABLED
