@@ -313,6 +313,8 @@ static String get_type_name(const String &p_type) {
 		return "object";
 	if (p_type == "Variant" || p_type.contains("*"))
 		return "any";
+	if (p_type == "StringName")
+		return "StringName | string";
 	return p_type;
 }
 
@@ -675,7 +677,11 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 		if (ignored_classes.has(class_doc.name)) {
 			continue;
 		}
-		class_doc.name = get_type_name(class_doc.name);
+
+		if (class_doc.name != "StringName") {
+			class_doc.name = get_type_name(class_doc.name);
+		}
+
 		if (class_doc.name.begins_with("@")) {
 			HashMap<String, Vector<const DocData::ConstantDoc *>> enumerations;
 			if (class_doc.name == "@GlobalScope" || class_doc.name == "@GDScript") {
