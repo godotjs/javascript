@@ -345,7 +345,7 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 				}
 			} else {
 				default_value += arg.default_value;
-				// we don't want to have pointers or adresses in TS
+				// we don't want to have pointers or addresses in TS
 				default_value = default_value
 										.replace("&", "")
 										.replace("*", "")
