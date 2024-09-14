@@ -741,11 +741,10 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 			continue;
 		}
 		classes += _export_class(
-		class_doc,
-		DECLARATION_CONSTRUCTORS,
-		DECLARATION_ENUMS,
-		IGNORE_METHODS
-		);
+			class_doc,
+			DECLARATION_CONSTRUCTORS,
+			DECLARATION_ENUMS,
+			IGNORE_METHODS);
 	}
 	dict["classes"] = classes;
 	dict["constants"] = constants;
