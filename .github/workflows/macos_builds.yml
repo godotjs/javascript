@@ -27,7 +27,7 @@ jobs:
             cache-name: macos-editor
             target: editor
             tests: true
-            bin: "./bin/godot.macos.editor.x86_64"
+            bin: "./bin/godot.macos.editor.universal"
 
           - name: Template (target=template_release)
             cache-name: macos-template
