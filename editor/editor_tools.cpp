@@ -301,6 +301,12 @@ static String format_property_name(const String &p_ident) {
 static String get_type_name(const String &p_type) {
 	if (p_type.is_empty() || p_type == "void")
 		return "void";
+
+	if (p_type.ends_with("[]")) {
+		String base_type = p_type.substr(0, p_type.length() - 2);
+		return "Array<" + get_type_name(base_type) + ">";
+	}
+
 	if (p_type == "int" || p_type == "float")
 		return "number";
 	if (p_type == "bool")
@@ -392,17 +398,23 @@ String _export_method(const DocData::MethodDoc &p_method, bool is_function = fal
 	return apply_pattern(method_template, dict);
 }
 
-String _export_class(const DocData::ClassDoc &class_doc) {
+/* This function generates all classes for godot.d.ts based on DocData::ClassDoc */
+String _export_class(const DocData::ClassDoc &class_doc,
+		Dictionary missing_constructors,
+		Dictionary missing_enums,
+		Array ignore_methods) {
 	String class_template = "\n"
 							"\t/** ${brief_description}\n"
 							"\t ${description} */\n"
 							"${TS_IGNORE}"
 							"\tclass ${name}${extends}${inherits} {\n"
+							"${missingConstructors}"
 							"${properties}"
 							"${methods}"
 							"${extrals}"
 							"\t}\n"
 							"\tnamespace ${name} {\n"
+							"${missingEnums}"
 							"${signals}"
 							"${enumerations}"
 							"${constants}"
@@ -420,6 +432,9 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 	} else {
 		dict["description"] = description;
 	}
+
+	dict["missingConstructors"] = missing_constructors.get(class_doc.name, "");
+	dict["missingEnums"] = missing_enums.get(class_doc.name, "");
 
 	HashSet<String> ignore_members;
 	if (removed_members.has(class_doc.name)) {
@@ -515,7 +530,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 		new_dict["static"] = Engine::get_singleton()->has_singleton(class_doc.name) ? "static " : "";
 		properties += apply_pattern(prop_str, new_dict);
 
-		if (!prop_doc.getter.is_empty()) {
+		if (!prop_doc.getter.is_empty() && !ignore_methods.has(prop_doc.getter)) {
 			DocData::MethodDoc md;
 			md.name = prop_doc.getter;
 			md.return_type = get_type_name(prop_doc.type);
@@ -523,7 +538,7 @@ String _export_class(const DocData::ClassDoc &class_doc) {
 			method_list.push_back(md);
 		}
 
-		if (!prop_doc.setter.is_empty()) {
+		if (!prop_doc.setter.is_empty() && !ignore_methods.has(prop_doc.setter)) {
 			DocData::MethodDoc md;
 			md.name = prop_doc.setter;
 			DocData::ArgumentDoc arg;
@@ -642,27 +657,6 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 	ignored_classes.insert("Variant");
 	ignored_classes.insert("Array");
 	ignored_classes.insert("Dictionary");
-#if 1
-	ignored_classes.insert("Vector2");
-	ignored_classes.insert("Vector3");
-	ignored_classes.insert("Color");
-	ignored_classes.insert("Rect2");
-	ignored_classes.insert("RID");
-	ignored_classes.insert("NodePath");
-	ignored_classes.insert("Transform2D");
-	ignored_classes.insert("Transform3D");
-	ignored_classes.insert("Basis");
-	ignored_classes.insert("Quaternion");
-	ignored_classes.insert("Plane");
-	ignored_classes.insert("AABB");
-	ignored_classes.insert("PackedByteArray");
-	ignored_classes.insert("PackedInt32Array");
-	ignored_classes.insert("PackedFloat32Array");
-	ignored_classes.insert("PackedStringArray");
-	ignored_classes.insert("PackedVector2Array");
-	ignored_classes.insert("PackedVector3Array");
-	ignored_classes.insert("PackedColorArray");
-#endif
 	ignored_classes.insert("Semaphore");
 	ignored_classes.insert("Thread");
 	ignored_classes.insert("Mutex");
@@ -678,7 +672,7 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 			continue;
 		}
 
-		if (class_doc.name != "StringName") {
+		if (class_doc.name != "StringName" && class_doc.name != "NodePath") {
 			class_doc.name = get_type_name(class_doc.name);
 		}
 
@@ -746,7 +740,12 @@ void JavaScriptPlugin::_export_typescript_declare_file(const String &p_path) {
 			}
 			continue;
 		}
-		classes += _export_class(class_doc);
+		classes += _export_class(
+		class_doc,
+		DECLARATION_CONSTRUCTORS,
+		DECLARATION_ENUMS,
+		IGNORE_METHODS
+		);
 	}
 	dict["classes"] = classes;
 	dict["constants"] = constants;
