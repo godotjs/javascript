@@ -1,3 +1,4 @@
+
 #ifndef JAVASCRIPT_BINDER_H
 #define JAVASCRIPT_BINDER_H
 
