@@ -28,6 +28,9 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+/* This is implementation is for loading/saving JS files. */
+/* After loading it contains the code/bytecode of the loaded file. */
+
 #include "javascript.h"
 #include "core/config/engine.h"
 #include "core/io/file_access_encrypted.h"
@@ -110,8 +113,17 @@ Error JavaScript::reload(bool p_keep_state) {
 	javascript_class = NULL;
 	Error err = OK;
 	JavaScriptBinder *binder = JavaScriptLanguage::get_thread_binder(Thread::get_caller_id());
+#ifdef TOOLS_ENABLED
+	// This is a workaround for files generated outside of the godot editor
+	if (binder == NULL) {
+		binder = JavaScriptLanguage::get_thread_binder(Thread::MAIN_ID);
+	}
+#endif
 	ERR_FAIL_COND_V_MSG(binder == NULL, ERR_INVALID_DATA, "Cannot load script in this thread");
 	JavaScriptError js_err;
+
+	// TODO: We should have a setting/option to skip parsing or reading .mjs files which aren't Godot classes for example "chunk-xxx.mjs" build from esbuild
+
 	if (!bytecode.is_empty()) {
 		javascript_class = binder->parse_javascript_class(bytecode, script_path, true, &js_err);
 	} else {
@@ -268,6 +280,11 @@ Ref<Resource> ResourceFormatLoaderJavaScript::load(const String &p_path, const S
 	Ref<JavaScriptModule> module = ResourceFormatLoaderJavaScriptModule::load_static(p_path, p_original_path, &err);
 	if (r_error)
 		*r_error = err;
+
+	if (err == ERR_FILE_NOT_FOUND) {
+		return module;
+	}
+
 	ERR_FAIL_COND_V_MSG(err != OK, Ref<Resource>(), "Cannot load script file '" + p_path + "'.");
 	Ref<JavaScript> javaScript;
 	javaScript.instantiate();
@@ -377,9 +394,17 @@ String ResourceFormatLoaderJavaScriptModule::get_resource_type(const String &p_p
 
 Ref<Resource> ResourceFormatLoaderJavaScriptModule::load_static(const String &p_path, const String &p_original_path, Error *r_error) {
 	Error err = ERR_FILE_CANT_OPEN;
+	bool fileExists = FileAccess::exists(p_path);
+	if (!fileExists) {
+		*r_error = ERR_FILE_NOT_FOUND;
+		WARN_PRINT("Cannot find file '" + p_path + "'. Maybe you deleted the file.");
+		return Ref<Resource>();
+	}
+
 	Ref<JavaScriptModule> module;
 	module.instantiate();
 	module->set_script_path(p_path);
+
 	if (p_path.ends_with("." EXT_JSMODULE) || p_path.ends_with("." EXT_JSCLASS) || p_path.ends_with("." EXT_JSON)) {
 		String code = FileAccess::get_file_as_string(p_path, &err);
 		if (r_error)
@@ -388,6 +413,7 @@ Ref<Resource> ResourceFormatLoaderJavaScriptModule::load_static(const String &p_
 		module->set_source_code(code);
 	}
 
+// TODO: Check what this block is for
 #if 0
 	else if (p_path.ends_with("." EXT_JSMODULE_BYTECODE) || p_path.ends_with("." EXT_JSCLASS_BYTECODE)) {
 		module->set_bytecode(FileAccess::get_file_as_array(p_path, &err));
