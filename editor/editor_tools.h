@@ -1,5 +1,3 @@
-
-
 #ifndef EDITOR_TOOLS_H
 #define EDITOR_TOOLS_H
 

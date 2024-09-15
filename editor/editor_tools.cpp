@@ -1,4 +1,3 @@
-
 #include "editor_tools.h"
 
 #ifdef TOOLS_ENABLED

@@ -1,4 +1,3 @@
-
 #include "quickjs_callable.h"
 #include "quickjs_binder.h"
 #include "../../javascript_language.h"

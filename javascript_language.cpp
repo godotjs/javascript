@@ -1,5 +1,3 @@
-
-
 /* This is the language server implementation. It handles how/when to use JS Scripts. */
 
 #include "javascript_language.h"

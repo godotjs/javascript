@@ -1,4 +1,3 @@
-
 /* This is implementation is for loading/saving JS files. */
 /* After loading it contains the code/bytecode of the loaded file. */
 

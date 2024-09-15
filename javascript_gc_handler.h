@@ -1,5 +1,3 @@
-
-
 #ifndef JAVASCRIPT_GC_HANDLER_H
 #define JAVASCRIPT_GC_HANDLER_H
 

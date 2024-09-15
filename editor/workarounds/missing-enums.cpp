@@ -1,6 +1,4 @@
-
-
-/* All types are generated in editor_tools, but constructors are missing we need to add them manually. */
+/* All types are generated in editor_tools, but some enums are missing we need to add them manually. */
 
 #include "../editor_tools.h"
 

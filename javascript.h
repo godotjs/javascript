@@ -1,4 +1,3 @@
-
 #ifndef JAVASCRIPT_H
 #define JAVASCRIPT_H
 

@@ -1,5 +1,3 @@
-
-
 #ifndef JAVASCRIPT_LANGUAGE_H
 #define JAVASCRIPT_LANGUAGE_H
 

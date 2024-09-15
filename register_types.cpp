@@ -1,4 +1,3 @@
-
 #include "register_types.h"
 
 #include "javascript.h"

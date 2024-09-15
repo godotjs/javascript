@@ -1,5 +1,3 @@
-
-
 #include "javascript_instance.h"
 #include "javascript.h"
 #include "javascript_language.h"

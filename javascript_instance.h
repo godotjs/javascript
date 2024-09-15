@@ -1,5 +1,3 @@
-
-
 #ifndef JAVASCRIPT_INSTANCE_H
 #define JAVASCRIPT_INSTANCE_H
 

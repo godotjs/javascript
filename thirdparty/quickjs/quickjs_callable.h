@@ -1,5 +1,3 @@
-
-
 #ifndef QUICKJS_CALLABLE_H
 #define QUICKJS_CALLABLE_H
 
