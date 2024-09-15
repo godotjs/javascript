@@ -100,4 +100,5 @@ env_module.Append(CPPPATH=["#modules/javascript"])
 env_module.add_source_files(env.modules_sources, sources)
 
 if env.editor_build:
+    env_module.add_source_files(env.modules_sources, "editor/workarounds/*.cpp")
     env_module.add_source_files(env.modules_sources, "editor/*.cpp")
