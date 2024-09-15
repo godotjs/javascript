@@ -84,7 +84,7 @@ jobs:
       - name: Style checks via clang-format (clang_format.sh)
         run: |
           clang-format --version
-          bash ./misc/scripts/clang_format.sh changed.txt
+          bash ./modules/javascript/misc/scripts/clang_format.sh changed.txt
 
       - name: Style checks via dotnet format (dotnet_format.sh)
         run: |

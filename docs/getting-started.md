@@ -2,7 +2,7 @@
 
 1. Define your JavaScript class and inherit from a Godot class, then export it as the **default** entry:
 
-```js
+```
 // The default export entry is treated as an exported class to Godot
 export default class MySprite extends godot.Sprite {
 	// this is _init() in GDScript
@@ -10,7 +10,7 @@ export default class MySprite extends godot.Sprite {
 		super();
 	}
 
-	_ready() {}
+	_reajavascript title="my-sprite.mjs"dy() {}
 
 	_process(delta) {}
 }
@@ -21,7 +21,7 @@ export default class MySprite extends godot.Sprite {
 
 ### How to export signals
 
-```js
+```javascript title="my-sprite.mjs"
 export default class MySprite extends godot.Sprite {}
 // register game_over signal to MySprite class
 godot.register_signal(MySprite, "game_over");
@@ -29,7 +29,7 @@ godot.register_signal(MySprite, "game_over");
 
 ### How to export properties
 
-```js
+```javascript title="my-sprite.mjs"
 export default class MySprite extends godot.Sprite {
 	_process(delta) {
 		// Yes! We can use operators in JavaScript like GDScript

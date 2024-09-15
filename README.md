@@ -47,3 +47,7 @@ Read this [documentation](https://geequlim.github.io/ECMAScript/getting-started)
 - [godot-ECMAScript-cookbook](https://github.com/why-try313/godot-ECMAScript-cookbook/wiki) - Tutorial
 - [godot-typescript-starter](https://github.com/citizenll/godot-typescript-starter) - Template
 - [godot-js-template](https://github.com/fukaraadam-workspace/godot-js-template) - Template
+
+## Contributing
+
+If you like to contribute to this project check the [CONTRIBUTING.md](https://github.com/Geequlim/ECMAScript/blob/master/CONTRIBUTING.md) file.

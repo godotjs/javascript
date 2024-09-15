@@ -1,7 +1,7 @@
-<!--
-Please target the `master` branch in priority.
-PRs can target `3.x` if the same change was done in `master`, or is not relevant there.
+## Description
 
-Relevant fixes are cherry-picked for stable branches as needed by maintainers.
-You can mention in the description if the change is compatible with `3.x`.
--->
+<!-- Describe the changes you've done -->
+
+Make sure to follow the PR preparation steps in [CONTRIBUTING.md](../CONTRIBUTING.md#preparing-your-pr) before submitting your PR:
+
+- [ ] format the codebase: from the root, run `bash ./misc/scripts/clang_format.sh`.

@@ -7,6 +7,11 @@ nav:
   - Getting Started: getting-started.md
   - API: api.md
   - TypeScript: typescript.md
+  - Examples:
+      - Load JSON in Singleton: examples/load-json-in-singleton.md
+      - Read file local: examples/read-file-local.md
+      - Use GDScript in TS: examples/use-gdscript-in-ts.md
+  - Gotchas: gotchas.md
 theme:
   name: material
   icon:
@@ -18,3 +23,12 @@ theme:
     - navigation.top
     - search.suggest
     - search.highlight
+    - content.code.copy
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
