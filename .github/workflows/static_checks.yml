@@ -30,7 +30,9 @@ jobs:
           path: tmp
 
       - name: Checkout workaround
-        run: mv tmp/misc/scripts misc/scripts
+        run: |
+          mv tmp/misc/scripts misc/scripts
+          mv -f clang_format.sh misc/scripts/clang_format.sh
 
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -84,7 +86,7 @@ jobs:
       - name: Style checks via clang-format (clang_format.sh)
         run: |
           clang-format --version
-          bash ./modules/javascript/misc/scripts/clang_format.sh changed.txt
+          bash ./misc/scripts/clang_format.sh changed.txt
 
       - name: Style checks via dotnet format (dotnet_format.sh)
         run: |
