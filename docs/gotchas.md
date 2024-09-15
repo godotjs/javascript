@@ -54,7 +54,7 @@ You cannot change `this.position.x` try to change `this.position`:
 export default class Player extends godot.KinematicBody2D {
 }
 // This works
-godot.register_property(Player, "directionA", new godot.Vector2(1, 0));
+godot.register_property(Player, "directionWorks", new godot.Vector2(1, 0));
 // This breaks because `player` isn't a correct target
-godot.register_property(player, "directionB", new godot.Vector2(1, 0));
+godot.register_property(player, "directionBreaks", new godot.Vector2(1, 0));
 ```
