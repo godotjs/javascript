@@ -31,6 +31,7 @@ jobs:
       - name: Checkout workaround
         run: |
           mv tmp/misc/scripts misc/scripts
+          cp thirdparty/clang_format.sh misc/scripts/clang_format.sh
 
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
