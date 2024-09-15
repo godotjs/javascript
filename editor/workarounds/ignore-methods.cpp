@@ -1,8 +1,4 @@
-/**************************************************************************/
-/*  ignore-methods.cpp                                                    */
-/**************************************************************************/
-
-/* All types are generated in editor_tools, but constructors are missing we need to add them manually. */
+/* All types are generated in editor_tools, but some getters and setters are obsolete we need to ignore them. */
 
 #include "../editor_tools.h"
 
