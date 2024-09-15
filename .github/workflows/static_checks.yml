@@ -6,7 +6,6 @@ on:
         required: true
         type: string
 
-
 concurrency:
   group: ci-${{github.actor}}-${{github.head_ref || github.run_number}}-${{github.ref}}-static
   cancel-in-progress: true
@@ -30,7 +29,9 @@ jobs:
           path: tmp
 
       - name: Checkout workaround
-        run: mv tmp/misc/scripts misc/scripts
+        run: |
+          mv tmp/misc/scripts misc/scripts
+          cp clang_format.sh misc/scripts/clang_format.sh
 
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
