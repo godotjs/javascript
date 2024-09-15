@@ -343,7 +343,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 	int arg_required = Expression::get_func_argument_count(func);
 	if (argc < arg_required) {
 		String func_name = Expression::get_func_name(func);
-		return JS_ThrowTypeError(ctx, "%d arguments expected for builtin funtion %s", arg_required, func_name.ascii().get_data());
+		return JS_ThrowTypeError(ctx, "%d arguments expected for builtin funtion %s", arg_required, func_name.utf8().get_data());
 	}
 
 	QuickJSBinder *binder = get_context_binder(ctx);
@@ -378,7 +378,7 @@ JSValue QuickJSBinder::godot_builtin_function(JSContext *ctx, JSValue this_val, 
 
 	if (err.error != Variant::CallError::CALL_OK) {
 		String func_name = Expression::get_func_name(func);
-		return JS_ThrowTypeError(ctx, "Call builtin function error %s: %s", func_name.ascii().get_data(), err_msg.utf8().get_data());
+		return JS_ThrowTypeError(ctx, "Call builtin function error %s: %s", func_name.utf8().get_data(), err_msg.utf8().get_data());
 	}
 
 #endif
@@ -509,14 +509,14 @@ Dictionary QuickJSBinder::js_to_dictionary(JSContext *ctx, const JSValue &p_val,
 
 JSAtom QuickJSBinder::get_atom(JSContext *ctx, const StringName &p_key) {
 	String name = p_key;
-	CharString name_str = name.ascii();
+	CharString name_str = name.utf8();
 	JSAtom atom = JS_NewAtom(ctx, name_str.get_data());
 	return atom;
 }
 
 JSValue QuickJSBinder::godot_to_string(JSContext *ctx, JSValue this_val, int argc, JSValue *argv) {
 	String str = var_to_variant(ctx, this_val);
-	CharString ascii = str.ascii();
+	CharString ascii = str.utf8();
 	return JS_NewStringLen(ctx, ascii.get_data(), ascii.length());
 }
 
@@ -830,7 +830,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 			return 0;
 		}
 	} else {
-		data.class_name = String(p_cls->name).ascii();
+		data.class_name = String(p_cls->name).utf8();
 		data.jsclass.class_name = data.class_name.get_data();
 	}
 
@@ -857,7 +857,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 
 			MethodBind *mb = pair.value;
 			godot_methods.set(internal_godot_method_id, mb);
-			CharString name = String(pair.key).ascii();
+			CharString name = String(pair.key).utf8();
 			JSValue method = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, name.get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
 			JS_DefinePropertyValueStr(ctx, data.prototype, name.get_data(), method, PROP_DEF_DEFAULT);
 			methods.insert(pair.key, method);
@@ -890,7 +890,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 					godot_object_indexed_properties.resize(size + 128);
 				}
 				godot_object_indexed_properties.write[internal_godot_indexed_property_id] = &prop;
-				CharString name = String(prop_name).ascii();
+				CharString name = String(prop_name).utf8();
 				getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.get_data(), 0, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
 				setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_indexed_property, name.get_data(), 1, JS_CFUNC_generic_magic, internal_godot_indexed_property_id);
 				++internal_godot_indexed_property_id;
@@ -904,7 +904,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 					}
 					godot_methods.write[internal_godot_method_id] = mb;
 					String setter_name = prop.setter;
-					setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, setter_name.ascii().get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
+					setter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, setter_name.utf8().get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
 					++internal_godot_method_id;
 				}
 
@@ -917,7 +917,7 @@ JSClassID QuickJSBinder::register_class(const ClassDB::ClassInfo *p_cls) {
 					}
 					godot_methods.write[internal_godot_method_id] = mb;
 					String getter_name = prop.getter;
-					getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, getter_name.ascii().get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
+					getter = JS_NewCFunctionMagic(ctx, &QuickJSBinder::object_method, getter_name.utf8().get_data(), mb->get_argument_count(), JS_CFUNC_generic_magic, internal_godot_method_id);
 					++internal_godot_method_id;
 				}
 			}
@@ -1153,7 +1153,7 @@ void QuickJSBinder::add_godot_globals() {
 	for (int i = 0; i < Expression::FUNC_MAX; ++i) {
 		Expression::BuiltinFunc func = (Expression::BuiltinFunc)i;
 		String name = Expression::get_func_name(func);
-		JSValue js_func = JS_NewCFunctionMagic(ctx, godot_builtin_function, name.ascii().get_data(), 0, JS_CFUNC_generic_magic, i);
+		JSValue js_func = JS_NewCFunctionMagic(ctx, godot_builtin_function, name.utf8().get_data(), 0, JS_CFUNC_generic_magic, i);
 		JSAtom atom = get_atom(ctx, name);
 		JS_DefinePropertyValue(ctx, godot_object, atom, js_func, QuickJSBinder::PROP_DEF_DEFAULT);
 		JS_FreeAtom(ctx, atom);
