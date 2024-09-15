@@ -2,7 +2,6 @@
 /*  ignore-methods.cpp                                                    */
 /**************************************************************************/
 
-
 /* All types are generated in editor_tools, but constructors are missing we need to add them manually. */
 
 #include "../editor_tools.h"
