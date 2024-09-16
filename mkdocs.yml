@@ -10,7 +10,7 @@ nav:
   - Examples:
       - Load JSON in Singleton: examples/load-json-in-singleton.md
       - Read file local: examples/read-file-local.md
-      - Use GDScript in TS: examples/use-gdscript-in-ts.md
+      - Use GDScript in JS or TS: examples/use-gdscript-in-js-or-ts.md
   - Gotchas: gotchas.md
 theme:
   name: material
@@ -24,6 +24,7 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
+    - content.tabs.link
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -32,3 +33,5 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
