@@ -2,7 +2,7 @@
 
 1. Define your JavaScript class and inherit from a Godot class, then export it as the **default** entry:
 
-```
+```javascript title="my-sprite.mjs"
 // The default export entry is treated as an exported class to Godot
 export default class MySprite extends godot.Sprite {
 	// this is _init() in GDScript
@@ -10,7 +10,7 @@ export default class MySprite extends godot.Sprite {
 		super();
 	}
 
-	_reajavascript title="my-sprite.mjs"dy() {}
+	_ready() {}
 
 	_process(delta) {}
 }
