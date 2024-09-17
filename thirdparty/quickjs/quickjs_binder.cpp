@@ -17,7 +17,6 @@
 #include "quickjs_callable.h"
 #include "quickjs_worker.h"
 
-
 #include <cstring>
 
 SafeNumeric<uint32_t> QuickJSBinder::global_context_id;
@@ -554,10 +553,12 @@ JSValue QuickJSBinder::godot_object_method_connect(JSContext *ctx, JSValue this_
 	ERR_FAIL_COND_V(argc < 2 || !JS_IsString(argv[0]) || !JS_IsFunction(ctx, argv[1]), JS_ThrowTypeError(ctx, "string and function expected for %s.%s", "Object", "connect"));
 #endif
 	JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	const QuickJSBinder *binder = get_context_binder(ctx);
 	Object *obj = bind->get_godot_object();
 	StringName signal = binder->js_to_string(ctx, argv[0]);
 	Callable callable = memnew(QuickJSCallable(ctx, argv[1]));
+	Variant params = var_to_variant(ctx, argv[2]);
+	callable = callable.bind(params); // Add params to function
 	obj->connect(signal, callable);
 	return JS_UNDEFINED;
 }
