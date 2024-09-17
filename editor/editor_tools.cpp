@@ -80,7 +80,6 @@ JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
 	declaration_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	declaration_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	declaration_file_dialog->add_filter(TTR("*.d.ts;TypeScript Declaration file"));
-	declaration_file_dialog->set_current_file("godot.d.ts");
 	declaration_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_typescript_declare_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(declaration_file_dialog);
 
@@ -89,7 +88,6 @@ JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
 	enumberation_file_dialog->set_file_mode(EditorFileDialog::FILE_MODE_SAVE_FILE);
 	enumberation_file_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 	enumberation_file_dialog->add_filter(TTR("*.mjs;JavaScript file"));
-	enumberation_file_dialog->set_current_file("enumerations.mjs");
 	enumberation_file_dialog->connect("file_selected", callable_mp(this, &JavaScriptPlugin::_export_enumeration_binding_file));
 	EditorNode::get_singleton()->get_gui_base()->add_child(enumberation_file_dialog);
 
