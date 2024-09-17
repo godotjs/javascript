@@ -25,6 +25,6 @@ As a maintainer you are able to create a new release.
 3. Select target ``master``
 4. Click ``Generate release notes``
 5. (Optional) You can edit the generated release notes
-6. Add a release title in the format ``[Godot_Version]-[Tag]-alpha-[Year][Month][Day]`` as an example ``4.1-v0.0.17-alpha-20231003``
+6. Add a release title in the format ``[Tag]-alpha-[Year][Month][Day]`` as an example ``v0.0.17-alpha-20231003``. The used godot version will be added ass prefix automatically
 7. Press ``Publish release``
 
