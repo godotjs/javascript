@@ -17,7 +17,6 @@
 #include "quickjs_callable.h"
 #include "quickjs_worker.h"
 
-
 #include <cstring>
 
 SafeNumeric<uint32_t> QuickJSBinder::global_context_id;
@@ -231,6 +230,22 @@ JSValue QuickJSBinder::object_indexed_property(JSContext *ctx, JSValue this_val,
 	return variant_to_var(ctx, ret_val);
 }
 
+Vector<String> QuickJSBinder::get_function_args(JSContext *ctx, const JSValue p_val) {
+	Vector<String> args;
+	if (JS_IsFunction(ctx, p_val)) {
+		const auto function = String(var_to_variant(ctx, p_val)); // Returns function as string
+		const auto start = function.find_char('(') + 1;
+		const auto end = function.find_char(')');
+		const String argsAsString = function.substr(start, end - start);
+		const auto resolvedArgs = argsAsString.split(",", false);
+		for (const auto &resolved_arg : resolvedArgs) {
+			args.push_back(resolved_arg.strip_edges());
+		}
+	}
+
+	return args;
+}
+
 JSValue QuickJSBinder::variant_to_var(JSContext *ctx, const Variant p_var) {
 	switch (p_var.get_type()) {
 		case Variant::BOOL:
@@ -312,9 +327,9 @@ Variant QuickJSBinder::var_to_variant(JSContext *ctx, JSValue p_val) {
 				ERR_FAIL_NULL_V(bind->godot_object, Variant());
 				return bind->get_value();
 			} else if (JS_IsFunction(ctx, p_val)) {
-				JSValue name = JS_GetProperty(ctx, p_val, JS_ATOM_name);
-				String ret = vformat("function %s() { ... }", js_to_string(ctx, name));
-				JS_FreeValue(ctx, name);
+				JSValue function = JS_FunctionToString(ctx, p_val);
+				String ret = js_to_string(ctx, function);
+				JS_FreeValue(ctx, function);
 				return ret;
 			} else { // Plain Object as Dictionary
 				List<void *> stack;
@@ -554,10 +569,12 @@ JSValue QuickJSBinder::godot_object_method_connect(JSContext *ctx, JSValue this_
 	ERR_FAIL_COND_V(argc < 2 || !JS_IsString(argv[0]) || !JS_IsFunction(ctx, argv[1]), JS_ThrowTypeError(ctx, "string and function expected for %s.%s", "Object", "connect"));
 #endif
 	JavaScriptGCHandler *bind = BINDING_DATA_FROM_JS(ctx, this_val);
-	QuickJSBinder *binder = QuickJSBinder::get_context_binder(ctx);
+	const QuickJSBinder *binder = get_context_binder(ctx);
 	Object *obj = bind->get_godot_object();
 	StringName signal = binder->js_to_string(ctx, argv[0]);
 	Callable callable = memnew(QuickJSCallable(ctx, argv[1]));
+	Variant params = var_to_variant(ctx, argv[2]);
+	callable = callable.bind(params); // Add params to function
 	obj->connect(signal, callable);
 	return JS_UNDEFINED;
 }
@@ -1751,7 +1768,7 @@ const JavaScriptClassInfo *QuickJSBinder::register_javascript_class(const JSValu
 		goto fail;
 	}
 
-	prototype = JS_GetProperty(ctx, p_constructor, QuickJSBinder::JS_ATOM_prototype);
+	prototype = JS_GetProperty(ctx, p_constructor, JS_ATOM_prototype);
 	classid = JS_GetProperty(ctx, prototype, js_key_godot_classid);
 	tooled = JS_GetProperty(ctx, p_constructor, js_key_godot_tooled);
 	icon = JS_GetProperty(ctx, p_constructor, js_key_godot_icon_path);
@@ -1806,8 +1823,8 @@ const JavaScriptClassInfo *QuickJSBinder::register_javascript_class(const JSValu
 				JavaScriptProperyInfo ei;
 				ei.name = key;
 				ei.type = Variant::NIL;
-				ei.hint = PropertyHint::PROPERTY_HINT_NONE;
-				ei.usage = PropertyUsageFlags::PROPERTY_USAGE_DEFAULT;
+				ei.hint = PROPERTY_HINT_NONE;
+				ei.usage = PROPERTY_USAGE_DEFAULT;
 
 				JSAtom pname = get_atom(ctx, key);
 				JSValue js_prop = JS_GetProperty(ctx, props, pname);
@@ -1864,13 +1881,21 @@ const JavaScriptClassInfo *QuickJSBinder::register_javascript_class(const JSValu
 		// methods
 		HashSet<String> keys;
 		get_own_property_names(ctx, prototype, &keys);
-		for (const String &E : keys) {
-			JSAtom key = get_atom(ctx, E);
+		for (const String &method_name : keys) {
+			JSAtom key = get_atom(ctx, method_name);
 			JSValue value = JS_GetProperty(ctx, prototype, key);
 			if (JS_IsFunction(ctx, value)) {
 				MethodInfo mi;
-				mi.name = E;
-				js_class.methods.insert(E, mi);
+				mi.name = method_name;
+
+				if (auto args = get_function_args(ctx, value); args.size() > 0) {
+					for (auto &arg : args) {
+						// TODO: How do we resolve the type???
+						mi.arguments.push_back(PropertyInfo(Variant::NIL, arg));
+					}
+				}
+
+				js_class.methods.insert(method_name, mi);
 			}
 			JS_FreeValue(ctx, value);
 			JS_FreeAtom(ctx, key);

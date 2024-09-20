@@ -222,7 +222,16 @@ protected:
 public:
 	static Error define_operators(JSContext *ctx, JSValue p_prototype, JSValue *p_operators, int p_size);
 
-public:
+	/**
+	 * Get arguments for a js function as string array
+	 * Note: There was no direct way to access args in quickjs.c, so we use
+	 * `var_to_variant` to get the function as string. Might not have the best performing
+	 * @param ctx Current QuickJSBinder context
+	 * @param p_val Pointer for the function
+	 * @return Array of Strings
+	 */
+	static Vector<String> get_function_args(JSContext *ctx, JSValue p_val);
+
 	static JSValue variant_to_var(JSContext *ctx, const Variant p_var);
 	static Variant var_to_variant(JSContext *ctx, JSValue p_val);
 	static bool validate_type(JSContext *ctx, Variant::Type p_type, JSValueConst &p_val);
@@ -279,8 +288,6 @@ public:
 	_FORCE_INLINE_ static JSValue to_js_bool(JSContext *ctx, bool p_val) {
 		return JS_NewBool(ctx, p_val);
 	}
-
-public:
 
 	QuickJSBinder() {
 		context_id = QuickJSBinder::global_context_id.increment();
