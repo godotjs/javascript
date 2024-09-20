@@ -742,10 +742,11 @@ JS_BOOL JS_SetConstructorBit(JSContext *ctx, JSValueConst func_obj, JS_BOOL val)
 JSValue JS_NewArray(JSContext *ctx);
 int JS_IsArray(JSContext *ctx, JSValueConst val);
 
-JSValue js_function_toString(JSContext *ctx, JSValueConst this_val);
+    JSValue js_function_toString(JSContext *ctx, JSValueConst this_val,
+                                           int argc, JSValueConst *argv);
 static js_force_inline JSValue JS_FunctionToString(JSContext *ctx, JSValueConst this_val)
     {
-        return js_function_toString(ctx, this_val);
+        return js_function_toString(ctx, this_val, 0, NULL);
     }
 
 JSValue JS_GetPropertyInternal(JSContext *ctx, JSValueConst obj,

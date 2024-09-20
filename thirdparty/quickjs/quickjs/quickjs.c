@@ -37459,7 +37459,8 @@ static JSValue js_function_bind(JSContext *ctx, JSValueConst this_val,
     return JS_EXCEPTION;
 }
 
-JSValue js_function_toString(JSContext *ctx, JSValueConst this_val)
+JSValue js_function_toString(JSContext *ctx, JSValueConst this_val,
+									   int argc, JSValueConst *argv)
 {
     JSObject *p;
     JSFunctionKindEnum func_kind = JS_FUNC_NORMAL;
