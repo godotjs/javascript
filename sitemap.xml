@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/api/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/getting-started/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/gotchas/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/typescript/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/examples/load-json-in-singleton/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/examples/read-file-local/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+    <url>
+         <loc>https://geequlim.github.io/ecmascript/examples/use-gdscript-in-js-or-ts/</loc>
+         <lastmod>2024-09-20</lastmod>
+    </url>
+</urlset>
