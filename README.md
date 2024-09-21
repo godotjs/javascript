@@ -1,6 +1,6 @@
 <picture>
-  <source media="(max-width: 720px)" srcset="icons/header-mobile.svg">
-  <img src="icons/header.svg" width="900" height="330" alt="GodotJS Logo">
+  <source media="(mmin-width: 720px)" srcset="docs/header.svg">
+  <img src="docs/header-mobile.svg" width="900" height="330" alt="GodotJS Logo">
 </picture>
 
 # **GodotJS**
