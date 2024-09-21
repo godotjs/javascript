@@ -1,6 +1,18 @@
-# GodotJS - JavaScript language binding for Godot game engine
+<picture>
+  <source media="(mmin-width: 720px)" srcset="docs/header.svg">
+  <img src="docs/header-mobile.svg" width="900" height="330" alt="GodotJS Logo">
+</picture>
+
+# **GodotJS**
+
+***-- JavaScript and TypeScript language binding for Godot game engine --***
 
 This module implements JavaScript/TypeScript language support for the Godot game engine using [QuickJS](https://bellard.org/quickjs/) as the JavaScript engine.
+
+
+## Getting started
+
+Read the [getting-started](https://godotjs.github.io/documentation/getting-started/).
 
 ## Features
 
@@ -12,10 +24,6 @@ This module implements JavaScript/TypeScript language support for the Godot game
 - Multi-thread support with Worker API
 - Full code completion support for all Godot APIs including signals and enumerations
 - Debug in Visual Studio Code with the [plugin](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-javascript-debug) - currently not available for 4.x
-
-### Getting started
-
-Read the [getting-started](https://geequlim.github.io/ECMAScript/getting-started).
 
 ## Getting the engine
 
@@ -32,8 +40,8 @@ Download the binaries from the [release page](https://github.com/GodotExplorer/E
   - `git clone https://github.com/godotengine/godot.git`
 - This branch uses version `4.1` so checkout the version with: `git checkout 4.1`
 - Clone this module and put it into `godot/modules/javascript`:
-  - `git clone git@github.com:Geequlim/ECMAScript.git godot/modules/javascript` or
-  - `git clone https://github.com/Geequlim/ECMAScript.git godot/modules/javascript`
+  - `git clone git@github.com:godotjs/javascript.git godot/modules/javascript` or
+  - `git clone https://github.com/godotjs/javascript.git godot/modules/javascript`
 - [Recompile the godot engine](https://docs.godotengine.org/en/4.1/development/compiling/index.html)
   - Use `scons` with those additional options `warnings=extra werror=yes module_text_server_fb_enabled=yes` to show all potential errors:
     - Windows: `scons platform=windows warnings=extra werror=yes module_text_server_fb_enabled=yes`
@@ -41,13 +49,14 @@ Download the binaries from the [release page](https://github.com/GodotExplorer/E
 
 ## Documentation, Tutorials & Demos
 
-Read this [documentation](https://geequlim.github.io/ECMAScript/getting-started) or look at the tutorials or demos:
 
-- [ECMAScriptDemos](https://github.com/Geequlim/ECMAScriptDemos) - Demos
+Read this [documentation](https://godotjs.github.io/documentation/getting-started/) or look at the tutorials or demos:
+
+- [ECMAScriptDemos](https://github.com/godotjs/javascriptDemos) - Demos
 - [godot-ECMAScript-cookbook](https://github.com/why-try313/godot-ECMAScript-cookbook/wiki) - Tutorial
 - [godot-typescript-starter](https://github.com/citizenll/godot-typescript-starter) - Template
 - [godot-js-template](https://github.com/fukaraadam-workspace/godot-js-template) - Template
 
 ## Contributing
 
-If you like to contribute to this project check the [CONTRIBUTING.md](https://github.com/Geequlim/ECMAScript/blob/master/CONTRIBUTING.md) file.
+If you like to contribute to this project check the [CONTRIBUTING.md](https://github.com/godotjs/javascript/blob/master/CONTRIBUTING.md) file.
