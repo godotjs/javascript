@@ -1,4 +1,9 @@
- <img src="icons/header.svg" width="800" height="400" alt="GodotJS Logo">
+<picture>
+  <source media="(max-width: 720px)" srcset="icons/header-mobile.svg">
+  <img src="icons/header.svg" width="900" height="330" alt="GodotJS Logo">
+</picture>
+
+# **GodotJS**
 
 ***-- JavaScript and TypeScript language binding for Godot game engine --***
 
