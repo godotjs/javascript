@@ -1,5 +1,5 @@
 <picture>
-  <source media="(mmin-width: 720px)" srcset="docs/header.svg">
+  <source media="(min-width: 720px)" srcset="docs/header.svg">
   <img src="docs/header-mobile.svg" width="900" height="330" alt="GodotJS Logo">
 </picture>
 
