@@ -56,7 +56,6 @@ JavaScriptLanguage::~JavaScriptLanguage() {
 void JavaScriptLanguage::init() {
 	ERR_FAIL_NULL(main_binder);
 	main_binder->initialize();
-	execute_file("modules/javascript/tests/UnitTest.js");
 }
 
 void JavaScriptLanguage::finish() {
@@ -65,14 +64,10 @@ void JavaScriptLanguage::finish() {
 	main_binder->language_finalize();
 }
 
-Error JavaScriptLanguage::execute_file(const String &p_path) {
+Error JavaScriptLanguage::execute_file(const String &code) {
 	ERR_FAIL_NULL_V(main_binder, ERR_BUG);
-	Error err;
-	String code = FileAccess::get_file_as_string(p_path, &err);
-	if (err == OK) {
-		JavaScriptGCHandler eval_ret;
-		err = main_binder->eval_string(code, JavaScriptBinder::EVAL_TYPE_GLOBAL, p_path, eval_ret);
-	}
+	JavaScriptGCHandler eval_ret;
+	const Error err = main_binder->eval_string(code, JavaScriptBinder::EVAL_TYPE_GLOBAL, "test.js", eval_ret);
 	return err;
 }
 

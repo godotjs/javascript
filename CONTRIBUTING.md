@@ -2,7 +2,24 @@
 
 ## Project Structure
 
-TODO
+- [Clang](https://clang.llvm.org/): Code formatting
+  - ``.clang-format``
+  - ``.clang-tidy``
+  - ``clang-format.sh``
+- [Custom Modules in C++](https://docs.godotengine.org/en/stable/contributing/development/core_and_modules/custom_modules_in_cpp.html#custom-modules-in-c)
+  - ``config.py``: Configs for this module
+  - ``doc``: For showing documentation in editor
+  - ``doc_classes``: For showing documentation in editor
+  - ``icons``: For showing icons in editor
+  - ``SCsub``: Will be called from Godots `SConstruct` during build
+  - ``editor``: Custom `.cpp` only bundled for `target=editor`
+  - ``misc``: Scripts and other files, which aren't related to `c++`
+  - ``tests``: Some testcases to run in CICD
+  - ``thirdparty``: Dependencies or libraries which shouldn't be analysed by static checks
+- GodotJS custom data
+  - ``.github``: Runs custom CI/CD in GitHub
+  - ``docs``: Add some additional stuff for README.md
+
 
 ## Preparing your PR
 
