@@ -46,8 +46,8 @@ test(
 
     let obj = new godot.Object();
     obj.connect("script_changed", (...args) => {
-      const [aNumber, aString] = args;
-      ok = aNumber === 123 && aString === "hello";
+      const [firstNumber, secondString] = args;
+      ok = firstNumber === 123 && secondString === "hello";
     });
     obj.emit_signal("script_changed", 123, "hello");
     obj.free();
