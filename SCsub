@@ -59,7 +59,6 @@ if JS_ENGINE == "quickjs":
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
-
 # --- Files inside editor  ---
 if env.editor_build:
     # TODO: Move generation of files to separate py script
@@ -113,6 +112,7 @@ sources = [
     "javascript_instance.cpp",
     "javascript.cpp",
     "misc/godot.binding_script.gen.cpp"
+
 ]
 
 # Add all required files for "Javascript" language into godot
