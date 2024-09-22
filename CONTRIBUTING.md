@@ -23,7 +23,11 @@
 
 ## Preparing your PR
 
-The project is using [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to format most files. You need to run `bash ./clang_format.sh` before your PR for a successful pipeline.
+The project is using [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to format C++ files. 
+You need to run `bash ./misc/formatting/clang_format.sh` before your PR for a successful pipeline.
+
+The project is using [`black`](https://github.com/psf/black) to format python files. 
+You need to run `bash ./misc/formatting/black_format.sh` before your PR for a successful pipeline.
 
 Furthermore, there is an `utf-8` and `LF` checker to fix file formats. Additionally, some spellchecks run inside the [pipeline](.github/workflows/static_checks.yml).
 
