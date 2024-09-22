@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-import platform, os, sys
+import os
+
+from misc.generate.generate_files import generate
 
 Import("env")
 Import("env_modules")
@@ -8,39 +10,18 @@ env_javascript = env_modules.Clone()
 
 # Default engine to use we might add some more in the future like node or v8
 JS_ENGINE = "quickjs"
+javascript_dir = os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd()))
 
 # Windows workaround
 if env["platform"] == "windows":
     if env["use_mingw"]:
         env.Append(LIBS=["pthread"])
 
-
-def open_file(path, mode):
-    if platform.python_version() > "3":
-        return open(path, mode, encoding="utf8")
-    else:
-        return open(path, mode)
-
-
-def dump_text_file_to_cpp(file):
-    source = open_file(file, "r").read()
-    lines = source.split("\n")
-    source = ""
-    length = len(lines)
-    for i in range(length):
-        line = lines[i].replace('"', '\\"')
-        line = '\t"' + line + '\\n"'
-        if i < length - 1:
-            line += "\n"
-        source += line
-    return source
-
-
 # Add required files for quickjs into godot
 if JS_ENGINE == "quickjs":
     import generate_builtin_api
 
-    generate_builtin_api.generate_api_json(os.path.join(GetLaunchDir(), "modules", os.path.basename(os.getcwd())))
+    generate_builtin_api.generate_api_json(javascript_dir)
     import thirdparty.quickjs.builtin_binding_generator
 
     thirdparty.quickjs.builtin_binding_generator.generate_builtin_bindings()
@@ -59,62 +40,50 @@ if JS_ENGINE == "quickjs":
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/*.cpp")
     quickjs_env.add_source_files(env.modules_sources, "thirdparty/quickjs/quickjs/*.c")
 
-# --- Files inside editor  ---
+# If target=editor is provided via scons
 if env.editor_build:
-    # TODO: Move generation of files to separate py script
-    base_text = (
-        '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
-    )
-    tool_fns = {
-        "editor/godot.d.ts.gen.cpp": (
-            "BUILTIN_DECLARATION_TEXT",
-            dump_text_file_to_cpp("misc/godot.d.ts"),
-        ),
-        "editor/tsconfig.json.gen.cpp": (
-            "TSCONFIG_CONTENT",
-            dump_text_file_to_cpp("misc/tsconfig.json"),
-        ),
-        "editor/decorators.ts.gen.cpp": (
-            "TS_DECORATORS_CONTENT",
-            dump_text_file_to_cpp("misc/decorators.ts"),
-        ),
-        "editor/package.json.gen.cpp": (
-            "PACKAGE_JSON_CONTENT",
-            dump_text_file_to_cpp("misc/package.json"),
-        ),
-    }
-    for fn, subs in tool_fns.items():
-        with open_file(fn, "w") as fh:
-            fh.write(base_text.format(*subs))
-        env_javascript.add_source_files(env.modules_sources, fn)
     env_javascript.add_source_files(env.modules_sources, "editor/workarounds/*.cpp")
     env_javascript.add_source_files(env.modules_sources, "editor/*.cpp")
+
+    # --- Generate editor tool files ---
+    from misc.generate.editor_tools import get_editor_tools_files
+    from misc.generate.editor_tools import get_editor_tools_header
+
+    files = get_editor_tools_files()
+    generate(javascript_dir, get_editor_tools_header(), files)
+    env_javascript.add_source_files(env.modules_sources, files.keys())
 
 # If tests=yes flag is provided via scons
 if env["tests"]:
     env_javascript.Append(CPPDEFINES=["TESTS_ENABLED"])
-    with open("src/tests/godot.unit_test.gen.cpp", "w") as f:
-        text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "test_manager.h"\nString TestManager::UNIT_TEST = \n${source};'
-        f.write(text.replace("${source}", dump_text_file_to_cpp("src/tests/UnitTest.js")))
-    env_javascript.add_source_files(env.modules_sources, "src/tests/godot.unit_test.gen.cpp")
+
+    # --- Generate test files ---
+    from misc.generate.test_manager import get_test_files
+    from misc.generate.test_manager import get_test_manager_header
+
+    files = get_test_files()
+    generate(javascript_dir, get_test_manager_header(), files)
+    env_javascript.add_source_files(env.modules_sources, files.keys())
 
 # --- Files inside editor & targets ---
-
-# Binding script to run at engine initializing
-# The bindings add some functionality for `this.connect(...)`
-with open("misc/godot.binding_script.gen.cpp", "w") as f:
-    text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../javascript_binder.h"\nString JavaScriptBinder::BINDING_SCRIPT_CONTENT = \n${source};'
-    f.write(text.replace("${source}", dump_text_file_to_cpp("misc/binding_script.js")))
 
 sources = [
     "register_types.cpp",
     "javascript_language.cpp",
     "javascript_instance.cpp",
     "javascript.cpp",
-    "misc/godot.binding_script.gen.cpp"
-
 ]
 
 # Add all required files for "Javascript" language into godot
 env_javascript.Append(CPPPATH=["#modules/javascript"])
 env_javascript.add_source_files(env.modules_sources, sources)
+
+# --- Generate binding files ---
+# Binding script to run at engine initializing
+# The bindings add some functionality for `this.connect(...)`
+from misc.generate.bindings import get_bindings_header
+from misc.generate.bindings import get_binding_files
+
+files = get_binding_files()
+generate(javascript_dir, get_bindings_header(), files)
+env_javascript.add_source_files(env.modules_sources, files.keys())
