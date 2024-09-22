@@ -97,6 +97,7 @@ if env["tests"]:
     with open("src/tests/godot.unit_test.gen.cpp", "w") as f:
         text = '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "test_manager.h"\nString TestManager::UNIT_TEST = \n${source};'
         f.write(text.replace("${source}", dump_text_file_to_cpp("src/tests/UnitTest.js")))
+    env_javascript.add_source_files(env.modules_sources, "src/tests/godot.unit_test.gen.cpp")
 
 # --- Files inside editor & targets ---
 
@@ -111,8 +112,7 @@ sources = [
     "javascript_language.cpp",
     "javascript_instance.cpp",
     "javascript.cpp",
-    "misc/godot.binding_script.gen.cpp",
-    "src/tests/godot.unit_test.gen.cpp",
+    "misc/godot.binding_script.gen.cpp"
 ]
 
 # Add all required files for "Javascript" language into godot
