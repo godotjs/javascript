@@ -46,6 +46,7 @@ Download the binaries from the [release page](https://github.com/GodotExplorer/E
   - Use `scons` with those additional options `warnings=extra werror=yes module_text_server_fb_enabled=yes` to show all potential errors:
     - Windows: `scons platform=windows warnings=extra werror=yes module_text_server_fb_enabled=yes`
     - MacOS: `scons platform=macos arch=arm64 warnings=extra werror=yes module_text_server_fb_enabled=yes`
+  - **Hint**: To enable unit tests you need to add ``tests=true`` to `scons` arguments 
 
 ## Documentation, Tutorials & Demos
 

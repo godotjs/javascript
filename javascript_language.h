@@ -56,7 +56,13 @@ public:
 
 	virtual void init() override;
 	virtual void finish() override;
-	virtual Error execute_file(const String &p_path);
+
+	/**
+	 * Executes a js file with JavaScriptBinder - currently used via init() for testing the editor in cicd
+	 * @param code Code as string which should be executed
+	 * @return
+	 */
+	virtual Error execute_file(const String &code);
 
 	virtual void get_reserved_words(List<String> *p_words) const override;
 	virtual bool is_control_flow_keyword(String p_keywords) const override;

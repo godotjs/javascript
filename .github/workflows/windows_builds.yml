@@ -78,7 +78,7 @@ jobs:
         run: |
           ${{ matrix.bin }} --version
           ${{ matrix.bin }} --help
-          ${{ matrix.bin }} --test
+          ${{ matrix.bin }} --test --force-colors
 
       - name: Prepare artifact
         run: |

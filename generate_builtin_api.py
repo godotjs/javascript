@@ -372,11 +372,11 @@ def parse_class(cls):
     )
 
 
-def generate_api_json(MODULE_DIR):
-    DOCS_DIR = os.path.abspath(os.path.join(MODULE_DIR, "../../doc/classes"))
+def generate_api_json(MODULES_DIR):
+    DOCS_DIR = os.path.abspath(os.path.join(MODULES_DIR, "../../doc/classes"))
     if not os.path.isdir(DOCS_DIR) and len(sys.argv) > 1:
         DOCS_DIR = sys.argv[-1]
-    OUTPUT_FILE = os.path.join(MODULE_DIR, "builtin_api.gen.json")
+    OUTPUT_FILE = os.path.join(MODULES_DIR, "builtin_api.gen.json")
 
     classes = []
     for cls in BUILTIN_CLASSES:

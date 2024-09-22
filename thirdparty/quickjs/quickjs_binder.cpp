@@ -233,12 +233,12 @@ JSValue QuickJSBinder::object_indexed_property(JSContext *ctx, JSValue this_val,
 Vector<String> QuickJSBinder::get_function_args(JSContext *ctx, const JSValue p_val) {
 	Vector<String> args;
 	if (JS_IsFunction(ctx, p_val)) {
-		const auto function = String(var_to_variant(ctx, p_val)); // Returns function as string
-		const auto start = function.find_char('(') + 1;
-		const auto end = function.find_char(')');
+		const String function = String(var_to_variant(ctx, p_val)); // Returns function as string
+		const int start = function.find_char('(') + 1;
+		const int end = function.find_char(')');
 		const String argsAsString = function.substr(start, end - start);
-		const auto resolvedArgs = argsAsString.split(",", false);
-		for (const auto &resolved_arg : resolvedArgs) {
+		const Vector<String> resolvedArgs = argsAsString.split(",", false);
+		for (const String &resolved_arg : resolvedArgs) {
 			args.push_back(resolved_arg.strip_edges());
 		}
 	}
@@ -1272,7 +1272,7 @@ void QuickJSBinder::initialize() {
 	// binding script
 	String script_binding_error;
 	JavaScriptGCHandler eval_ret;
-	if (OK == safe_eval_text(JavaScriptBinder::BINDING_SCRIPT_CONTENT, JavaScriptBinder::EVAL_TYPE_GLOBAL, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
+	if (OK == safe_eval_text(BINDING_SCRIPT_CONTENT, EVAL_TYPE_GLOBAL, "<internal: binding_script.js>", script_binding_error, eval_ret)) {
 #ifdef TOOLS_ENABLED
 		if (eval_ret.javascript_object) {
 			JSValue ret = JS_MKPTR(JS_TAG_OBJECT, eval_ret.javascript_object);
@@ -1888,8 +1888,8 @@ const JavaScriptClassInfo *QuickJSBinder::register_javascript_class(const JSValu
 				MethodInfo mi;
 				mi.name = method_name;
 
-				if (auto args = get_function_args(ctx, value); args.size() > 0) {
-					for (auto &arg : args) {
+				if (Vector<String> args = get_function_args(ctx, value); args.size() > 0) {
+					for (String &arg : args) {
 						// TODO: How do we resolve the type???
 						mi.arguments.push_back(PropertyInfo(Variant::NIL, arg));
 					}

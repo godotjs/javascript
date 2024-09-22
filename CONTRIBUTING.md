@@ -2,11 +2,30 @@
 
 ## Project Structure
 
-TODO
+- [Clang](https://clang.llvm.org/): Code formatting
+  - ``.clang-format``
+  - ``.clang-tidy``
+  - ``clang-format.sh``
+- [Custom Modules in C++](https://docs.godotengine.org/en/stable/contributing/development/core_and_modules/custom_modules_in_cpp.html#custom-modules-in-c)
+  - ``config.py``: Configs for this module
+  - ``doc``: For showing documentation in editor
+  - ``doc_classes``: For showing documentation in editor
+  - ``icons``: For showing icons in editor
+  - ``SCsub``: Will be called from Godots `SConstruct` during build
+  - ``editor``: Custom `.cpp` only bundled for `target=editor`
+  - ``misc``: Scripts and other files, which aren't related to `c++`
+  - ``tests``: Some testcases to run in CICD
+  - ``thirdparty``: Dependencies or libraries which shouldn't be analysed by static checks
+- GodotJS custom data
+  - ``.github``: Runs custom CI/CD in GitHub
+  - ``docs``: Add some additional stuff for README.md
+  - ``src``: Contains custom C++ code
+
 
 ## Preparing your PR
 
-The project is using [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to format most files. You need to run `bash ./clang_format.sh` before your PR for a successful pipeline.
+The project is using [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to format C++ files. 
+You need to run `bash ./misc/formatting/clang_format.sh` before your PR for a successful pipeline.
 
 Furthermore, there is an `utf-8` and `LF` checker to fix file formats. Additionally, some spellchecks run inside the [pipeline](.github/workflows/static_checks.yml).
 
