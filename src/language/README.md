@@ -26,6 +26,6 @@ You need to use `export default class CLASS extends GODOT_OBJECT_NAME.BASE` as c
 
 Inside `misc/generate/templates.py` ou need to add a new template where you need to add some template name and description.
 
-If you want to add a new template you need to add it as well inside `src/language/templates/javascript_template_manager.h`, like
+If you want to add a new template you need to add the variable as well inside `src/language/templates/javascript_template_manager.h`, like
 `static ScriptLanguage::ScriptTemplate DEFAULT_TEMPLATE;`.
 And you need to append it into the `get_templates` function inside `src/language/templates/javascript_template_manager.cpp`.
