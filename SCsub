@@ -69,7 +69,6 @@ if env["tests"]:
 
 sources = [
     "register_types.cpp",
-    "javascript_language.cpp",
     "javascript_instance.cpp",
     "javascript.cpp",
 ]
@@ -77,6 +76,17 @@ sources = [
 # Add all required files for "Javascript" language into godot
 env_javascript.Append(CPPPATH=["#modules/javascript"])
 env_javascript.add_source_files(env.modules_sources, sources)
+env_javascript.add_source_files(env.modules_sources, "src/language/*.cpp")
+env_javascript.add_source_files(env.modules_sources, "src/language/templates/*.cpp")
+
+# --- Generate template files ---
+from misc.generate.templates import get_templates_header
+from misc.generate.templates import get_templates_files
+from misc.generate.generate_files import generate_templates
+
+files = get_templates_files()
+generate_templates(javascript_dir, get_templates_header(), files)
+env_javascript.add_source_files(env.modules_sources, files.keys())
 
 # --- Generate binding files ---
 # Binding script to run at engine initializing

@@ -9,6 +9,7 @@
 
 #include "javascript_binder.h"
 
+#define EXT_NAME "JavaScript"
 #define EXT_JSCLASS "mjs"
 #define EXT_JSMODULE "js"
 #define EXT_JSON "json"
