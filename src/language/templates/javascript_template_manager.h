@@ -1,10 +1,10 @@
+
 #ifndef JAVASCRIPT_TEMPLATE_MANAGER_H
 #define JAVASCRIPT_TEMPLATE_MANAGER_H
 
 #include "../javascript_language.h"
 
 class JavaScriptLanguageManager {
-
 public:
 	static ScriptLanguage::ScriptTemplate DEFAULT_TEMPLATE;
 	static ScriptLanguage::ScriptTemplate EMPTY_TEMPLATE;
