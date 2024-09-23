@@ -1,6 +1,9 @@
 def get_test_manager_header():
     return (
-        '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "test_manager.h"\nString TestManager::{} = \n{};'
+        '/* THIS FILE IS GENERATED DO NOT EDIT */\n'
+        '#include "test_manager.h"\n'
+        'String TestManager::{} = \n'
+        '{};'
     )
 
 

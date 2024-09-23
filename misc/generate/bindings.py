@@ -1,6 +1,9 @@
 def get_bindings_header():
     return (
-        '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "../javascript_binder.h"\nString JavaScriptBinder::{} = \n{};'
+        '/* THIS FILE IS GENERATED DO NOT EDIT */\n'
+        '#include "../javascript_binder.h"\n'
+        'String JavaScriptBinder::{} = \n'
+        '{};'
     )
 
 

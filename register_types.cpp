@@ -1,10 +1,9 @@
 #include "register_types.h"
 
 #include "javascript.h"
-#include "javascript_language.h"
+#include "src/language/javascript_language.h"
 
 #ifdef TOOLS_ENABLED
-#include "core/io/file_access_encrypted.h"
 #include "editor/editor_node.h"
 #include "editor/editor_tools.h"
 #include "editor/export/editor_export.h"
@@ -20,7 +19,7 @@ public:
 			return;
 		}
 	}
-	virtual String _get_name() const override { return "JavaScript"; }
+	virtual String _get_name() const override { return EXT_NAME; }
 };
 
 #endif

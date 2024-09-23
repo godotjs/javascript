@@ -1,6 +1,9 @@
 def get_editor_tools_header():
     return (
-        '/* THIS FILE IS GENERATED DO NOT EDIT */\n#include "editor_tools.h"\nString JavaScriptPlugin::{} = \n{};'
+        '/* THIS FILE IS GENERATED DO NOT EDIT */\n'
+        '#include "editor_tools.h"\n'
+        'String JavaScriptPlugin::{} = \n'
+        '{};'
     )
 
 

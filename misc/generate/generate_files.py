@@ -27,11 +27,21 @@ def dump_text_file_to_cpp(javascript_dir, path):
     return source
 
 
-def generate(javascript_dir, header, tool_fns):
-    for fn, subs in tool_fns.items():
+def generate(javascript_dir, header, files):
+    for fn, subs in files.items():
         with open_file(javascript_dir, fn, "w") as fh:
             name = subs[0]
             file = dump_text_file_to_cpp(javascript_dir, subs[1])
             fh.write(header.format(name, file))
 
 
+def generate_templates(javascript_dir, header, files):
+    for fn, subs in files.items():
+        with (open_file(javascript_dir, fn, "w") as fh):
+            cpp_name = subs[0]
+            inherit = subs[1]
+            template_name = subs[2]
+            template_description = subs[3]
+            file = dump_text_file_to_cpp(javascript_dir, subs[4])
+            file = file.replace("GODOT_OBJECT_NAME", "\" GODOT_OBJECT_NAME \"")
+            fh.write(header.format(cpp_name, inherit, template_name, template_description, file))
