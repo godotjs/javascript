@@ -2,11 +2,10 @@
 /* After loading it contains the code/bytecode of the loaded file. */
 
 #include "javascript.h"
-#include "core/config/engine.h"
 #include "core/io/file_access_encrypted.h"
 #include "javascript_instance.h"
-#include "javascript_language.h"
 #include "scene/resources/resource_format_text.h"
+#include "src/language/javascript_language.h"
 
 ScriptLanguage *JavaScript::get_language() const {
 	return JavaScriptLanguage::get_singleton();

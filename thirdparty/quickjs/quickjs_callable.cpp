@@ -1,6 +1,6 @@
 #include "quickjs_callable.h"
 #include "quickjs_binder.h"
-#include "../../javascript_language.h"
+#include "../../src/language/javascript_language.h"
 #include "quickjs/quickjs.h"
 
 bool QuickJSCallable::compare_equal(const CallableCustom *p_a, const CallableCustom *p_b) {

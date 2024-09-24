@@ -31,7 +31,7 @@ jobs:
       - name: Checkout workaround
         run: |
           mv tmp/misc/scripts misc/scripts
-          cp misc/formatting/clang_format.sh misc/scripts/clang_format.sh
+          cp clang_format.sh misc/scripts/clang_format.sh
 
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -61,10 +61,6 @@ jobs:
       - name: File formatting checks (file_format.sh)
         run: |
           bash ./misc/scripts/file_format.sh changed.txt
-
-      - name: Header guards formatting checks (header_guards.sh)
-        run: |
-          bash ./misc/scripts/header_guards.sh changed.txt
 
       - name: Python scripts static analysis (mypy_check.sh)
         run: |

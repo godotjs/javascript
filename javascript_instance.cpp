@@ -1,6 +1,6 @@
 #include "javascript_instance.h"
 #include "javascript.h"
-#include "javascript_language.h"
+#include "src/language/javascript_language.h"
 
 Ref<Script> JavaScriptInstance::get_script() const {
 	return script;
