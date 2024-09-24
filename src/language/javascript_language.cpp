@@ -96,5 +96,5 @@ void JavaScriptLanguage::frame() {
 
 // TODO
 void JavaScriptLanguage::add_global_constant(const StringName &p_variable, const Variant &p_value) {}
-
-
+void JavaScriptLanguage::add_named_global_constant(const StringName &p_name, const Variant &p_value) {}
+void JavaScriptLanguage::remove_named_global_constant(const StringName &p_name) {}

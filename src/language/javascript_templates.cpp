@@ -14,7 +14,7 @@ Ref<Script> JavaScriptLanguage::make_template(const String &p_template, const St
 Vector<ScriptLanguage::ScriptTemplate> JavaScriptLanguage::get_built_in_templates(const StringName p_object) {
 	Vector<ScriptTemplate> templates;
 #ifdef TOOLS_ENABLED
-		const Vector<ScriptTemplate> all_templates = JavaScriptLanguageManager::get_templates();
+	const Vector<ScriptTemplate> all_templates = JavaScriptLanguageManager::get_templates();
 
 	for (int i = 0; i < all_templates.size(); i++) {
 		if (all_templates[i].inherit == p_object) {

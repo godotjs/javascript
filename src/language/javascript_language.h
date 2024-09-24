@@ -57,11 +57,20 @@ public:
 	 * @param p_value Value of the global constant
 	 */
 	virtual void add_global_constant(const StringName &p_variable, const Variant &p_value) override;
+	virtual void add_named_global_constant(const StringName &p_name, const Variant &p_value) override;
+	virtual void remove_named_global_constant(const StringName &p_name) override;
 
 	/* TEXT EDITOR FUNCTIONS */
 	virtual int find_function(const String &p_function, const String &p_code) const override;
 	virtual String make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const override;
 	virtual void auto_indent_code(String &p_code, int p_from_line, int p_to_line) const override;
+
+	virtual bool supports_documentation() const override;
+	virtual bool can_inherit_from_file() const override;
+	virtual Error open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) override;
+	virtual bool overrides_external_editor() override;
+	virtual Error complete_code(const String &p_code, const String &p_path, Object *p_owner, List<CodeCompletionOption> *r_options, bool &r_force, String &r_call_hint) override;
+	virtual Error lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner, LookupResult &r_result) override;
 
 	/* SCRIPT GLOBAL CLASS FUNCTIONS */
 	/*TODO*/ virtual bool handles_global_class_type(const String &p_type) const override { return false; }
