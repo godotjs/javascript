@@ -14,6 +14,7 @@
 #define EXT_TSCLASS "ts"
 #define EXT_JSMODULE "js"
 #define EXT_JSON "json"
+#define EXT_GENERATE "//generatedPath="
 
 class JavaScript : public Script {
 	GDCLASS(JavaScript, Script);
