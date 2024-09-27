@@ -24,9 +24,9 @@ struct JavaScriptAlphCompare {
 };
 
 static Error dump_to_file(const String &p_path, const String &p_content) {
-	Ref<FileAccess> tsconfig = FileAccess::open(p_path, FileAccess::WRITE);
-	if (tsconfig.is_valid() && tsconfig->is_open()) {
-		tsconfig->store_string(p_content);
+	const Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE);
+	if (file.is_valid() && file->is_open()) {
+		file->store_string(p_content);
 		return OK;
 	}
 	return FAILED;
@@ -43,8 +43,8 @@ void JavaScriptPlugin::_notification(int p_what) {
 		case MainLoop::NOTIFICATION_APPLICATION_FOCUS_IN: {
 			const HashSet<Ref<JavaScript>> &scripts = JavaScriptLanguage::get_singleton()->get_scripts();
 			for (const Ref<JavaScript> &s : scripts) {
-				uint64_t last_time = s->get_last_modified_time();
-				uint64_t time = FileAccess::get_modified_time(s->get_script_path());
+				const uint64_t last_time = s->get_last_modified_time();
+				const uint64_t time = FileAccess::get_modified_time(s->get_script_path());
 				if (last_time != time) {
 					JavaScriptLanguage::get_singleton()->reload_tool_script(s, true);
 				}
@@ -58,9 +58,6 @@ void JavaScriptPlugin::_on_menu_item_pressed(int item) {
 		case MenuItem::ITEM_GEN_DECLARE_FILE:
 			declaration_file_dialog->popup_centered_ratio();
 			break;
-		case MenuItem::ITEM_GEN_TYPESCRIPT_PROJECT:
-			_generate_typescript_project();
-			break;
 		case MenuItem::ITEM_GEN_ENUM_BINDING_SCRIPT:
 			enumberation_file_dialog->popup_centered_ratio();
 			break;
@@ -72,7 +69,6 @@ JavaScriptPlugin::JavaScriptPlugin(EditorNode *p_node) {
 	add_tool_submenu_item(TTR("JavaScript"), menu);
 	menu->add_item(TTR("Generate TypeScript Declaration File"), ITEM_GEN_DECLARE_FILE);
 	menu->add_item(TTR("Generate Enumeration Binding Script"), ITEM_GEN_ENUM_BINDING_SCRIPT);
-	menu->add_item(TTR("Generate TypeScript Project"), ITEM_GEN_TYPESCRIPT_PROJECT);
 	menu->connect("id_pressed", callable_mp(this, &JavaScriptPlugin::_on_menu_item_pressed));
 
 	declaration_file_dialog = memnew(EditorFileDialog);
@@ -182,13 +178,6 @@ void JavaScriptPlugin::_export_enumeration_binding_file(const String &p_path) {
 	file_content = apply_pattern(file_content, enum_dict);
 
 	dump_to_file(p_path, file_content);
-}
-
-void JavaScriptPlugin::_generate_typescript_project() {
-	_export_typescript_declare_file("res://godot.d.ts");
-	dump_to_file("res://tsconfig.json", TSCONFIG_CONTENT);
-	dump_to_file("res://decorators.ts", TS_DECORATORS_CONTENT);
-	dump_to_file("res://package.json", PACKAGE_JSON_CONTENT);
 }
 
 // The following functions are used to generate a godot.d.ts file out of the docs folder from godot
