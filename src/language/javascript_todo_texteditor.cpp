@@ -4,7 +4,10 @@
 
 #include <core/config/project_settings.h>
 #include <core/io/json.h>
+
+#ifdef TOOLS_ENABLED
 #include <editor/editor_settings.h>
+#endif
 
 int JavaScriptLanguage::find_function(const String &p_function, const String &p_code) const { return -1; }
 String JavaScriptLanguage::make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const { return ""; }
@@ -15,6 +18,7 @@ bool JavaScriptLanguage::can_inherit_from_file() const { return false; }
 Error JavaScriptLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<ScriptLanguage::CodeCompletionOption> *r_options, bool &r_force, String &r_call_hint) { return ERR_UNAVAILABLE; }
 Error JavaScriptLanguage::lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner, ScriptLanguage::LookupResult &r_result) { return ERR_UNAVAILABLE; }
 
+#ifdef TOOLS_ENABLED
 Error JavaScriptLanguage::open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) {
 	const Ref<JavaScript> s = p_script;
 	const String origin_script_path = s->get_script_path();
@@ -83,3 +87,7 @@ Error JavaScriptLanguage::open_in_external_editor(const Ref<Script> &p_script, i
 bool JavaScriptLanguage::overrides_external_editor() {
 	return EditorSettings::get_singleton()->get("text_editor/external/use_external_editor");
 }
+#else
+Error JavaScriptLanguage::open_in_external_editor(const Ref<Script> &p_script, int p_line, int p_col) { return ERR_UNAVAILABLE; }
+bool JavaScriptLanguage::overrides_external_editor() { return false; }
+#endif
