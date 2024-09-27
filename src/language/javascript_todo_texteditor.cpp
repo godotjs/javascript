@@ -73,7 +73,7 @@ Error JavaScriptLanguage::open_in_external_editor(const Ref<Script> &p_script, i
 		if (!has_file_flag) {
 			args.push_back(script_path);
 		}
-		const Error err = OS::get_singleton()->execute(path, args, false);
+		const Error err = OS::get_singleton()->execute(path, args);
 		if (err != OK) {
 			WARN_PRINT("Couldn't open external text editor, using internal");
 		}
