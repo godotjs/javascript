@@ -53,7 +53,7 @@ Download the binaries from the [release page](https://github.com/GodotExplorer/E
 
 Read this [documentation](https://godotjs.github.io/documentation/getting-started/) or look at the tutorials or demos:
 
-- [ECMAScriptDemos](https://github.com/godotjs/javascriptDemos) - Demos
+- [ECMAScriptDemos](https://github.com/geequlim-godot-related/ECMAScriptDemos) - Demos
 - [godot-ECMAScript-cookbook](https://github.com/why-try313/godot-ECMAScript-cookbook/wiki) - Tutorial
 - [godot-typescript-starter](https://github.com/citizenll/godot-typescript-starter) - Template
 - [godot-js-template](https://github.com/fukaraadam-workspace/godot-js-template) - Template
